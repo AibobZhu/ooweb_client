@@ -1,11 +1,19 @@
+#########################################
+# Author         : Haibo Zhu             
+# Email          : haibo.zhu@hotmail.com 
+# created        : 2019-08-09 19:53 
+# Last modified  : 2019-08-09 20:16
+# Filename       : example_app.py
+# Description    :                       
+#########################################
 from requests import get, put,post
 import pprint
 import json
 from contextlib2 import contextmanager
 from flask import Flask, render_template_string
 from flask_bootstrap import Bootstrap
-from examples.pages import create_demo_page
-from examples.settings import *
+from pages import create_demo_page
+from settings import *
 
 app = Flask(__name__)
 Bootstrap(app)
@@ -18,4 +26,4 @@ def demo():
 
 if __name__ == '__main__':
     print('running')
-    app.run(port=8080)
+    app.run(host='0.0.0.0', port=80)

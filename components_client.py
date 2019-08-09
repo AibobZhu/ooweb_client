@@ -1,3 +1,11 @@
+#########################################
+# Author         : Haibo Zhu             
+# Email          : haibo.zhu@hotmail.com 
+# created        : 2019-08-09 20:19 
+# Last modified  : 2019-08-09 20:19
+# Filename       : components_client.py
+# Description    :                       
+#########################################
 from interfaces import *
 
 from flask import current_app
@@ -253,10 +261,9 @@ class WebComponent(ComponentInf, ClientInf):
         raise NotImplementedError
 
     def render(self):
-        print('WebPageClient.render:\n{}'.format(pprint.pformat(self.context())))
         #components = components_factory(self.context())
         payload = create_payload(self.context())
-        #r = post(url='http://ec2-13-115-254-77.ap-northeast-1.compute.amazonaws.com:8089' + self._api, json=payload)
+        print('WebPage::render api:{}'.format(self._api))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
         return html
