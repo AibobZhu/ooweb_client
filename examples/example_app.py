@@ -2,7 +2,7 @@
 # Author         : Haibo Zhu             
 # Email          : haibo.zhu@hotmail.com 
 # created        : 2019-08-09 19:53 
-# Last modified  : 2019-08-09 20:16
+# Last modified  : 2019-08-09 20:50
 # Filename       : example_app.py
 # Description    :                       
 #########################################
@@ -26,4 +26,4 @@ def demo():
 
 if __name__ == '__main__':
     print('running')
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8089, threaded=True)
