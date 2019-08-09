@@ -1,12 +1,12 @@
-from ooweb_client.interfaces import *
-from ooweb_client.examples.settings import *
+from interfaces import *
 
+from flask import current_app
 import uuid
 import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
-from ooweb_client.share import create_payload, extract_data, APIs
+from share import create_payload, extract_data, APIs
 import sys
 
 sys.setrecursionlimit(2000)
@@ -156,7 +156,6 @@ class WebComponent(ComponentInf, ClientInf):
 
     _context = None
     _cur_context_stack = []
-    _api = API_URL + APIs['render'].format('v1.0')
 
     @classmethod
     def _set_context(cls, context):
@@ -400,6 +399,7 @@ class WebPage(WebComponentBootstrap):
     def __init__(self, **kwargs):
         self._set_context([])
         super().__init__(**kwargs)
+        self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
 
 class WebRow(WebComponentBootstrap):

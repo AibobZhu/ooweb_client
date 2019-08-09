@@ -1,4 +1,4 @@
-from ooweb_client.components_client import *
+from components_client import *
 
 
 def create_demo_page():
