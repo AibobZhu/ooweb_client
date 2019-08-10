@@ -26,4 +26,4 @@ def demo():
 
 if __name__ == '__main__':
     print('running')
-    app.run(host='0.0.0.0', port=8089, threaded=True)
+    app.run(host='localhost', port=80, threaded=True)

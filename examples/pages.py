@@ -10,7 +10,7 @@ from components_client import *
 
 
 def create_demo_page():
-    with WebPage(name='mypage', value='<OwwwO>') as page:
+    with WebPage(name='mypage', value='<OwwwO>', nav={'is_login':True, 'login_name':'TestUser'}) as page:
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn( width=['md6'], offset=['mdo3'], align=['horizon-center'])) as r1c1:
                 with r1c1.add_child(WebHead1(value='&lt;OwwwO&gt; 	 Demo')) as h1:

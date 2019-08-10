@@ -405,6 +405,38 @@ class WebPage(WebComponentBootstrap):
 
     def __init__(self, **kwargs):
         self._set_context([])
+        if 'nav' not in kwargs:
+            kwargs['nav'] = {
+                'menus':{
+                    'title':{'name':'OwwwO_Demo','action':'test'},
+                    'menu_list':[
+                        {'name':'TestMenu1','action':'test'},
+                        {'name':'TestMenu2','action':'test'}
+                    ]
+                },
+                'login_href':'test',
+                'logout_href':'test',
+                'login_name':'测试用户',
+                'is_login': False
+            }
+        else:
+            if 'menus' not in kwargs['nav']:
+                kwargs['nav']['menus'] = {
+                    'title':{'name':'OwwwO_Demo','action':'test'},
+                    'menu_list':[
+                        {'name':'TestMenu1','action':'test'},
+                        {'name':'TestMenu2','action':'test'}
+                    ]
+                }
+            if 'login_href' not in kwargs['nav']:
+                kwargs['nav']['login_href'] = 'test'
+            if 'logout_href' not in kwargs['nav']:
+                kwargs['nav']['logout_href'] = 'test'
+            if 'login_name' not in kwargs['nav']:
+                kwargs['nav']['login_name'] = '测试用户1'
+            if 'is_login' not in kwargs['nav']:
+                kwargs['nav']['is_login'] = False
+
         super().__init__(**kwargs)
         self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 

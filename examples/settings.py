@@ -1,1 +1,1 @@
-API_URL = "http://52.198.90.175:8090"
+API_URL = "http://localhost:8090"
