@@ -22,4 +22,4 @@
 - Use flask_appconfig to setup application
 
 # Note
-- The ooweb_client code calls remote APIs to render the HTML page. The server URL of the remote APIs may change. If your code doesn't work due to it, please check the setting.py on github.
+- The ooweb_client code calls remote APIs to render the HTML page. The server URL of the remote APIs may change. If your code doesn't work due to it, please check the settings.py on github.
