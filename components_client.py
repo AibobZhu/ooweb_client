@@ -259,11 +259,14 @@ class WebComponent(ComponentInf, ClientInf):
 
     def url(self, url=None):
         raise NotImplementedError
+    
+    def url_for(self, context):
+        pass
 
     def render(self):
         #components = components_factory(self.context())
         payload = create_payload(self.context())
-        print('WebPage::render api:{}'.format(self._api))
+        #print('WebPage::render api:{}'.format(self._api))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
         return html
@@ -401,6 +404,7 @@ class WebComponentBootstrap(WebComponent, Action, Format):
         context['sub_context'] = []
         self.add_context(context)
 
+
 class WebPage(WebComponentBootstrap):
 
     def __init__(self, **kwargs):
@@ -408,35 +412,43 @@ class WebPage(WebComponentBootstrap):
         if 'nav' not in kwargs:
             kwargs['nav'] = {
                 'menus':{
-                    'title':{'name':'OwwwO_Demo','action':'test'},
+                    'title':{'name':'OwwwO_Demo','action':'view.test'},
                     'menu_list':[
-                        {'name':'TestMenu1','action':'test'},
-                        {'name':'TestMenu2','action':'test'}
+                        {'name':'TestMenu1','action':'view.test'},
+                        {'name':'TestMenu2','action':'view.test'}
                     ]
                 },
-                'login_href':'test',
-                'logout_href':'test',
+                'login_href':'view.test',
+                'logout_href':'view.test',
                 'login_name':'测试用户',
                 'is_login': False
             }
         else:
             if 'menus' not in kwargs['nav']:
                 kwargs['nav']['menus'] = {
-                    'title':{'name':'OwwwO_Demo','action':'test'},
+                    'title':{'name':'OwwwO_Demo','action':'view.test'},
                     'menu_list':[
-                        {'name':'TestMenu1','action':'test'},
-                        {'name':'TestMenu2','action':'test'}
+                        {'name':'TestMenu1','action':'view.test'},
+                        {'name':'TestMenu2','action':'view.test'}
                     ]
                 }
+            else:
+                if 'title' not in kwargs['nav']['menus']:
+                    kwargs['nav']['menus']['title'] = {'name':'EduCloud','action':'view.test'}
+                if 'menu_list' not in kwargs['nav']['menus']:
+                    kwargs['nav']['menus']['menu_list'] = [
+                        {'name':'TestMenu1','action':'view.test'},
+                        {'name':'TestMenu2','action':'view.test'}
+                    ]
             if 'login_href' not in kwargs['nav']:
-                kwargs['nav']['login_href'] = 'test'
+                kwargs['nav']['login_href'] = 'view.test'
             if 'logout_href' not in kwargs['nav']:
-                kwargs['nav']['logout_href'] = 'test'
+                kwargs['nav']['logout_href'] = 'view.test'
             if 'login_name' not in kwargs['nav']:
                 kwargs['nav']['login_name'] = '测试用户1'
             if 'is_login' not in kwargs['nav']:
                 kwargs['nav']['is_login'] = False
-
+        
         super().__init__(**kwargs)
         self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
