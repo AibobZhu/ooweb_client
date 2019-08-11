@@ -3,13 +3,13 @@
 
 # Run the example
 ## Ubuntu
-- 'git clone https://github.com/AibobZhu/ooweb_client.git'
-- 'cd ooweb_client'
-- 'virtualenv venv3 --python=/usr/bin/python3'
-- 'source venv3/bin/activate'
-- 'pip install -r requirements.txt'
-- 'cd examples'
-- 'python example_app.py'
+- git clone https://github.com/AibobZhu/ooweb_client.git
+- cd ooweb_client
+- virtualenv venv3 --python=/usr/bin/python3
+- source venv3/bin/activate
+- pip install -r requirements.txt
+- cd examples
+- python example_app.py
 
 ## Windows
 - Install and run Pycharm
