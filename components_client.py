@@ -409,41 +409,42 @@ class WebPage(WebComponentBootstrap):
 
     def __init__(self, **kwargs):
         self._set_context([])
+        default_url = 'index'
         if 'nav' not in kwargs:
             kwargs['nav'] = {
                 'menus':{
-                    'title':{'name':'OwwwO_Demo','action':'view.test'},
+                    'title':{'name':'OwwwO_Demo','action':default_url},
                     'menu_list':[
-                        {'name':'TestMenu1','action':'view.test'},
-                        {'name':'TestMenu2','action':'view.test'}
+                        {'name':'TestMenu1','action':default_url},
+                        {'name':'TestMenu2','action':default_url}
                     ]
                 },
-                'login_href':'view.test',
-                'logout_href':'view.test',
+                'login_href':default_url,
+                'logout_href':default_url,
                 'login_name':'测试用户',
                 'is_login': False
             }
         else:
             if 'menus' not in kwargs['nav']:
                 kwargs['nav']['menus'] = {
-                    'title':{'name':'OwwwO_Demo','action':'view.test'},
+                    'title':{'name':'OwwwO_Demo','action':default_url},
                     'menu_list':[
-                        {'name':'TestMenu1','action':'view.test'},
-                        {'name':'TestMenu2','action':'view.test'}
+                        {'name':'TestMenu1','action':default_url},
+                        {'name':'TestMenu2','action':default_url}
                     ]
                 }
             else:
                 if 'title' not in kwargs['nav']['menus']:
-                    kwargs['nav']['menus']['title'] = {'name':'EduCloud','action':'view.test'}
+                    kwargs['nav']['menus']['title'] = {'name':'EduCloud','action':default_url}
                 if 'menu_list' not in kwargs['nav']['menus']:
                     kwargs['nav']['menus']['menu_list'] = [
-                        {'name':'TestMenu1','action':'view.test'},
-                        {'name':'TestMenu2','action':'view.test'}
+                        {'name':'TestMenu1','action':default_url},
+                        {'name':'TestMenu2','action':default_url}
                     ]
             if 'login_href' not in kwargs['nav']:
-                kwargs['nav']['login_href'] = 'view.test'
+                kwargs['nav']['login_href'] = default_url
             if 'logout_href' not in kwargs['nav']:
-                kwargs['nav']['logout_href'] = 'view.test'
+                kwargs['nav']['logout_href'] = default_url
             if 'login_name' not in kwargs['nav']:
                 kwargs['nav']['login_name'] = '测试用户1'
             if 'is_login' not in kwargs['nav']:

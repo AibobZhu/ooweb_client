@@ -156,6 +156,9 @@ class ActionInf(metaclass=abc.ABCMeta):
     def post(self, url, data):
         pass
 
+    @abc.abstractmethod
+    def is_js_kw(self, scripts):
+        pass
 
 class FormatInf(metaclass=abc.ABCMeta):
 
