@@ -29,10 +29,14 @@ def abort_if_task_doesnt_exist(task_id, tasks):
     if task_id not in tasks:
         abort(404, message="Task {} doesn't exist".format(task_id))
 
+def set_default(obj):
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError
 
 def create_payload(data_input, compress=True):
     if not isinstance(data_input, str):
-        data_json = json.dumps(data_input)
+        data_json = json.dumps(data_input, default=set_default)
     else:
         data_json = data_input
     print('len of data_input:{}, data_json:{}'.format(len(data_input), len(data_json)))

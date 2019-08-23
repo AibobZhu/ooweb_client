@@ -421,6 +421,7 @@ class WebComponentBootstrap(WebComponent, Action, Format):
     def is_js_kw(self):
         pass
 
+
 class WebPage(WebComponentBootstrap):
 
     def __init__(self, **kwargs):
@@ -522,6 +523,14 @@ class WebInputGroup(WebComponentBootstrap):
 
 
 class WebInput(WebComponentBootstrap):
+    pass
+
+
+class WebInputGroup(WebComponentBootstrap):
+    pass
+
+
+class WebFormInline(WebComponentBootstrap):
     pass
 
 
