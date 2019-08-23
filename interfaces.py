@@ -118,11 +118,11 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def styles(self):
+    def global_styles(self):
         pass
 
     @abc.abstractmethod
-    def add_styles(self, styles):
+    def add_global_styles(self, styles):
         pass
 
 
@@ -160,6 +160,7 @@ class ActionInf(metaclass=abc.ABCMeta):
     def is_js_kw(self, scripts):
         pass
 
+
 class FormatInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -195,7 +196,23 @@ class FormatInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def atts(self, klass=None):
+    def styles(self, style=None):
+        pass
+    
+    @abc.abstractmethod
+    def styles_str(self):
+        pass
+
+    @abc.abstractmethod
+    def add_styles(self, styles):
+        pass
+    
+    @abc.abstractmethod
+    def remove_style(self, style):
+        pass
+
+    @abc.abstractmethod
+    def atts(self, atts=None):
         pass
 
     @abc.abstractmethod
@@ -203,7 +220,7 @@ class FormatInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_atts(self, att):
+    def add_atts(self, atts):
         pass
 
     @abc.abstractmethod

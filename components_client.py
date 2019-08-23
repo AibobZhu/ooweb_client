@@ -159,6 +159,15 @@ class Format(BootstrapInf, FormatInf):
     def remove_width(self, width):
         raise NotImplementedError
 
+    def remove_style(self, style):
+        raise NotImplementedError
+
+    def styles(self, style=None):
+        raise NotImplementedError
+
+    def styles_str(self):
+        raise NotImplementedError
+
 
 class WebComponent(ComponentInf, ClientInf):
 
@@ -378,6 +387,11 @@ class WebComponent(ComponentInf, ClientInf):
         finally:
             self._pop_current_context()
 
+    def add_global_styles(self, styles):
+        raise NotImplementedError
+
+    def global_styles(self):
+        raise NotImplementedError
 
 class WebComponentBootstrap(WebComponent, Action, Format):
 
@@ -404,6 +418,8 @@ class WebComponentBootstrap(WebComponent, Action, Format):
         context['sub_context'] = []
         self.add_context(context)
 
+    def is_js_kw(self):
+        pass
 
 class WebPage(WebComponentBootstrap):
 
@@ -481,5 +497,42 @@ class WebBtnToggle(WebComponentBootstrap):
         self.add_context(context)
 
 
+class WebBtnGroup(WebComponentBootstrap):
+    pass
+
+
+class WebBtnToolbar(WebComponentBootstrap):
+    pass
+
+
+class WebBtn(WebComponentBootstrap):
+    pass
+
+
+class WebBtnDropdownToggle(WebComponentBootstrap):
+    pass
+
+
+class WebFormGroup(WebComponentBootstrap):
+    pass
+
+
+class WebInputGroup(WebComponentBootstrap):
+    pass
+
+
+class WebInput(WebComponentBootstrap):
+    pass
+
+
+class WebSpan(WebComponentBootstrap):
+    pass
+
+
 class WebBr(WebComponentBootstrap):
     pass
+
+
+class WebUl(WebComponentBootstrap):
+    pass
+
