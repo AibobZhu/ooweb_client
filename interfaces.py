@@ -2,6 +2,26 @@ import abc
 
 class BootstrapInf(metaclass=abc.ABCMeta):
 
+    DEFAULT_URL='index'
+
+    @classmethod
+    def create_default_nav_items(cls):
+        menu = {
+            'title': {'name': 'OwwwO', 'action': cls.DEFAULT_URL},
+            'menu_list': [
+                {'name': 'test menu 1', 'action': cls.DEFAULT_URL},
+                {'name': 'test menu 2', 'action': cls.DEFAULT_URL}
+            ],
+            'login': {
+                'site_name': 'OwwwO',
+                'is_login': False,
+                'login_name': 'TestUser',
+                'login_href': cls.DEFAULT_URL,
+                'logout_href': cls.DEFAULT_URL
+            }
+        }
+        return menu
+
     @abc.abstractmethod
     def check_col_name(self, col):
         pass
