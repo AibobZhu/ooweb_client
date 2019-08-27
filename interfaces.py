@@ -130,6 +130,10 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def replace_scripts(self, stub, scripts):
+        pass
+
+    @abc.abstractmethod
     def add_script_files(self, files):
         pass
 
