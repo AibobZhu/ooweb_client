@@ -130,6 +130,14 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def add_script_files(self, files):
+        pass
+
+    @abc.abstractmethod
+    def get_script_files(self):
+        pass
+
+    @abc.abstractmethod
     def set_script_indent(self, indent):
         pass
 
@@ -138,11 +146,19 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def global_styles(self):
+    def get_global_styles(self):
         pass
 
     @abc.abstractmethod
     def add_global_styles(self, styles):
+        pass
+
+    @abc.abstractmethod
+    def add_style_files(self, files):
+        pass
+
+    @abc.abstractmethod
+    def get_style_files(self):
         pass
 
 
