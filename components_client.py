@@ -530,3 +530,6 @@ class WebUl(WebComponentBootstrap):
 
 class WebDiv(WebComponentBootstrap):
     pass
+
+class OODatePicker(WebInputGroup):
+    pass
