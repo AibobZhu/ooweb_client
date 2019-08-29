@@ -393,6 +393,25 @@ class WebComponent(ComponentInf, ClientInf):
     def global_styles(self):
         raise NotImplementedError
 
+    def add_script_files(self, files):
+        raise NotImplementedError
+
+    def add_style_files(self, files):
+        raise NotImplementedError
+
+    def get_global_styles(self):
+        raise NotImplementedError
+
+    def get_script_files(self):
+        raise NotImplementedError
+
+    def get_style_files(self):
+        raise NotImplementedError
+
+    def replace_scripts(self, stub, scripts):
+        raise NotImplementedError
+
+
 class WebComponentBootstrap(WebComponent, Action, Format):
 
     def has_class(self, class_):
