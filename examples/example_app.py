@@ -20,9 +20,13 @@ Bootstrap(app)
 app.config['BOOTSTRAP_SERVE_LOCAL'] = True
 app.config['API_URL'] = API_URL
 
+
 @app.route('/')
-def demo():
-    return create_demo_page()
+def index():
+    page = create_demo_page()
+    print('page:{}'.format(page))
+    return render_template_string(page)
+
 
 if __name__ == '__main__':
     print('running')

@@ -8,18 +8,159 @@
 #########################################
 from interfaces import *
 
-from flask import current_app
+from flask import current_app, render_template_string, request
 import uuid
 import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
 from share import create_payload, extract_data, APIs
-import sys
+import sys, os
+import datetime
+from flask_sqlalchemy import SQLAlchemy
+import json
 
 sys.setrecursionlimit(2000)
 
-class Action(CommandInf, ActionInf):
+
+class Test:
+
+    '''
+    Page all the testing methods. The subclass inherited it
+    '''
+    _TEST_JS = ''
+
+    _SUBCLASSES = {}
+
+    @staticmethod
+    def get_sub_classes(cls):
+        """
+        Get all subclasses recursively
+        """
+
+        for subclass in cls.__subclasses__():
+            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
+                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
+                cls._SUBCLASSES[subclass.__name__] = subclass
+                cls.get_sub_classes(subclass)
+
+        return cls._SUBCLASSES
+    def __init__(self, test=False, **kwargs):
+        #super().__init__(**kwargs)
+        self._test = test
+        if self._test and self.__class__.__name__.find("WebPage") == 0:
+            self.test_init()
+
+    def test_init(self):
+        if not self._value:
+            self._value = self.__class__.__name__ + 'Test'
+
+    def get_test_js(self):
+        '''
+        Post test result to url of class_name_test_result
+        Sub class should overwrite this according its own condition if necessary
+        '''
+
+        '''
+        test_js = self._TEST_JS
+        return test_js
+        '''
+        url = ''
+        return '''
+                alert('!@#class_name!@#');
+        '''.replace('!@#class_name!@#',self.__class__.__name__)
+
+    @classmethod
+    def test_result(cls):
+        '''sub class should over'''
+
+        #return 'OK', 201
+        raise NotImplementedError
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        '''
+        TODO: Remove WebPageTest class and use WebPage(test=True)
+        '''
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](test=True)) as test:
+                pass
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
+    @classmethod
+    def add_test_route(cls, app):
+        url_request = 'test_' + cls.__name__ + '_request'
+        app.add_url_rule('/' + url_request, endpoint=url_request, view_func=cls.test_request)
+        url_result = 'test_' + cls.__name__ + '_result'
+        app.add_url_rule('/' + url_result, endpoint=url_result, view_func=cls.test_result, methods=['POST'])
+        return {'test_request':url_request,'test_result':url_result}
+
+
+class TestPage(Test):
+
+    _TEST_DB = 'test.db'
+
+    def __init__(self, test=False, **kwargs):
+        super().__init__(test=test, **kwargs)
+
+    def test_init(self):
+        self._test_route_list = []
+        self.create_app()
+
+    def create_test_routes(self, app):
+        '''
+        Create a test url route and page link for each subclass, each page contains a test case in js. Finally create an index page of all tests
+        TODO: may add this into a new interface of page
+        '''
+
+        nav_items = {'menu_list':[]}
+        subclasses = self.get_sub_classes(WebComponentBootstrap)
+        for name, klass in subclasses.items():
+            test_urls = klass.add_test_route(app)
+            nav_items['menu_list'].append({'name':name,'action':test_urls['test_request']})
+
+        self._nav_items = {**self._nav_items, **nav_items} if hasattr(self, '_nav_item') else nav_items
+
+        @app.route('/')
+        def index():
+            return self.render()
+
+
+    def create_app(self):
+        '''create app, and all test urls'''
+
+        from flask import Flask
+        from flask_appconfig import AppConfig
+        from flask_bootstrap import Bootstrap
+
+        app = Flask(__name__)
+        AppConfig(app,'default_config.py')
+        Bootstrap(app)
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config['TESTING'] = True
+        timestamp = datetime.datetime.now().strftime('-%Y-%m-%d-%H-%M-%S.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
+                                                os.path.join(basedir, self._TEST_DB + timestamp)
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        self.create_test_routes(app)
+        self.app_client = app.test_client()
+        self.app = app
+        self.db = SQLAlchemy(app)
+        self.db.drop_all()
+        self.db.create_all()
+
+
+        return app
+
+    def test_start(self):
+        self.app.run(port=5600, threaded=True)
+
+
+class Action(CommandInf, ActionInf, Test):
 
     def if_(self):
         raise NotImplementedError
@@ -72,8 +213,18 @@ class Action(CommandInf, ActionInf):
     def on_ready(self):
         raise NotImplementedError
 
-    def post(self, url, data):
-        raise NotImplementedError
+    @contextmanager
+    def post(self, url=None, data=None, success=None):
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
 
 
 class Format(BootstrapInf, FormatInf):
@@ -186,8 +337,8 @@ class WebComponent(ComponentInf, ClientInf):
             'params': params
         }
 
-    def __init__(self, **kwargs):
-
+    def __init__(self, test=False, **kwargs):
+        super().__init__(test=test,**kwargs)
         if 'id' in kwargs:
             self._id = kwargs['id']
         else:
@@ -208,6 +359,12 @@ class WebComponent(ComponentInf, ClientInf):
 
         kwargs['name'] = self.name()
         kwargs['id'] = self.id()
+        if hasattr(self,'_nav_items'):
+            kwargs['nav'] = self._nav_items
+        if self.__class__.__name__.find("WebPage") != 0:
+            kwargs['test'] = test
+        else:
+            kwargs['test'] = False
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
         self.add_context(context)
@@ -278,7 +435,7 @@ class WebComponent(ComponentInf, ClientInf):
         #print('WebPage::render api:{}'.format(self._api))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
-        return html
+        return render_template_string(html)
 
     def context(self):
         if self._parent:
@@ -305,10 +462,14 @@ class WebComponent(ComponentInf, ClientInf):
         raise NotImplementedError
 
     def add_scripts(self, scripts):
-        raise NotImplementedError
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
+                                            params={'scripts': scripts})
+        self.add_context(context)
 
     def set_script_indent(self, indent):
-        raise NotImplementedError
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
+                                            params={'indent': indent})
+        self.add_context(context)
 
     def get_script_indent(self):
         raise NotImplementedError
@@ -322,6 +483,19 @@ class WebComponent(ComponentInf, ClientInf):
     @contextmanager
     def on_click(self):
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3],'params':{}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def on_select(self):
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
@@ -441,12 +615,15 @@ class WebComponentBootstrap(WebComponent, Action, Format):
         pass
 
 
-class WebPage(WebComponentBootstrap):
+class WebPage(WebComponentBootstrap,TestPage):
 
-    def __init__(self, **kwargs):
+    def __init__(self,  test=False, **kwargs):
         self._set_context([])
-        super().__init__(**kwargs)
-        self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
+        super().__init__(test=test, **kwargs)
+        if hasattr(self, "app") and self.app:
+            self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
+        else:
+            self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
 
 class WebRow(WebComponentBootstrap):
@@ -533,3 +710,32 @@ class WebDiv(WebComponentBootstrap):
 
 class OODatePicker(WebInputGroup):
     pass
+
+class OOGeneralSelector(WebBtnGroup):
+
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
+                with test.on_select():
+                    test.set_script_indent(-1)
+                    test.add_scripts("alert(btn.name + '.' + event.target.text);")
+                    test.set_script_indent(1)
+                    with test.post():
+                        pass
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
+    @classmethod
+    def test_result(cls):
+        r = request.form['test']
+        print("Got " + cls.__name__ + " testing post: " + r)
+        return json.dumps({"status": "sucess"}), 201
+
+    def call_on_select(self):
+        pass

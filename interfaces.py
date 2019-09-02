@@ -4,6 +4,22 @@ class BootstrapInf(metaclass=abc.ABCMeta):
 
     DEFAULT_URL='index'
 
+    _SUBCLASSES = {}
+
+    @staticmethod
+    def get_sub_classes(cls):
+        """
+        Get all subclasses recursively
+        """
+
+        for subclass in cls.__subclasses__():
+            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
+                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
+                cls._SUBCLASSES[subclass.__name__] = subclass
+                cls.get_sub_classes(subclass)
+
+        return cls._SUBCLASSES
+
     @classmethod
     def create_default_nav_items(cls):
         menu = {
@@ -168,6 +184,12 @@ class ComponentInf(metaclass=abc.ABCMeta):
 
 class ActionInf(metaclass=abc.ABCMeta):
 
+    '''
+    All the interfaces about js operations
+
+    TODO: add w_ head of all the function with decorated with contextmanager
+    '''
+
     @abc.abstractmethod
     def has_class(self, class_):
         pass
@@ -193,7 +215,7 @@ class ActionInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def post(self, url, data):
+    def post(self, url, data, success):
         pass
 
     '''
@@ -205,6 +227,13 @@ class ActionInf(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def value(self, value):
         pass
+
+    '''
+    @abc.abstractmethod
+    def post(self, data_name=None):
+        pass
+    '''
+
 
 class FormatInf(metaclass=abc.ABCMeta):
 
