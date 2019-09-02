@@ -1,6 +1,7 @@
 import abc
+from test_class import *
 
-class BootstrapInf(metaclass=abc.ABCMeta):
+class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
 
     DEFAULT_URL='index'
 
@@ -83,7 +84,7 @@ class BootstrapInf(metaclass=abc.ABCMeta):
         pass
 
 
-class ComponentInf(metaclass=abc.ABCMeta):
+class ComponentInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __enter__(self):
@@ -182,7 +183,7 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
 
-class ActionInf(metaclass=abc.ABCMeta):
+class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     '''
     All the interfaces about js operations
@@ -235,7 +236,7 @@ class ActionInf(metaclass=abc.ABCMeta):
     '''
 
 
-class FormatInf(metaclass=abc.ABCMeta):
+class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def pad(self, pad=None):
@@ -318,7 +319,7 @@ class FormatInf(metaclass=abc.ABCMeta):
         pass
 
 
-class CommandInf(metaclass=abc.ABCMeta):
+class CommandInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def if_(self):
@@ -365,7 +366,7 @@ class CommandInf(metaclass=abc.ABCMeta):
         pass
 
 
-class ClientInf(metaclass=abc.ABCMeta):
+class ClientInf(MinXin, metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
