@@ -2,6 +2,7 @@ from flask import make_response, request, jsonify
 from flask_restful import abort, Api
 from flask_httpauth import HTTPBasicAuth
 import json, zlib
+import random
 #TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
 APIs = {
@@ -59,3 +60,22 @@ def extract_data(data_str_com, compressed=True):
         rd = data_str_com
     #rd = json.loads(rd_json)
     return rd
+
+
+def _getGBK2312():
+  head = random.randint(0xb0,0xc0)
+  body = random.randint(0xa1,0xc9)
+  val = (head << 8) | body
+  val = binascii.unhexlify(hex(val)[2:].encode('ascii')).decode('gb2312')
+  return val
+
+
+def _getStr(leng):
+  s = ''
+  for _ in range(leng):
+    s += _getGBK2312()
+  return s
+
+
+def _getSUUID():
+	return str(uuid.uuid4()).split("-")[0]

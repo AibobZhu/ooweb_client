@@ -182,6 +182,62 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def get_style_files(self):
         pass
 
+    def data_format(self):
+        raise NotImplementedError
+
+
+class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
+
+    @classmethod
+    @abc.abstractmethod
+    def get_url(cls):
+        pass
+
+    @abc.abstractmethod
+    def get_wc(self):
+        pass
+
+    @abc.abstractmethod
+    def data_format(self, format=None):
+        '''
+        Define the data format, can be used by data creators like user class. Basically the format is a dict with blank values
+
+        :param format: generally a dict
+        :return:
+        '''
+        pass
+
+    @abc.abstractmethod
+    def load_data(self, data=None):
+        '''
+        Load data from user or model modules, and expect it in the correct format already,
+            for the data should be created in the format defined by CustomToolbar.data_format
+
+        :param data:
+        :return:
+        '''
+        pass
+
+    @abc.abstractmethod
+    def create(self,parent):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def create_routes(cls, app):
+        '''
+        Create url routes to provide the backend data process methods
+
+        :param app:
+        :return:
+        '''
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def on_post(cls):
+        pass
+
 
 class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -234,6 +290,14 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def post(self, data_name=None):
         pass
     '''
+
+    @abc.abstractmethod
+    def on_window_resize(self):
+        pass
+
+    @abc.abstractmethod
+    def clear(self, call=False):
+        pass
 
 
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
@@ -316,6 +380,19 @@ class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def remove_class(self, class_):
+        pass
+
+    @abc.abstractmethod
+    def clear(self):
+        pass
+
+    @abc.abstractmethod
+    def border_radius(self, radius=None):
+        '''
+        Set the border radius
+        :param radius: {'tl':1px, 'tr':2px, 'br':3px, 'bl':4px}
+        :return:
+        '''
         pass
 
 

@@ -79,7 +79,7 @@ class Action(CommandInf, ActionInf, Test):
 
     @contextmanager
     def post(self, url=None, data=None, success=None):
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data}})
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data, 'success':success}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
@@ -89,6 +89,26 @@ class Action(CommandInf, ActionInf, Test):
             pass
         finally:
             self._pop_current_context()
+
+    def clear(self, call=False):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'call': call})
+        self.add_context(context)
+
+    @contextmanager
+    def on_window_resize(self):
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3],'params': {}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+
+    def on_resize(self):
+        pass
 
 
 class Format(BootstrapInf, FormatInf):
@@ -183,6 +203,10 @@ class Format(BootstrapInf, FormatInf):
     def styles_str(self):
         raise NotImplementedError
 
+    def border_radius(self, radius=None):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'radius': radius})
+        self.add_context(context)
+
 
 class WebComponent(ComponentInf, ClientInf):
 
@@ -194,11 +218,12 @@ class WebComponent(ComponentInf, ClientInf):
         WebComponent._context = context
         WebComponent._cur_context_stack=[WebComponent._context]
 
-    def _get_objcall_context(self, func, caller_id=None, params=None):
+    def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         return {
             'function': func,
             'caller_id': caller_id,
-            'params': params
+            'params': params,
+            'sub_context': sub_context
         }
 
     def __init__(self, test=False, **kwargs):
@@ -230,6 +255,9 @@ class WebComponent(ComponentInf, ClientInf):
         else:
             kwargs['test'] = False
 
+        if hasattr(self, '_value'):
+            kwargs['_value'] = self._value
+
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
         self.add_context(context)
 
@@ -249,7 +277,7 @@ class WebComponent(ComponentInf, ClientInf):
     def name(self, name=None):
         if not name:
             if not hasattr(self, '_name') or not self._name:
-                self._name = self.__class__.__name__ + '-' + self.id()
+                self._name = self.__class__.__name__ + '_' + self.id()
             return self._name
         else:
             self._name = name
@@ -326,13 +354,11 @@ class WebComponent(ComponentInf, ClientInf):
         raise NotImplementedError
 
     def add_scripts(self, scripts):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
-                                            params={'scripts': scripts})
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
 
     def set_script_indent(self, indent):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
-                                            params={'indent': indent})
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'indent': indent})
         self.add_context(context)
 
     def get_script_indent(self):
@@ -372,8 +398,7 @@ class WebComponent(ComponentInf, ClientInf):
 
     @contextmanager
     def if_(self):
-        context = self._get_objcall_context(func='with', caller_id=self.id(),
-                                            params={'function': inspect.stack()[0][3], 'params': {}})
+        context = self._get_objcall_context(func='with', caller_id=self.id(),params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
@@ -492,6 +517,10 @@ class WebComponentBootstrap(WebComponent, Action, Format):
     def is_js_kw(self):
         pass
 
+    def test_init(self):
+        if (not hasattr(self, '_value')) or (not self._value):
+            self._value = self.__class__.__name__ + 'Test'
+
 
 class WebPage(WebComponentBootstrap,TestPage):
 
@@ -543,7 +572,27 @@ class WebBtnGroupVertical(WebComponentBootstrap):
 
 
 class WebBtnToolbar(WebComponentBootstrap):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
+                with test.add_child(OOGeneralSelector(test=True)) as sel1:
+                    pass
+                with test.add_child(WebBtnGroup(test=True)) as btng1:
+                    with btng1.add_child(OODatePicker(test=True)) as dp1:
+                        pass
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
+    @classmethod
+    def test_result(cls):
+        r = request.form['test']
+        print("Got " + cls.__name__ + " testing post: " + r)
+        return json.dumps({"status": "sucess"}), 201
 
 
 class WebBtn(WebComponentBootstrap):
@@ -589,11 +638,35 @@ class WebUl(WebComponentBootstrap):
 class WebDiv(WebComponentBootstrap):
     pass
 
+
 class OODatePicker(WebInputGroup):
     pass
 
+
 class OOGeneralSelector(WebBtnGroup):
 
+    '''
+    Create a general selector, contains several toggle drop down buttons in a line
+
+    :param: btns=[
+        {
+            'name':'btn1',
+            'options':[
+                {
+                    'name':'option1',
+                    'href':'#'
+                }
+            ]
+        }
+    ]
+    '''
+
+    @staticmethod
+    def data_format():
+        return {
+            'button': {'name': '', 'options': []},
+            'option': {'name': '', 'href': '#'}
+        }
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -620,3 +693,6 @@ class OOGeneralSelector(WebBtnGroup):
 
     def call_on_select(self):
         pass
+
+
+

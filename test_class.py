@@ -33,12 +33,8 @@ class Test(MinXin):
     def __init__(self, test=False, **kwargs):
         super().__init__(**kwargs)
         self._test = test
-        if self._test and self.__class__.__name__.find("WebPage") == 0:
+        if self._test and hasattr(self,'test_init'):
             self.test_init()
-
-    def test_init(self):
-        if not self._value:
-            self._value = self.__class__.__name__ + 'Test'
 
     def get_test_js(self):
         '''
@@ -50,6 +46,7 @@ class Test(MinXin):
         test_js = self._TEST_JS
         return test_js
         '''
+
         url = ''
         return '''
                 alert('!@#class_name!@#');
@@ -62,7 +59,6 @@ class Test(MinXin):
         #return 'OK', 201
         raise NotImplementedError
 
-
     @classmethod
     def add_test_route(cls, app):
         url_request = 'test_' + cls.__name__ + '_request'
@@ -71,6 +67,10 @@ class Test(MinXin):
         app.add_url_rule('/' + url_result, endpoint=url_result, view_func=cls.test_result, methods=['POST'])
         return {'test_request':url_request,'test_result':url_result}
 
+    @classmethod
+    def test_init(cls):
+        pass
+
 
 class TestPage(Test):
 
@@ -78,6 +78,8 @@ class TestPage(Test):
 
     def __init__(self, test=False, **kwargs):
         super().__init__(test=test, **kwargs)
+        if test:
+            TestPage.test_init(self)
 
     def test_init(self):
         self._test_route_list = []
@@ -100,7 +102,6 @@ class TestPage(Test):
         @app.route('/')
         def index():
             return render_template_string(self.render())
-
 
     def create_app(self):
         '''create app, and all test urls'''
