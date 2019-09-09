@@ -236,6 +236,11 @@ class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def on_post(cls):
+        '''
+        Response the post request from itself post method. return data in the format of 
+        {'status': , 'data': }
+        :return: {'status': , 'data': }
+        '''
         pass
 
 
@@ -257,6 +262,10 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def remove_class(self, class_):
+        pass
+
+    @abc.abstractmethod
+    def on_select(self):
         pass
 
     @abc.abstractmethod

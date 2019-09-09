@@ -110,6 +110,10 @@ class Action(CommandInf, ActionInf, Test):
     def on_resize(self):
         pass
 
+    def alert(self, message=''):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'message': message})
+        self.add_context(context)
+        
 
 class Format(BootstrapInf, FormatInf):
 
