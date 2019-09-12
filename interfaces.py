@@ -269,6 +269,10 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def on_select_declare(self):
+        pass
+
+    @abc.abstractmethod
     def on_click(self):
         pass
 

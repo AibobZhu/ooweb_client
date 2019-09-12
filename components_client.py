@@ -401,6 +401,19 @@ class WebComponent(ComponentInf, ClientInf):
             self._pop_current_context()
 
     @contextmanager
+    def on_select_declare(self):
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
     def if_(self):
         context = self._get_objcall_context(func='with', caller_id=self.id(),params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
