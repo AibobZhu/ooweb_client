@@ -111,6 +111,10 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def empty_children(self):
+        pass
+
+    @abc.abstractmethod
     def parent(self, parent=None):
         pass
 
@@ -185,6 +189,9 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def data_format(self):
         raise NotImplementedError
 
+    def default_data(self):
+        raise NotImplementedError
+
 
 class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -215,6 +222,14 @@ class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
 
         :param data:
         :return:
+        '''
+        pass
+
+    @abc.abstractmethod
+    def query_data(self, qeury):
+        '''
+        Let the user of custom complex controller query data in a format , like the endpoint to response post request
+        :return: queried data
         '''
         pass
 
@@ -287,6 +302,10 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def post(self, url, data, success):
         pass
+
+    @staticmethod
+    def on_post():
+        raise NotImplementedError
 
     '''
     @abc.abstractmethod

@@ -48,9 +48,7 @@ class Test(MinXin):
         '''
 
         url = ''
-        return '''
-                alert('!@#class_name!@#');
-        '''.replace('!@#class_name!@#',self.__class__.__name__)
+        return '''alert('!@#class_name!@#');\n'''.replace('!@#class_name!@#',self.__class__.__name__)
 
     @classmethod
     def test_result(cls):

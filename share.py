@@ -3,6 +3,7 @@ from flask_restful import abort, Api
 from flask_httpauth import HTTPBasicAuth
 import json, zlib
 import random
+import binascii
 #TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
 APIs = {

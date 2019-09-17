@@ -310,6 +310,9 @@ class WebComponent(ComponentInf, ClientInf):
         self.add_context(context)
         return child
 
+    def empty_children(self):
+        self._children.clear()
+
     def parent(self, parent=None):
         raise NotImplementedError
 
@@ -673,7 +676,8 @@ class OOGeneralSelector(WebBtnGroup):
                     'name':'option1',
                     'href':'#'
                 }
-            ]
+            ],
+            'select':'option1'
         }
     ]
     '''
@@ -681,7 +685,7 @@ class OOGeneralSelector(WebBtnGroup):
     @staticmethod
     def data_format():
         return {
-            'button': {'name': '', 'options': []},
+            'button': {'name': '', 'select':'', 'options': []},
             'option': {'name': '', 'href': '#'}
         }
 
