@@ -383,7 +383,7 @@
 					return DPGlobal.parseDate(weekString.split(options.weekPicker.separator)[0], options.format, options.language);
 				}
 			};
-			if (o.weekPicker) {
+			if (o.weekPicker) { //ooweb_client/tests/static/js/...
 				if (typeof o.weekPicker != 'object') o.weekPicker = defaultWeekPicker;
 				else {
 					o.weekPicker.separator = o.weekPicker.separator+'' || defaultWeekPicker.separator;

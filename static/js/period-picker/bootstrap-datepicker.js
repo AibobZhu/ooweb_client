@@ -383,14 +383,24 @@
 					return DPGlobal.parseDate(weekString.split(options.weekPicker.separator)[0], options.format, options.language);
 				}
 			};
+
 			if (o.weekPicker) {
-				if (typeof o.weekPicker != 'object') o.weekPicker = defaultWeekPicker;
-				else {
+				if (typeof o.weekPicker != 'object'){
+				    // o.weekPicker == true
+				    o.weekPicker = defaultWeekPicker;
+				}else {
+				    //o.weekPicker == object
 					o.weekPicker.separator = o.weekPicker.separator+'' || defaultWeekPicker.separator;
 					if (typeof o.weekPicker.formatWeek != 'function') o.weekPicker.formatWeek = defaultWeekPicker.formatWeek;
 					if (typeof o.weekPicker.getWeekStart != 'function') o.weekPicker.getWeekStart = defaultWeekPicker.getWeekStart;
 				}
-			}
+			}else{
+			    if (typeof o.weekPicker != 'object'){
+			        //o.weekPicker == false
+			        o.weekPickerBak = defaultWeekPicker;
+			    }
+			};
+
 		},
 		
 		_checkTimePart: function() {

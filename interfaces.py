@@ -293,6 +293,21 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def on_change(self):
+        '''
+        Define the action to process change event
+        Normally, push function into the execution list
+
+        :return:
+        '''
+        pass
+
+    @abc.abstractmethod
+    def on_change_event(self, filter=''):
+        '''
+        Declare the change event capture
+
+        :return:
+        '''
         pass
 
     @abc.abstractmethod
@@ -306,29 +321,37 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     @staticmethod
     def on_post():
         raise NotImplementedError
-
-    '''
-    @abc.abstractmethod
-    def is_js_kw(self, scripts):
-        pass
-    '''
     
     @abc.abstractmethod
     def value(self, value):
         pass
-
-    '''
-    @abc.abstractmethod
-    def post(self, data_name=None):
-        pass
-    '''
 
     @abc.abstractmethod
     def on_window_resize(self):
         pass
 
     @abc.abstractmethod
-    def clear(self, call=False):
+    def clear_declare(self):
+        pass
+
+    @abc.abstractmethod
+    def on_clear(self):
+        pass
+
+    @abc.abstractmethod
+    def call_clear(self, data="''"):
+        pass
+
+    @abc.abstractmethod
+    def execute_list_name(self, action_name):
+        pass
+
+    @abc.abstractmethod
+    def execute_list_declare(self):
+        pass
+
+    @abc.abstractmethod
+    def event_declare(self):
         pass
 
 
@@ -412,10 +435,6 @@ class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def remove_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def clear(self):
         pass
 
     @abc.abstractmethod
