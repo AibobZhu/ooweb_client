@@ -280,11 +280,26 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def on_event_w(self,event):
+        '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
+        pass
+
+    @abc.abstractmethod
+    def trigger_event(self,event):
+        '''Trigger the event on the element'''
+        pass
+
+
+    '''
+    TODO: The following should be replaced with trigger_event, on_event
+    '''
+    '''
+    @abc.abstractmethod
     def on_select(self):
         pass
 
     @abc.abstractmethod
-    def on_select_declare(self):
+    def select_declare(self):
         pass
 
     @abc.abstractmethod
@@ -293,26 +308,56 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def on_change(self):
-        '''
+    '''
+    '''
         Define the action to process change event
         Normally, push function into the execution list
 
         :return:
-        '''
+    '''
+    '''
         pass
 
     @abc.abstractmethod
     def on_change_event(self, filter=''):
-        '''
+    '''
+    '''
         Declare the change event capture
 
         :return:
-        '''
+    '''
+    '''
         pass
 
     @abc.abstractmethod
+    def clear_declare(self):
+        pass
+
+    @abc.abstractmethod
+    def event_declare(self, event, filter=''):
+        pass
+
+    @abc.abstractmethod
+    def _execute_list_name(self, action_name):
+        pass
+
+    @abc.abstractmethod
+    def execute_list_declare(self, action_name):
+        pass
+
+    @abc.abstractmethod
+
     def on_ready(self):
         pass
+        
+    @abc.abstractmethod
+    def on_window_resize(self):
+        pass
+        
+    '''
+    '''
+    TODO END
+    '''
 
     @abc.abstractmethod
     def post(self, url, data, success):
@@ -323,35 +368,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         raise NotImplementedError
     
     @abc.abstractmethod
-    def value(self, value):
-        pass
-
-    @abc.abstractmethod
-    def on_window_resize(self):
-        pass
-
-    @abc.abstractmethod
-    def clear_declare(self):
-        pass
-
-    @abc.abstractmethod
-    def on_clear(self):
-        pass
-
-    @abc.abstractmethod
-    def call_clear(self, data="''"):
-        pass
-
-    @abc.abstractmethod
-    def execute_list_name(self, action_name):
-        pass
-
-    @abc.abstractmethod
-    def execute_list_declare(self):
-        pass
-
-    @abc.abstractmethod
-    def event_declare(self):
+    def val(self, value):
         pass
 
 

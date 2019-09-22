@@ -114,6 +114,41 @@ class Action(CommandInf, ActionInf, Test):
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'message': message})
         self.add_context(context)
         
+    def call_clear(self, data="''"):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'data': data})
+        self.add_context(context)
+
+    def clear_declare(self):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
+        self.add_context(context)
+
+    def event_declare(self, event, filter=''):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'event':event,'filter':filter})
+        self.add_context(context)
+
+    def execute_list_declare(self, action_name):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
+        self.add_context(context)
+
+    def execute_list_name(self, action_name):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
+        self.add_context(context)
+
+    def on_change_event(self, filter=''):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'filter': filter})
+        self.add_context(context)
+
+    def on_clear(self):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
+        self.add_context(context)
+
+    def select_declare(self):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
+        self.add_context(context)
+
+    def call_select(self, event):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'event':event})
+        self.add_context(context)
 
 class Format(BootstrapInf, FormatInf):
 
