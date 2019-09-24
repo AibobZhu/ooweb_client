@@ -280,7 +280,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def on_event_w(self,event):
+    def on_event_w(self,event,filter=''):
         '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
         pass
 
@@ -368,7 +368,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         raise NotImplementedError
     
     @abc.abstractmethod
-    def val(self, value):
+    def val(self, value=''):
         pass
 
 

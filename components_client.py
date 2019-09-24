@@ -68,15 +68,6 @@ class Action(CommandInf, ActionInf, Test):
     def remove_class(self, class_):
         raise NotImplementedError
 
-    def on_click(self):
-        raise NotImplementedError
-
-    def on_change(self):
-        raise NotImplementedError
-
-    def on_ready(self):
-        raise NotImplementedError
-
     @contextmanager
     def post(self, url=None, data=None, success=None):
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data, 'success':success}})
@@ -90,6 +81,43 @@ class Action(CommandInf, ActionInf, Test):
         finally:
             self._pop_current_context()
 
+    def alert(self, message=''):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'message': message})
+        self.add_context(context)
+        
+    def execute_list_name(self, action_name):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
+        self.add_context(context)
+
+    @contextmanager
+    def on_event_w(self,event,filter=''):
+        context = self._get_objcall_context(func='with', caller_id=self.id(),
+                                            params={'function': inspect.stack()[0][3], 'params': {'event':event,'filter':filter}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+        
+    def trigger_event(self,event):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
+                                            params={'event': event})
+        self.add_context(context)
+
+    def val(self,value=''):
+        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
+                                            params={'value': value})
+        self.add_context(context)
+
+    '''
+    TODO: replace with on_event_w, trigger_event
+    '''
+    '''
+    
     def clear(self, call=False):
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'call': call})
         self.add_context(context)
@@ -109,10 +137,15 @@ class Action(CommandInf, ActionInf, Test):
 
     def on_resize(self):
         pass
+    
+    def on_click(self):
+        raise NotImplementedError
 
-    def alert(self, message=''):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'message': message})
-        self.add_context(context)
+    def on_change(self):
+        raise NotImplementedError
+
+    def on_ready(self):
+        raise NotImplementedError
         
     def call_clear(self, data="''"):
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'data': data})
@@ -127,10 +160,6 @@ class Action(CommandInf, ActionInf, Test):
         self.add_context(context)
 
     def execute_list_declare(self, action_name):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
-        self.add_context(context)
-
-    def execute_list_name(self, action_name):
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
         self.add_context(context)
 
@@ -149,7 +178,9 @@ class Action(CommandInf, ActionInf, Test):
     def call_select(self, event):
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'event':event})
         self.add_context(context)
-
+    '''
+    
+    
 class Format(BootstrapInf, FormatInf):
 
     def pad(self, pad=None):
@@ -587,6 +618,10 @@ class WebPage(WebComponentBootstrap,TestPage):
             self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
         else:
             self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
+
+
+class WebA(WebComponentBootstrap):
+    pass
 
 
 class WebRow(WebComponentBootstrap):
