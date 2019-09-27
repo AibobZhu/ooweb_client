@@ -8,7 +8,7 @@
 #########################################
 from interfaces import *
 
-from flask import current_app, render_template_string, request
+from flask import current_app, render_template_string, request, jsonify
 import uuid
 import pprint
 import inspect
@@ -20,19 +20,58 @@ import datetime
 from flask_sqlalchemy import SQLAlchemy
 import json
 from test_class import *
+import copy
 
 sys.setrecursionlimit(2000)
 
 
-class Action(CommandInf, ActionInf, Test):
+class ClientBase(metaclass=abc.ABCMeta):
 
-    def if_(self):
+    @abc.abstractmethod
+    def id(self):
+        pass
+
+    @abc.abstractmethod
+    def add_context(self, context):
+        pass
+
+    @abc.abstractmethod
+    def _get_objcall_context(self,func,caller_id,params):
+        pass
+
+    def func_call(self, params):
+        context = self._get_objcall_context(func=inspect.stack()[1][3], caller_id=self.id(), params=params)
+        context['sub_context'] = []
+        self.add_context(context)
+        return context
+
+    def with_call(self, params):
+        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[1][3],
+                                                                                      'params': params})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+
+    def enter_call(self, params={}):
+        context = self._get_objcall_context(func='with', params={'obj_id': self.id()})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+
+
+'''
+TODO: try with eval, just pass the function calling and express in string, then execute with 'eval' on server side
+'''
+
+class Action(CommandInf, ActionInf, Test, ClientBase):
+
+    def if_w(self):
         raise NotImplementedError
 
-    def else_(self):
+    def else_w(self):
         raise NotImplementedError
 
-    def for_(self):
+    def for_w(self):
         raise NotImplementedError
 
     def var(self, value=None):
@@ -53,10 +92,10 @@ class Action(CommandInf, ActionInf, Test):
     def set_condition(self, cond):
         raise NotImplementedError
 
-    def condition(self):
+    def condition_w(self):
         raise NotImplementedError
 
-    def cmds(self):
+    def cmds_w(self):
         raise NotImplementedError
 
     def has_class(self, class_):
@@ -68,12 +107,27 @@ class Action(CommandInf, ActionInf, Test):
     def remove_class(self, class_):
         raise NotImplementedError
 
+    @classmethod
+    def on_post(cls):
+        '''
+        The process function to response the post request from the WebComponent itself
+        TODO: Query data by user model
+
+        :return: jsonify({'status':'success','data': data})
+        '''
+        r = json.loads(request.form.get('data'))
+        return {"status": "sucess", 'data': r}
+    
     @contextmanager
-    def post(self, url=None, data=None, success=None):
+    def post_w(self, url=None, data=None, success=None):
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data, 'success':success}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
+        '''
+        params = {'url':url, 'data':data, 'success':success}
+        self.with_call(params)
         try:
             yield
         except:
@@ -82,20 +136,24 @@ class Action(CommandInf, ActionInf, Test):
             self._pop_current_context()
 
     def alert(self, message=''):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'message': message})
-        self.add_context(context)
+        params = {'message': message}
+        return self.func_call(params)
         
     def execute_list_name(self, action_name):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
-        self.add_context(context)
+        params = {'action_name': action_name}
+        return self.func_call(params)
 
     @contextmanager
     def on_event_w(self,event,filter=''):
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {'event':event,'filter':filter}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
+        '''
+        params = {'event':event,'filter':filter}
+        self.with_call(params)
         try:
             yield
         except:
@@ -104,14 +162,12 @@ class Action(CommandInf, ActionInf, Test):
             self._pop_current_context()
         
     def trigger_event(self,event):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
-                                            params={'event': event})
-        self.add_context(context)
+        params = {'event': event}
+        self.func_call(params)
 
     def val(self,value=''):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),
-                                            params={'value': value})
-        self.add_context(context)
+        params = {'value': value}
+        self.func_call(params)
 
     '''
     TODO: replace with on_event_w, trigger_event
@@ -181,7 +237,7 @@ class Action(CommandInf, ActionInf, Test):
     '''
     
     
-class Format(BootstrapInf, FormatInf):
+class Format(BootstrapInf, FormatInf, ClientBase):
 
     def pad(self, pad=None):
         raise NotImplementedError
@@ -274,11 +330,11 @@ class Format(BootstrapInf, FormatInf):
         raise NotImplementedError
 
     def border_radius(self, radius=None):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'radius': radius})
-        self.add_context(context)
+        params = {'radius': radius}
+        self.func_call(params)
 
 
-class WebComponent(ComponentInf, ClientInf):
+class WebComponent(ComponentInf, ClientInf, ClientBase):
 
     _context = None
     _cur_context_stack = []
@@ -289,6 +345,11 @@ class WebComponent(ComponentInf, ClientInf):
         WebComponent._cur_context_stack=[WebComponent._context]
 
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
+        def convert_param_obj(params):
+            for k,v in params.items():
+                if isinstance(v, WebComponent):
+                    params[k] = {'obj_id':v.id()}
+        convert_param_obj(params)
         return {
             'function': func,
             'caller_id': caller_id,
@@ -332,10 +393,13 @@ class WebComponent(ComponentInf, ClientInf):
         self.add_context(context)
 
     def __enter__(self):
+        '''
         context = self._get_objcall_context(func='with', params={'obj_id':self.id()})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
+        '''
+        self.enter_call()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -372,9 +436,9 @@ class WebComponent(ComponentInf, ClientInf):
         assert (not objs)
         self._children.add(child)
         child._parent = self
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'child_id':child.id()})
-        self.add_context(context)
-        return child
+        params = {'child_id': child.id()}
+        self.func_call(params)
+        return  child
 
     def empty_children(self):
         self._children.clear()
@@ -411,6 +475,18 @@ class WebComponent(ComponentInf, ClientInf):
     def add_context(self, cont):
         return self._add_context(cont)
 
+    def remove_context(self, cont):
+        self._remove_context(cont)
+
+    @classmethod
+    def _remove_context(cls, cont=None):
+        if not cont:
+            del cls._cur_context_stack[-1]
+        else:
+            for i,v in enumerate(cls._cur_context_stack):
+                if v == cont:
+                    del cls._cur_context_stack[i]
+
     @classmethod
     def _add_context(cls, cont):
         cls._cur_context_stack[-1].append(cont)
@@ -427,12 +503,20 @@ class WebComponent(ComponentInf, ClientInf):
         raise NotImplementedError
 
     def add_scripts(self, scripts):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'scripts': scripts})
+        '''
+        context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
+        '''
+        params = {'scripts': scripts}
+        return self.func_call(params)
 
     def set_script_indent(self, indent):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'indent': indent})
         self.add_context(context)
+        '''
+        params = {'indent': indent}
+        return self.func_call(params)
 
     def get_script_indent(self):
         raise NotImplementedError
@@ -443,6 +527,10 @@ class WebComponent(ComponentInf, ClientInf):
     def add_styles(self, styles):
         raise NotImplementedError
 
+    '''
+    Replace with on_event_w
+    '''
+    '''
     @contextmanager
     def on_click(self):
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3],'params':{}})
@@ -481,9 +569,12 @@ class WebComponent(ComponentInf, ClientInf):
             pass
         finally:
             self._pop_current_context()
+    '''
 
     @contextmanager
-    def if_(self):
+    def if_w(self):
+        raise NotImplementedError
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
         self.add_context(context)
@@ -494,9 +585,12 @@ class WebComponent(ComponentInf, ClientInf):
             pass
         finally:
             self._pop_current_context()
+        '''
 
     @contextmanager
-    def else_(self):
+    def else_w(self):
+        raise  NotImplementedError
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
@@ -508,14 +602,18 @@ class WebComponent(ComponentInf, ClientInf):
             pass
         finally:
             self._pop_current_context()
+        '''
 
     @contextmanager
-    def condition(self):
+    def condition_w(self):
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
+        '''
+        self.with_call({})
         try:
             yield
         except:
@@ -525,10 +623,13 @@ class WebComponent(ComponentInf, ClientInf):
 
     @contextmanager
     def cmds(self):
+        '''
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
         context['sub_context'] = []
         self.add_context(context)
         self._push_current_context(context['sub_context'])
+        '''
+        self.with_call({})
         try:
             yield
         except:
@@ -568,37 +669,77 @@ class WebComponent(ComponentInf, ClientInf):
         TODO: Remove WebPageTest class and use WebPage(test=True)
         '''
         with WebPage() as page:
-            with page.add_child(globals()[cls.__name__](test=True)) as test:
+            with page.add_child(globals()[cls.__name__](test=True))[1] as test:
                 pass
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
 
+    @contextmanager
+    def var_w(self, name='data'):
+        '''
+        context = self._get_objcall_context(func='with', caller_id=self.id(),
+                                            params={'function': inspect.stack()[0][3], 'params': {'name':name}})
+        context['sub_context'] = []
+        self.add_context(context)
+        self._push_current_context(context['sub_context'])
+        '''
+        params = {'name':name}
+        self.with_call(params)
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
 
-class WebComponentBootstrap(WebComponent, Action, Format):
+    def lvar_w(self, name='data'):
+        raise NotImplementedError
+
+    def gvar_w(self, name='data'):
+        raise NotImplementedError
+
+
+class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
     def has_class(self, class_):
         raise NotImplementedError
 
     def is_width(self, width):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
         context['sub_context'] = []
         self.add_context(context)
+        '''
+        params = {'width': width}
+        return self.func_call(params)
 
     def remove_width(self, width):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
         context['sub_context'] = []
         self.add_context(context)
+        '''
+        params = {'width': width}
+        return self.func_call(params)
 
     def set_width(self, width):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
         context['sub_context'] = []
         self.add_context(context)
+        '''
+        params={'width': width}
+        return self.func_call(params)
 
     def value(self, value):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'value': value})
         context['sub_context'] = []
         self.add_context(context)
+        '''
+        params = {'value': value}
+        return self.func_call(params)
 
     def is_js_kw(self):
         pass
@@ -647,9 +788,12 @@ class WebImg(WebComponentBootstrap):
 class WebBtnToggle(WebComponentBootstrap):
 
     def toggle(self):
+        '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
         self.add_context(context)
-
+        '''
+        params = {}
+        return self.func_call(params)
 
 class WebBtnGroup(WebComponentBootstrap):
 
@@ -681,7 +825,6 @@ class WebBtnToolbar(WebComponentBootstrap):
     @classmethod
     def test_result(cls):
         r = request.form['test']
-        print("Got " + cls.__name__ + " testing post: " + r)
         return json.dumps({"status": "sucess"}), 201
 
 
@@ -730,7 +873,30 @@ class WebDiv(WebComponentBootstrap):
 
 
 class OODatePicker(WebInputGroup):
-    pass
+
+    @classmethod
+    def on_post(cls):
+        '''
+        TODO: query data by user model
+        :return:
+        '''
+        r = super().on_post()
+
+        # just for test
+        select_data = r['data']
+        data = cls.default_data()
+        for index, btn in enumerate(data):
+            if index < len(select_data):
+                sbtn = select_data[index]
+                if sbtn['select']:
+                    btn['select'] = sbtn['select']
+            elif index == len(select_data):
+                pass
+            else:
+                btn['options'].call_clear()
+        # test end
+
+        return jsonify({'status': 'success', 'data': data})
 
 
 class OOGeneralSelector(WebBtnGroup):
@@ -745,11 +911,21 @@ class OOGeneralSelector(WebBtnGroup):
                 {
                     'name':'option1',
                     'href':'#'
+                },
+                {
+                    ...
                 }
             ],
             'select':'option1'
+        },
+        {
+        ...
         }
     ]
+
+    methods:
+        on_event_w: own events: 'select', response function params: 'a', 'btn', 'me'
+
     '''
 
     @staticmethod
@@ -765,15 +941,22 @@ class OOGeneralSelector(WebBtnGroup):
 
         with WebPage() as page:
             with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
+                '''
                 with test.on_select():
                     test.set_script_indent(-1)
-                    test.add_scripts("alert(btn.name + '.' + event.target.text);")
+                    test.add_scripts('''"alert(btn.name + '.' + event.target.text);"''')
                     test.set_script_indent(1)
-                    with test.post():
+                    with test.post_w():
                         pass
+                '''
+        with test.on_event_w('select'):
+            #test.add_scripts('''"var data = " + test.fix_cmd(test.val())''')
+            with Var() as data:
+                test.val()
+            with test.post_w():
+                test.val(data)
 
         html = page.render()
-        print(pprint.pformat(html))
         return render_template_string(html)
 
     @classmethod
@@ -785,5 +968,57 @@ class OOGeneralSelector(WebBtnGroup):
     def call_on_select(self):
         pass
 
+    @staticmethod
+    def default_data():
+        fmt = OOGeneralSelector.data_format()
+        data = []
+        for i in range(3):
+            button = copy.deepcopy(fmt['button'])
+            button['name'] = 'testtest' + str(i)
+            option1 = copy.deepcopy(fmt['option'])
+            option1['name'] = button['name'] + '_testoption1'
+            option2 = copy.deepcopy(fmt['option'])
+            option2['name'] = button['name'] + '_testoption2'
+            button['options'].append(option1)
+            button['options'].append(option2)
+            data.append(button)
+        button = copy.deepcopy(fmt['button'])
+        button['name'] = 'test' + str(3)
+        data.append(button)
+        return data
+
+    @classmethod
+    def on_post(cls):
+        '''
+        TODO: query data by user model
+        :return:
+        '''
+        r = super().on_post()
+
+        # just for test
+        select_data = r['data']
+        data = cls.default_data()
+        for index, btn in enumerate(data):
+            if index < len(select_data):
+                sbtn = select_data[index]
+                if sbtn['select']:
+                    btn['select'] = sbtn['select']
+            elif index == len(select_data):
+                pass
+            else:
+                btn['options'].call_clear()
+        # test end
+
+        return jsonify({'status': 'success', 'data': data})
 
 
+class Var(WebComponentBootstrap):
+    pass
+
+
+class LVar(Var):
+    pass
+
+
+class GVar(Var):
+    pass

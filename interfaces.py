@@ -360,7 +360,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     '''
 
     @abc.abstractmethod
-    def post(self, url, data, success):
+    def post_w(self, url, data, success):
         pass
 
     @staticmethod
@@ -467,24 +467,33 @@ class FormatInf(MinXin, metaclass=abc.ABCMeta):
 class CommandInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def if_(self):
+    def if_w(self):
         pass
 
     @abc.abstractmethod
-    def else_(self):
+    def else_w(self):
         pass
 
     @abc.abstractmethod
-    def for_(self):
+    def for_w(self):
+        pass
+
+    '''
+    Replace with Var, LVar, GVar classes
+    '''
+    '''
+    @abc.abstractmethod
+    def var_w(self, name='data'):
         pass
 
     @abc.abstractmethod
-    def var(self, value=None):
+    def lvar_w(self, name='data'):
         pass
 
     @abc.abstractmethod
-    def g_var(self, value=None):
+    def gvar_w(self, name='data'):
         pass
+    '''
 
     @abc.abstractmethod
     def is_js(self):
@@ -503,11 +512,11 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def condition(self):
+    def condition_w(self):
         pass
 
     @abc.abstractmethod
-    def cmds(self):
+    def cmds_w(self):
         pass
 
 
