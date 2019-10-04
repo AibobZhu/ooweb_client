@@ -34,7 +34,9 @@ def abort_if_task_doesnt_exist(task_id, tasks):
 def set_default(obj):
     if isinstance(obj, set):
         return list(obj)
-    raise TypeError
+    else:
+        print("Error: Type not support:",type(obj))
+        raise TypeError
 
 def create_payload(data_input, compress=True):
     if not isinstance(data_input, str):

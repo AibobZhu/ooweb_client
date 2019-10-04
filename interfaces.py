@@ -285,6 +285,11 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def stop_event(self, event, filter='', stop=False):
+        '''set/unset event stop running flag'''
+        pass
+
+    @abc.abstractmethod
     def trigger_event(self,event):
         '''Trigger the event on the element'''
         pass

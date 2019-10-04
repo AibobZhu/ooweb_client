@@ -156,11 +156,15 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         self.with_call(params)
         try:
             yield
-        except:
-            pass
+        except Exception as err:
+            raise Exception(err)
         finally:
             self._pop_current_context()
-        
+
+    def stop_event(self,event,filter='',stop=False):
+        params = {'event': event, 'filter':filter, 'stop': stop}
+        self.func_call(params)
+
     def trigger_event(self,event):
         params = {'event': event}
         self.func_call(params)
@@ -347,6 +351,8 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         def convert_param_obj(params):
             for k,v in params.items():
+                if k == 'params':
+                    convert_param_obj(v)
                 if isinstance(v, WebComponent):
                     params[k] = {'obj_id':v.id()}
         convert_param_obj(params)
