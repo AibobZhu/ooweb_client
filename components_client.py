@@ -83,8 +83,9 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
     def is_js(self):
         raise NotImplementedError
 
-    def set_js(self, js):
-        raise NotImplementedError
+    def set_js(self, js_):
+        params = {'js_':js_}
+        self.func_call(params=params)
 
     def is_condition(self):
         raise NotImplementedError
@@ -102,10 +103,20 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         raise NotImplementedError
 
     def add_class(self, class_):
-        raise NotImplementedError
+        params={'class_':class_}
+        return self.func_call(params)
 
     def remove_class(self, class_):
-        raise NotImplementedError
+        params={'class_':class_}
+        return self.func_call(params)
+
+    def add_attrs(self,attrs):
+        params = {'attrs': attrs}
+        return self.func_call(params)
+
+    def remove_attrs(self, attrs):
+        params = {'attrs', attrs}
+        return self.func_call(params)
 
     @classmethod
     def on_post(cls):
@@ -173,72 +184,9 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {'value': value}
         self.func_call(params)
 
-    '''
-    TODO: replace with on_event_w, trigger_event
-    '''
-    '''
-    
-    def clear(self, call=False):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'call': call})
-        self.add_context(context)
-
-    @contextmanager
-    def on_window_resize(self):
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3],'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-
-    def on_resize(self):
-        pass
-    
-    def on_click(self):
-        raise NotImplementedError
-
-    def on_change(self):
-        raise NotImplementedError
-
-    def on_ready(self):
-        raise NotImplementedError
-        
-    def call_clear(self, data="''"):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'data': data})
-        self.add_context(context)
-
-    def clear_declare(self):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
-        self.add_context(context)
-
-    def event_declare(self, event, filter=''):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'event':event,'filter':filter})
-        self.add_context(context)
-
-    def execute_list_declare(self, action_name):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'action_name': action_name})
-        self.add_context(context)
-
-    def on_change_event(self, filter=''):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'filter': filter})
-        self.add_context(context)
-
-    def on_clear(self):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
-        self.add_context(context)
-
-    def select_declare(self):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
-        self.add_context(context)
-
-    def call_select(self, event):
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'event':event})
-        self.add_context(context)
-    '''
+    def disable(self, disable):
+        params = {'disable': disable}
+        self.func_call(params)
     
     
 class Format(BootstrapInf, FormatInf, ClientBase):
@@ -267,13 +215,13 @@ class Format(BootstrapInf, FormatInf, ClientBase):
     def font(self, font=None):
         raise NotImplementedError
 
-    def atts(self, klass=None):
+    def attrs(self, klass=None):
         raise NotImplementedError
 
-    def atts_str(self):
+    def attrs_str(self):
         raise NotImplementedError
 
-    def add_atts(self, att):
+    def add_attrs(self, att):
         raise NotImplementedError
 
     def remove_att(self, att):
@@ -286,10 +234,12 @@ class Format(BootstrapInf, FormatInf, ClientBase):
         raise NotImplementedError
 
     def add_class(self, class_):
-        raise NotImplementedError
+        params = {'class_':class_}
+        return self.func_call(params=params)
 
     def remove_class(self, class_):
-        raise NotImplementedError
+        params = {'class_':class_}
+        return self.func_call(params=params)
 
     def check_col_name(self, col):
         raise NotImplementedError
@@ -350,6 +300,8 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         def convert_param_obj(params):
+            if isinstance(params, str):
+                print("error: params is instance of str")
             for k,v in params.items():
                 if k == 'params':
                     convert_param_obj(v)
@@ -903,6 +855,48 @@ class OODatePicker(WebInputGroup):
         # test end
 
         return jsonify({'status': 'success', 'data': data})
+
+
+class WebSvg(WebComponentBootstrap):
+    pass
+
+
+class OOChartNVD3(WebSvg):
+    pass
+
+class OOChartLineFinder(OOChartNVD3):
+    pass
+
+class OOChartPie(OOChartNVD3):
+    pass
+
+class OOChartComulativeLine(OOChartNVD3):
+    pass
+
+class OOChartLinePlusBar(OOChartNVD3):
+    pass
+
+class OOChartHorizontalGroupedStackedBar(OOChartNVD3):
+    pass
+
+class OOChartDescreteBar(OOChartNVD3):
+    pass
+
+class OOChartStackedArea(OOChartNVD3):
+    pass
+    
+class OOChartLine(OOChartNVD3):
+    pass
+
+class OOChartScatterBubble(OOChartNVD3):
+    pass
+
+class OOChartMultiBar(OOChartNVD3):
+    pass
+
+class OOChartBullet(OOChartNVD3):
+    pass
+
 
 
 class OOGeneralSelector(WebBtnGroup):

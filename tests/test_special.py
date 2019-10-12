@@ -26,11 +26,34 @@ def webbtn_post():
 
 def webbtn():
     with WebPage(default_url="index") as page:
-        with page.add_child(WebBtn(value='测试')) as test:
+        with page.add_child(WebBtn(styles={"border-top-left-radius": "10px"}, test=True)) as btn1:
+            pass
+        with page.add_child(WebBtn(value='Disable button')) as btn2:
+            pass
+        with page.add_child(WebBtn(value='Enable button')) as btn3:
             pass
 
-    with test.on_event_w('click'):
-        test.alert(' $(event.target).text().trim() + " clicked!" ')
+            # response click event of the button
+        with btn1.on_event_w(event="click"):
+            btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is clicked!' ")
+
+            # response change event of the button
+        with btn1.on_event_w(event='change'):
+            btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is changed!' ")
+            btn1.trigger_event(event='change')  # expect not any alert pop up
+
+            # expect trigger change event, but jquery actually not, fixed in val()
+        btn1.set_js(True)
+        btn1.val('"新测试"')
+        btn1.set_js(False)
+
+        # Expect btn1 is disabled by clicking btn2
+        with btn2.on_event_w('click'):
+            btn1.disable(disable=True)
+
+        # Expect btn1 is enabled by clicking btn3
+        with btn3.on_event_w('click'):
+            btn1.disable(disable=False)
 
     return render_template_string(page.render())
 
@@ -150,12 +173,36 @@ def oodatepicker():
 def oodatepicker_post():
     return OODatePicker.on_post()
 
+def oochartbullet():
+    with WebPage(default_url="index") as page:
+            with page.add_child(OOChartBullet(value='example_data')) as test1:
+                pass
+
+    html = page.render()
+    return render_template_string(html)
+
+def oochartbullet_post():
+    return None
+
+def oochartlineplusbar():
+    with WebPage(default_url="index") as page:
+            with page.add_child(OOChartLinePlusBar(value='example_data', height='400px')) as test1:
+                pass
+
+    html = page.render()
+    return render_template_string(html)
+
+def oochartlineplusbar_post():
+    return None
+
 classes=[]
 classes.append((WebBtn,webbtn,webbtn_post))
 classes.append((WebInput,webinput, webinput_post))
 classes.append((WebBtnDropdownToggle,webbtndropdowntoggle,webbtndropdowntoggle_post))
 classes.append((OOGeneralSelector, oogeneralselector, oogeneralselector_post))
 classes.append((OODatePicker, oodatepicker, oodatepicker_post))
+classes.append((OOChartBullet,oochartbullet, oochartbullet_post))
+classes.append((OOChartLinePlusBar, oochartlineplusbar, oochartlineplusbar_post))
 
 @app.route('/')
 def index():

@@ -294,76 +294,6 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         '''Trigger the event on the element'''
         pass
 
-
-    '''
-    TODO: The following should be replaced with trigger_event, on_event
-    '''
-    '''
-    @abc.abstractmethod
-    def on_select(self):
-        pass
-
-    @abc.abstractmethod
-    def select_declare(self):
-        pass
-
-    @abc.abstractmethod
-    def on_click(self):
-        pass
-
-    @abc.abstractmethod
-    def on_change(self):
-    '''
-    '''
-        Define the action to process change event
-        Normally, push function into the execution list
-
-        :return:
-    '''
-    '''
-        pass
-
-    @abc.abstractmethod
-    def on_change_event(self, filter=''):
-    '''
-    '''
-        Declare the change event capture
-
-        :return:
-    '''
-    '''
-        pass
-
-    @abc.abstractmethod
-    def clear_declare(self):
-        pass
-
-    @abc.abstractmethod
-    def event_declare(self, event, filter=''):
-        pass
-
-    @abc.abstractmethod
-    def _execute_list_name(self, action_name):
-        pass
-
-    @abc.abstractmethod
-    def execute_list_declare(self, action_name):
-        pass
-
-    @abc.abstractmethod
-
-    def on_ready(self):
-        pass
-        
-    @abc.abstractmethod
-    def on_window_resize(self):
-        pass
-        
-    '''
-    '''
-    TODO END
-    '''
-
     @abc.abstractmethod
     def post_w(self, url, data, success):
         pass
@@ -376,6 +306,17 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def val(self, value=''):
         pass
 
+    @abc.abstractmethod
+    def add_attrs(self, attrs):
+        pass
+
+    @abc.abstractmethod
+    def remove_attrs(self, attrs):
+        pass
+
+    @abc.abstractmethod
+    def disable(self, disable):
+        pass
 
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -428,19 +369,19 @@ class FormatInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def atts(self, atts=None):
+    def attrs(self, attrs=None):
         pass
 
     @abc.abstractmethod
-    def atts_str(self):
+    def attrs_str(self):
         pass
 
     @abc.abstractmethod
-    def add_atts(self, atts):
+    def add_attrs(self, attrs):
         pass
 
     @abc.abstractmethod
-    def remove_att(self, att):
+    def remove_attrs(self, attrs):
         pass
 
     @abc.abstractmethod
