@@ -124,6 +124,10 @@ class TestPage(Test):
         self.db.drop_all()
         self.db.create_all()
 
+        def week():
+            print('week')
+
+
 
         return app
 

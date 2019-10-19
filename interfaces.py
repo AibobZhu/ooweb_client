@@ -318,6 +318,17 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def disable(self, disable):
         pass
 
+    @classmethod
+    @abc.abstractmethod
+    def add_url_url(cls, app):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def _example_data(cls):
+        pass
+
+
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
