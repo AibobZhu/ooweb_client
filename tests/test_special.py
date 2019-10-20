@@ -12,7 +12,7 @@ import json
 from contextlib2 import contextmanager
 from datetime import datetime
 
-from flask import Flask, render_template_string,url_for
+from flask import Flask, render_template_string,url_for, current_app
 from flask_bootstrap import Bootstrap
 from tests.settings import *
 from components_client import *
@@ -195,6 +195,26 @@ def oochartlineplusbar():
 def oochartlineplusbar_post():
     return None
 
+def oocalendar():
+    OOCalendar.add_url_rule(app=current_app)
+
+    with WebPage() as page:
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                with c1.add_child(OOCalendarBar()) as bar:
+                    pass
+        with page.add_child(WebRow()) as r2:
+            with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                with c2.add_child(OOCalendar) as calendar:
+                    pass
+
+    html = page.render()
+    return render_template_string(html)
+
+def oocalendar_post():
+    return None
+
+
 classes=[]
 classes.append((WebBtn,webbtn,webbtn_post))
 classes.append((WebInput,webinput, webinput_post))
@@ -203,6 +223,7 @@ classes.append((OOGeneralSelector, oogeneralselector, oogeneralselector_post))
 classes.append((OODatePicker, oodatepicker, oodatepicker_post))
 classes.append((OOChartBullet,oochartbullet, oochartbullet_post))
 classes.append((OOChartLinePlusBar, oochartlineplusbar, oochartlineplusbar_post))
+classes.append((OOCalendar, oocalendar,oocalendar_post))
 
 @app.route('/')
 def index():

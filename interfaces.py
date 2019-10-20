@@ -320,7 +320,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def add_url_url(cls, app):
+    def add_url_rule(cls, app):
         pass
 
     @classmethod

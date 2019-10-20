@@ -466,6 +466,7 @@ if(!String.prototype.formatNum) {
 	Calendar.prototype._format_hour = function(str_hour, leadingZero) {
 		var hour_split = str_hour.split(":");
 		var hour = parseInt(hour_split[0]);
+		var hour = parseInt(hour_split[0]);
 		var minutes = parseInt(hour_split[1]);
 		var leadingZero = leadingZero == 'undefined' ? true : false;
 		var hourLength = leadingZero ? 2 : 1;

@@ -188,7 +188,13 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {'disable': disable}
         self.func_call(params)
     
-    
+    def _example_data(cls):
+        raise NotImplementedError
+
+    def add_url_rule(cls, app):
+        raise NotImplementedError
+
+
 class Format(BootstrapInf, FormatInf, ClientBase):
 
     def pad(self, pad=None):
@@ -362,7 +368,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_tb:
-            print('Error, tb:{}'.format(exc_tb))
+            print('Error, {}, {}, {} '.format(exc_type, exc_val, exc_tb))
         self._pop_current_context()
         return False
 
@@ -627,7 +633,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         TODO: Remove WebPageTest class and use WebPage(test=True)
         '''
         with WebPage() as page:
-            with page.add_child(globals()[cls.__name__](test=True))[1] as test:
+            with page.add_child(globals()[cls.__name__](test=True)) as test:
                 pass
         html = page.render()
         print(pprint.pformat(html))
@@ -753,6 +759,7 @@ class WebBtnToggle(WebComponentBootstrap):
         params = {}
         return self.func_call(params)
 
+
 class WebBtnGroup(WebComponentBootstrap):
 
     def __init__(self, **kwargs):
@@ -862,7 +869,22 @@ class WebSvg(WebComponentBootstrap):
 
 
 class OOChartNVD3(WebSvg):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        '''
+        TODO: Remove WebPageTest class and use WebPage(test=True)
+        '''
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](value='example_data', height='400px')) as test:
+                pass
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
 
 class OOChartLineFinder(OOChartNVD3):
     pass
@@ -891,12 +913,13 @@ class OOChartLine(OOChartNVD3):
 class OOChartScatterBubble(OOChartNVD3):
     pass
 
+
 class OOChartMultiBar(OOChartNVD3):
     pass
 
+
 class OOChartBullet(OOChartNVD3):
     pass
-
 
 
 class OOGeneralSelector(WebBtnGroup):
@@ -988,6 +1011,10 @@ class OOGeneralSelector(WebBtnGroup):
         return data
 
     @classmethod
+    def _example_data(cls):
+        return OOGeneralSelector.default_data()
+
+    @classmethod
     def on_post(cls):
         '''
         TODO: query data by user model
@@ -997,7 +1024,7 @@ class OOGeneralSelector(WebBtnGroup):
 
         # just for test
         select_data = r['data']
-        data = cls.default_data()
+        data = cls._example_data()
         for index, btn in enumerate(data):
             if index < len(select_data):
                 sbtn = select_data[index]
@@ -1010,6 +1037,385 @@ class OOGeneralSelector(WebBtnGroup):
         # test end
 
         return jsonify({'status': 'success', 'data': data})
+
+
+class OOCalendar(WebDiv):
+
+    @classmethod
+    def _week(cls):
+        week = '''
+                <div class="cal-week-box">
+                    <div class="cal-offset1 cal-column"></div>
+                    <div class="cal-offset2 cal-column"></div>
+                    <div class="cal-offset3 cal-column"></div>
+                    <div class="cal-offset4 cal-column"></div>
+                    <div class="cal-offset5 cal-column"></div>
+                    <div class="cal-offset6 cal-column"></div>
+                    <div class="cal-row-fluid cal-row-head">
+                        <% _.each(days_name, function(name) { %>
+                            <div class="cal-cell1 <%= cal._getDayClass('week', start) %>" data-toggle="tooltip" title="<%= cal._getHolidayName(start) %>"><%= name %><br>
+                                <small><span data-cal-date="<%= start.getFullYear() %>-<%= start.getMonthFormatted() %>-<%= start.getDateFormatted() %>" data-cal-view="day"><%= start.getDate() %> <%= cal.locale['ms' + start.getMonth()] %></span></small>
+                            </div>
+                            <% start.setDate(start.getDate() + 1); %>
+                        <% }) %>
+                    </div>
+                    <hr>
+                    <%= cal._week() %>
+                </div>
+            '''
+        # return send_file('templates/calendar/tmpls/week.html')
+        return week
+
+    @classmethod
+    def _week_day(cls):
+        week_days = '''
+                <% _.each(events, function(event){ %>
+                <div class="cal-row-fluid">
+                    <div class="cal-cell<%= event.days%> cal-offset<%= event.start_day %> day-highlight dh-<%= event['class'] %>" data-event-class="<%= event['class'] %>">
+                        <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>" class="cal-event-week event<%= event.id %>"><%= event.title %></a>
+                    </div>
+                </div>
+                <% }); %>
+            '''
+        # return send_file('templates/calendar/tmpls/week-days.html')
+        return week_days
+
+    @classmethod
+    def _day(cls):
+        day = '''
+                <div id="cal-day-box">
+                    <div class="row-fluid clearfix cal-row-head">
+                        <div class="span1 col-xs-1 cal-cell"><%= cal.locale.time %></div>
+                        <div class="span11 col-xs-11 cal-cell"><%= cal.locale.events %></div>
+                    </div>
+                    <% if(all_day.length) {%>
+                        <div class="row-fluid clearfix cal-day-hour">
+                            <div class="span1 col-xs-1"><b><%= cal.locale.all_day %></b></div>
+                            <div class="span11 col-xs-11">
+                                <% _.each(all_day, function(event){ %>
+                                    <div class="day-highlight dh-<%= event['class'] %>">
+                                        <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>"
+                                           data-event-class="<%= event['class'] %>" class="event-item">
+                                            <%= event.title %></a>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% }; %>
+                    <% if(before_time.length) {%>
+                        <div class="row-fluid clearfix cal-day-hour">
+                            <div class="span1 col-xs-3"><b><%= cal.locale.before_time %></b></div>
+                            <div class="span5 col-xs-5">
+                                <% _.each(before_time, function(event){ %>
+                                    <div class="day-highlight dh-<%= event['class'] %>">
+                                        <span class="cal-hours pull-right"><%= event.end_hour %></span>
+                                        <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>"
+                                           data-event-class="<%= event['class'] %>" class="event-item">
+                                            <%= event.title %></a>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% }; %>
+                    <div id="cal-day-panel" class="clearfix">
+                        <div id="cal-day-panel-hour">
+                            <% for(i = 0; i < hours; i++){ %>
+                                <div class="cal-day-hour">
+                                    <% for(l = 0; l < cal._hour_min(i); l++){ %>
+                                        <div class="row-fluid cal-day-hour-part">
+                                            <div class="span1 col-xs-1"><b><%= cal._hour(i, l) %></b></div>
+                                            <div class="span11 col-xs-11"></div>
+                                        </div>
+                                <% }; %>
+                                </div>
+                            <% }; %>
+                        </div>
+
+                        <% _.each(by_hour, function(event){ %>
+                            <div class="pull-left day-event day-highlight dh-<%= event['class'] %>" style="margin-top: <%= (event.top * 30) %>px; height: <%= (event.lines * 30) %>px">
+                                <span class="cal-hours"><%= event.start_hour %> - <%= event.end_hour %></span>
+                                <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>"
+                                   data-event-class="<%= event['class'] %>" class="event-item">
+                                    <%= event.title %></a>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <% if(after_time.length) {%>
+                    <div class="row-fluid clearfix cal-day-hour">
+                        <div class="span1 col-xs-3"><b><%= cal.locale.after_time %></b></div>
+                        <div class="span11 col-xs-9">
+                            <% _.each(after_time, function(event){ %>
+                            <div class="day-highlight dh-<%= event['class'] %>">
+                                <span class="cal-hours"><%= event.start_hour %></span>
+                                <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>"
+                                   data-event-class="<%= event['class'] %>" class="event-item">
+                                    <%= event.title %></a>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                    <% }; %>
+                </div>
+
+            '''
+        # return send_file('templates/calendar/tmpls/day.html')
+        return day
+
+    @classmethod
+    def _month(cls):
+        month = '''
+                <div class="cal-row-fluid cal-row-head">
+                    <% _.each(days_name, function(name){ %>
+                        <div class="cal-cell1"><%= name %></div>
+                    <% }) %>
+                </div>
+                <div class="cal-month-box" style="">
+                    <% for(i = 0; i < 6; i++) { %>
+                        <% if(cal.stop_cycling == true) break; %>
+                        <div class="cal-row-fluid cal-before-eventlist">
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day1"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day2"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day3"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day4"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day5"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day6"><%= cal._day(i, day++) %></div>
+                            <div class="cal-cell1 cal-cell" data-cal-row="-day7"><%= cal._day(i, day++) %></div>
+                        </div>
+                    <% } %>
+                </div>        
+            '''
+        # return send_file('templates/calendar/tmpls/month.html')
+        return month
+
+    @classmethod
+    def _month_day(cls):
+        month_day = '''
+                <div class="cal-month-day <%= cls %>">
+                    <span class="pull-right" data-cal-date="<%= data_day %>" data-cal-view="day" data-toggle="tooltip" title="<%= tooltip %>"><%= day %></span>
+                    <% if (events.length > 0) { %>
+                        <div class="events-list" data-cal-start="<%= start %>" data-cal-end="<%= end %>">
+                            <% _.each(events, function(event) { %>
+                                <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>" data-event-class="<%= event['class'] %>"
+                                    class="pull-left event <%= event['class'] %>" data-toggle="tooltip"
+                                    title="<%= event.title %>"></a>
+                            <% }); %>
+                        </div>
+                    <% } %>
+                </div>
+            '''
+        # return send_file('templates/calendar/tmpls/month-day.html')
+        return month_day
+
+    @classmethod
+    def _year(cls):
+        year = '''
+                <div class="cal-year-box">
+                    <div class="row row-fluid cal-before-eventlist">
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month1"><%= cal._month(0) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month2"><%= cal._month(1) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month3"><%= cal._month(2) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month4"><%= cal._month(3) %></div>
+                    </div>
+                    <div class="row row-fluid cal-before-eventlist">
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month1"><%= cal._month(4) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month2"><%= cal._month(5) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month3"><%= cal._month(6) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month4"><%= cal._month(7) %></div>
+                    </div>
+                    <div class="row row-fluid cal-before-eventlist">
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month1"><%= cal._month(8) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month2"><%= cal._month(9) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month3"><%= cal._month(10) %></div>
+                        <div class="span3 col-md-3 col-sm-3 col-xs-3 cal-cell" data-cal-row="-month4"><%= cal._month(11) %></div>
+                    </div>
+                </div>
+            '''
+        # return send_file('templates/calendar/tmpls/year.html')
+        return year
+
+    @classmethod
+    def _year_month(cls):
+        year_month = '''
+                <span class="pull-right" data-cal-date="<%= data_day %>" data-cal-view="month"><%= month_name %></span>
+                <% if (events.length > 0) { %>
+                    <small class="cal-events-num badge badge-important pull-left"><%= events.length %></small>
+                    <div class="hide events-list" data-cal-start="<%= start %>" data-cal-end="<%= end %>">
+                        <% _.each(events, function(event) { %>
+                            <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>" data-event-class="<%= event['class'] %>"
+                                class="pull-left event <%= event['class'] %> event<%= event.id %>" data-toggle="tooltip"
+                                title="<%= event.title %>"></a>
+                        <% }); %>
+                    </div>
+                <% } %>
+            '''
+        # return send_file('templates/calendar/tmpls/year-month.html')
+        return year_month
+
+    @classmethod
+    def _event_list(cls):
+        event_list = '''
+                <span id="cal-slide-tick" style="display: none"></span>
+                <div id="cal-slide-content" class="cal-event-list">
+                    <ul class="unstyled list-unstyled">
+                        <% _.each(events, function(event) { %>
+                            <li>
+                                <span class="pull-left event <%= event['class'] %>"></span>&nbsp;
+                                <a href="<%= event.url ? event.url : 'javascript:void(0)' %>" data-event-id="<%= event.id %>"
+                                    data-event-class="<%= event['class'] %>" class="event-item">
+                                    <%= event.title %></a>
+                            </li>
+                        <% }) %>
+                    </ul>
+                </div>
+
+            '''
+        # return send_file('templates/calendar/tmpls/events-list.html')
+        return event_list
+
+    @classmethod
+    def _example_data(cls):
+        return {
+            "status": 'success',
+            "result": [
+                {
+                    "id": "293",
+                    "title": "This is warning class event with very long title to check how it fits to evet in day view",
+                    "url": "http://www.example.com/",
+                    "class": "event-warning",
+                    "start": "1362938400000",
+                    "end": "1363197686300"
+                },
+                {
+                    "id": "256",
+                    "title": "Event that ends on timeline",
+                    "url": "http://www.example.com/",
+                    "class": "event-warning",
+                    "start": "1363155300000",
+                    "end": "1363227600000"
+                },
+                {
+                    "id": "276",
+                    "title": "Short day event",
+                    "url": "http://www.example.com/",
+                    "class": "event-success",
+                    "start": "1363245600000",
+                    "end": "1363252200000"
+                },
+                {
+                    "id": "294",
+                    "title": "This is information class ",
+                    "url": "http://www.example.com/",
+                    "class": "event-info",
+                    "start": "1363111200000",
+                    "end": "1363284086400"
+                },
+                {
+                    "id": "297",
+                    "title": "This is success event",
+                    "url": "http://www.example.com/",
+                    "class": "event-success",
+                    "start": "1363234500000",
+                    "end": "1363284062400"
+                },
+                {
+                    "id": "54",
+                    "title": "This is simple event",
+                    "url": "http://www.example.com/",
+                    "class": "",
+                    "start": "1363712400000",
+                    "end": "1363716086400"
+                },
+                {
+                    "id": "532",
+                    "title": "This is inverse event",
+                    "url": "http://www.example.com/",
+                    "class": "event-inverse",
+                    "start": "1364407200000",
+                    "end": "1364493686400"
+                },
+                {
+                    "id": "548",
+                    "title": "This is special event",
+                    "url": "http://www.example.com/",
+                    "class": "event-special",
+                    "start": "1363197600000",
+                    "end": "1363629686400"
+                },
+                {
+                    "id": "295",
+                    "title": "Event 3",
+                    "url": "http://www.example.com/",
+                    "class": "event-important",
+                    "start": "1364320800000",
+                    "end": "1364407286400"
+                }
+            ]
+        }
+
+    @classmethod
+    def _event(cls):
+        events = cls._example_data()
+
+        _from = request.args.get('from')
+        if _from:
+            _from = datetime.datetime.fromtimestamp(float(_from) / 1000.0)
+        _to = request.args.get('to')
+        if _to:
+            _to = datetime.datetime.fromtimestamp(float(_to) / 1000.0)
+        are = request.args.get('are')
+        sch = request.args.get('sch')
+        dep = request.args.get('dep')
+        sta = request.args.get('sta')
+        print("  _from:{} _to:{} are:{} sch:{} dep:{} sta:{}".format(_from, _to, are, sch, dep, sta))
+        print("  ##got events:{}".format(events))
+        if events:
+            ret = events
+        else:
+            ret = {
+                'status': 'error',
+                'result': 'No events'
+            }
+        return jsonify(ret)
+
+    @classmethod
+    def add_url_rule(cls, app):
+        app.add_url_rule('/oocalendar/year.html', view_func=cls._year)
+        app.add_url_rule('/oocalendar/year-month.html', view_func=cls._year_month)
+        app.add_url_rule('/oocalendar/month.html', view_func=cls._month)
+        app.add_url_rule('/oocalendar/month-day.html', view_func=cls._month_day)
+        app.add_url_rule('/oocalendar/week.html', view_func=cls._week)
+        app.add_url_rule("/oocalendar/week-days.html", view_func=cls._week_day)
+        app.add_url_rule("/oocalendar/day.html", view_func=cls._day)
+        app.add_url_rule("/oocalendar/events-list.html", view_func=cls._event_list)
+        app.add_url_rule('/oocalendar/events', view_func=cls._event)
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        '''
+        TODO: Remove WebPageTest class and use WebPage(test=True)
+        '''
+
+        cls.add_url_rule(app=current_app)
+
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'],offset=['mdo2'])) as c1:
+                    with c1.add_child(OOCalendarBar()) as bar:
+                        pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(globals()[cls.__name__](value='example_data')) as calendar:
+                        pass
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
+
+class OOCalendarBar(WebDiv):
+    pass
 
 
 class Var(WebComponentBootstrap):

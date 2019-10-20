@@ -38,6 +38,7 @@
     calendar.setLanguage('zh-TW');
     calendar.view();
 
+    /*
     $.ajax({
         url: options.tmpl_path + '\oocalendar-bar.html',
         dataType: 'html',
@@ -46,48 +47,47 @@
         cache: true
 	}).done(function(html) {
 		$('#oocalendar-bar').append(html)
+	});
+    */
 
-		$('.btn-group button[data-calendar-nav]').each(function() {
+    $('.btn-group button[data-calendar-nav]').each(function() {
             var $this = $(this);
             $this.click(function() {
                 calendar.navigate($this.data('calendar-nav'));
             });
 	    });
 
-        $('.btn-group button[data-calendar-view]').each(function() {
-            var $this = $(this);
-            $this.click(function() {
-                calendar.view($this.data('calendar-view'));
-            });
+    $('.btn-group button[data-calendar-view]').each(function() {
+        var $this = $(this);
+        $this.click(function() {
+            calendar.view($this.data('calendar-view'));
         });
+    });
 
-        $('#language').change(function(){
-            calendar.setLanguage($(this).val());
-            calendar.view();
-        });
+    $('#language').change(function(){
+        calendar.setLanguage($(this).val());
+        calendar.view();
+    });
 
-        $('#events-in-modal').change(function(){
-            var val = $(this).is(':checked') ? $(this).val() : null;
-            calendar.setOptions({modal: val});
-        });
-        $('#format-12-hours').change(function(){
-            var val = $(this).is(':checked') ? true : false;
-            calendar.setOptions({format12: val});
-            calendar.view();
-        });
-        $('#show_wbn').change(function(){
-            var val = $(this).is(':checked') ? true : false;
-            calendar.setOptions({display_week_numbers: val});
-            calendar.view();
-        });
-        $('#show_wb').change(function(){
-            var val = $(this).is(':checked') ? true : false;
-            calendar.setOptions({weekbox: val});
-            calendar.view();
-        });
-
-	});
-
+    $('#events-in-modal').change(function(){
+        var val = $(this).is(':checked') ? $(this).val() : null;
+        calendar.setOptions({modal: val});
+    });
+    $('#format-12-hours').change(function(){
+        var val = $(this).is(':checked') ? true : false;
+        calendar.setOptions({format12: val});
+        calendar.view();
+    });
+    $('#show_wbn').change(function(){
+        var val = $(this).is(':checked') ? true : false;
+        calendar.setOptions({display_week_numbers: val});
+        calendar.view();
+    });
+    $('#show_wb').change(function(){
+        var val = $(this).is(':checked') ? true : false;
+        calendar.setOptions({weekbox: val});
+        calendar.view();
+    });
 
 	$('#events-modal .modal-header, #events-modal .modal-footer').click(function(e){
 		//e.preventDefault();
