@@ -143,11 +143,19 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def add_context_list(self,context_list):
+        pass
+
+    @abc.abstractmethod
     def scripts(self):
         pass
 
     @abc.abstractmethod
     def add_scripts(self, scripts):
+        pass
+
+    @abc.abstractmethod
+    def add_script_list(self, ls):
         pass
 
     @abc.abstractmethod

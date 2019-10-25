@@ -4,6 +4,7 @@ from flask_httpauth import HTTPBasicAuth
 import json, zlib
 import random
 import binascii
+import uuid
 #TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
 APIs = {
