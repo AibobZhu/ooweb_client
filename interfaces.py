@@ -155,7 +155,7 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_script_list(self, ls):
+    def add_script_list(self, script_list):
         pass
 
     @abc.abstractmethod

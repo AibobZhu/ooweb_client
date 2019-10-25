@@ -39,6 +39,11 @@ class ClientBase(metaclass=abc.ABCMeta):
     def _get_objcall_context(self,func,caller_id,params):
         pass
 
+    def context_call(self, params):
+        context = self._get_objcall_context(func='add_context', caller_id=self.id(), params=params)
+        self.add_context(context)
+        return context
+
     def func_call(self, params):
         context = self._get_objcall_context(func=inspect.stack()[1][3], caller_id=self.id(), params=params)
         context['sub_context'] = []
@@ -439,6 +444,16 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def add_context(self, cont):
         return self._add_context(cont)
 
+    def add_context_list(self, context_list, indent=True):
+        '''
+        for i,v in enumerate(context_list[1:]):
+            context_list[i+1] = self.get_context_indent()*'    ' + context_list[i+1]
+        '''
+        self.context_call(params={'context':''.join(context_list)})
+
+    def add_script_list(self, script_list):
+        raise NotImplementedError
+
     def remove_context(self, cont):
         self._remove_context(cont)
 
@@ -474,6 +489,15 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         params = {'scripts': scripts}
         return self.func_call(params)
 
+    def add_script_list(self, script_list):
+        '''
+        Add scripts in a list
+        :param ls: scripts in list
+        :return: self.func_call(params)
+        '''
+        params = {'script_list',script_list}
+        return self.func_call(params)
+
     def set_script_indent(self, indent):
         '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'indent': indent})
@@ -491,82 +515,13 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def add_styles(self, styles):
         raise NotImplementedError
 
-    '''
-    Replace with on_event_w
-    '''
-    '''
-    @contextmanager
-    def on_click(self):
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3],'params':{}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-
-    @contextmanager
-    def on_select(self):
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-
-    @contextmanager
-    def on_select_declare(self):
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-    '''
-
     @contextmanager
     def if_w(self):
         raise NotImplementedError
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(),params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-        '''
 
     @contextmanager
     def else_w(self):
         raise  NotImplementedError
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(),
-                                            params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-        '''
 
     @contextmanager
     def condition_w(self):
@@ -1417,6 +1372,174 @@ class OOCalendar(WebDiv):
 class OOCalendarBar(WebDiv):
     pass
 
+
+class WebTable(WebComponentBootstrap):
+
+    def __init__(self, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
+        super().__init__(**kwargs)
+        WebTable._head_styles = head_styles
+        WebTable._body_styles = body_styles
+        WebTable._head_classes = head_classes
+        WebTable._body_classes = body_classes
+
+    @classmethod
+    def _head_styles_str(cls):
+        ret = ''
+        if not cls._head_styles:
+            return ''
+        for key, value in cls._head_styles.items():
+            if key != 'border-radius':
+                ret += key + ':' + value + ';'
+            else:
+                raise NotImplementedError
+        if ret and ret[-1:] == ';':
+            ret = ret[:-1]
+        return ret
+
+    @classmethod
+    def _body_styles_str(cls):
+        ret = ''
+        if not cls._body_styles:
+            return ''
+        for key, value in cls._body_styles.items():
+            if key != 'border-radius':
+                ret += key + ':' + value + ';'
+            else:
+                raise NotImplementedError
+        if ret and ret[-1:] == ';':
+            ret = ret[:-1]
+        return ret
+
+    @classmethod
+    def _example_data(cls):
+        return {
+            'schema':[
+                {'name':'Firstname','attr':'', 'subhead':[{'name':'Firstname','attr':''},{'name':'Middlename','attr':''}]},
+                {'name':'Lastname','attr':''},
+                {'name': 'Email', 'attr': ''}
+            ],
+            'records':[
+                ('John','','Doe','john@example.com'),
+                ('Mary','','Moe','mary@example.com'),
+                ('July','','Dooley','july@example.com')
+            ]
+        }
+
+    @classmethod
+    def _html(cls, data):
+
+        def _head_colspan(head):
+            colspan = 0
+            sub_max_levels = 0
+            if 'subhead' not in head or not head['subhead']:
+                colspan = 1
+            else:
+                for sh in head['subhead']:
+                    cs, ml = _head_colspan(sh)
+                    colspan = colspan + cs
+                    if ml > sub_max_levels:
+                        sub_max_levels = ml
+            if colspan > 1:
+                if 'attr' not in head:
+                    head['attr'] = ''
+                head['attr'] = head['attr'] + ' colspan="{}" '.format(str(colspan))
+
+            return colspan, sub_max_levels+1
+
+        def _head_rowspan(head, max_levels):
+
+            if 'subhead' not in head or not head['subhead']:
+                if max_levels > 1:
+                    if 'attr' not in head:
+                        head['attr'] = ''
+                    head['attr'] = head['attr'] + ' rowspan="{}" '.format(max_levels)
+                return
+            else:
+                assert(max_levels>1)
+                for sh in head['subhead']:
+                    _head_rowspan(sh, max_levels-1)
+
+        def _head_matrix(head, matrix, index):
+
+            if len(matrix) <= index:
+                for i in range(len(matrix), index+1):
+                    matrix.append([])
+            if matrix[index]:
+                matrix[index].append({'name': head['name'], 'attr': head['attr']})
+            else:
+                matrix[index] = [{'name': head['name'], 'attr': head['attr']}]
+            if 'subhead' in head and head['subhead']:
+                if len(matrix) <= index + 1:
+                    matrix.append([])
+                for sh in head['subhead']:
+                    _head_matrix(sh, matrix, index+1)
+
+        def _head(html, schema):
+            max_level = 0
+            for h in schema:
+                cs, ml = _head_colspan(h)
+                if ml > max_level:
+                    max_level = ml
+            for h in schema:
+                _head_rowspan(h,max_level)
+
+            matrix = []
+            for h in schema:
+                _head_matrix(h, matrix,0)
+
+            for tr in matrix:
+                html.append('    <tr class="{}" style="{}">\n'.format(' '.join(cls._head_classes), cls._head_styles_str()))
+                for th in tr:
+                    html.append('        <th class="{}" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['attr'],th['name']))
+                html.append('    </tr>\n')
+
+        html = []
+        if 'schema' in data and data['schema']:
+            html.append('<thead>\n')
+            _head(html, data['schema'])
+            html.append('</thead>\n')
+
+        html.append('<tbody style="{}">\n'.format(WebTable._body_styles_str()))
+        for tr in data['records']:
+            html.append('    <tr>\n')
+            for d in tr:
+                html.append('        <td>'+d+'</td>\n')
+            html.append('    </tr>\n')
+        html.append('</tbody>\n')
+        return html
+
+    def __enter__(self):
+        ret = super().__enter__()
+        self.add_context_list(self._html(data=self._example_data()))
+        return ret
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'],
+                                                              head_classes=['text-center'])) as bar:
+                        pass
+        html = page.render()
+        return render_template_string(html)
+
+
+class OOTable(WebTable):
+
+    @classmethod
+    def _table_html(cls):
+        ret = cls._html(data=cls._example_data())
+        return ' '.join(ret)
+
+    @classmethod
+    def add_url_rule(cls, app):
+        app.add_url_rule('/ootable/ootable_html', view_func=cls._table_html)
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        cls.add_url_rule(app=current_app)
+        return super().test_request()
 
 class Var(WebComponentBootstrap):
     pass

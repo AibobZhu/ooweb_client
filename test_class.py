@@ -51,7 +51,7 @@ class Test(MinXin):
         return '''alert('!@#class_name!@#');\n'''.replace('!@#class_name!@#',self.__class__.__name__)
 
     @classmethod
-    def test_result(cls):
+    def test_result(cls, methods=['GET']):
         '''sub class should over'''
 
         #return 'OK', 201
