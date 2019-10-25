@@ -177,6 +177,7 @@ table.table-bordered.dataTable td {
 table.table-bordered.dataTable th:last-child, table.table-bordered.dataTable th:last-child,
 table.table-bordered.dataTable td:last-child,
 table.table-bordered.dataTable td:last-child {
+  /*Fix the issue about sub head right child has no right border */
   /*border-right-width: 0;*/
 }
 table.table-bordered.dataTable tbody th,
