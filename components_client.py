@@ -196,8 +196,15 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
     def _example_data(cls):
         raise NotImplementedError
 
-    def add_url_rule(cls, app):
-        raise NotImplementedError
+    def add_url_rule(cls, app, extend=[]):
+        if extend:
+            for e in extend:
+                if len(e) == 3:
+                    app.add_url_rule(e[0], e[1], methods=e[2])
+                elif len(e) == 2:
+                    app.add_url_rule(e[0], e[1])
+                else:
+                    raise RuntimeError
 
 
 class Format(BootstrapInf, FormatInf, ClientBase):
@@ -916,6 +923,7 @@ class OOGeneralSelector(WebBtnGroup):
 
         with WebPage() as page:
             with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
+                pass
                 '''
                 with test.on_select():
                     test.set_script_indent(-1)
@@ -926,7 +934,7 @@ class OOGeneralSelector(WebBtnGroup):
                 '''
         with test.on_event_w('select'):
             #test.add_scripts('''"var data = " + test.fix_cmd(test.val())''')
-            with Var() as data:
+            with Var(parent=test) as data:
                 test.val()
             with test.post_w():
                 test.val(data)
@@ -1326,7 +1334,8 @@ class OOCalendar(WebDiv):
         return jsonify(ret)
 
     @classmethod
-    def add_url_rule(cls, app):
+    def add_url_rule(cls, app, extend=[]):
+        super().add_url_rule(app,extend)
         app.add_url_rule('/oocalendar/year.html', view_func=cls._year)
         app.add_url_rule('/oocalendar/year-month.html', view_func=cls._year_month)
         app.add_url_rule('/oocalendar/month.html', view_func=cls._month)
@@ -1413,14 +1422,27 @@ class WebTable(WebComponentBootstrap):
     def _example_data(cls):
         return {
             'schema':[
-                {'name':'Firstname','attr':'', 'subhead':[{'name':'Firstname','attr':''},{'name':'Middlename','attr':''}]},
-                {'name':'Lastname','attr':''},
-                {'name': 'Email', 'attr': ''}
+                {'name': 'Firstname','attr':'', 'subhead':[{'name':'Firstname','attr':''},{'name':'Middlename','attr':''}]},
+                {'name': 'Lastname','attr':''},
+                {'name': 'Email','attr': ''},
+                {'name': 'friend', 'attr': '',
+                 'subhead': [{'name': 'Firstname', 'attr': ''}, {'name': 'Middlename', 'attr': ''}]},
+
             ],
             'records':[
-                ('John','','Doe','john@example.com'),
-                ('Mary','','Moe','mary@example.com'),
-                ('July','','Dooley','july@example.com')
+                ('John','','Doe','john@example.com','Maria','Lopez'),
+                ('Mary','','Moe','mary@example.com','James', 'Garcia'),
+                ('July','','Dooley','july@example.com','Daniel', 'Rodriguez'),
+                ('David', '', 'Jones', 'david@example.com','David', 'Jones'),
+                ('Michael', '', 'Johnson', 'michael@example.com','Paul', 'Rodriguez'),
+                ('Chris', '', 'Lee', 'chris@example.com','Mark', 'Williams'),
+                ('Mike', '', 'Brown', 'Mike@example.com','Mike', 'Brown'),
+                ('Mark', '', 'Williams', 'mark@example.com','Chris', 'Lee'),
+                ('Paul', '', 'Rodriguez', 'paul@example.com','Michael', 'Johnson'),
+                ('David', '', 'Jones', 'david@example.com','David', 'Jones'),
+                ('Daniel', '', 'Rodriguez', 'daniel@example.com','July','Dooley'),
+                ('James', '', 'Garcia', 'james@example.com','Mary','Moe'),
+                ('Maria','','Lopez','maria@example.com','John','Doe')
             ]
         }
 
@@ -1489,19 +1511,22 @@ class WebTable(WebComponentBootstrap):
             for tr in matrix:
                 html.append('    <tr class="{}" style="{}">\n'.format(' '.join(cls._head_classes), cls._head_styles_str()))
                 for th in tr:
-                    html.append('        <th class="{}" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['attr'],th['name']))
+                    html.append('        <th class="{}" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['attr'], th['name']))
                 html.append('    </tr>\n')
 
+            return matrix
+
         html = []
+        matrix = []
         if 'schema' in data and data['schema']:
             html.append('<thead>\n')
-            _head(html, data['schema'])
+            matrix = _head(html, data['schema'])
             html.append('</thead>\n')
 
         html.append('<tbody style="{}">\n'.format(WebTable._body_styles_str()))
         for tr in data['records']:
             html.append('    <tr>\n')
-            for d in tr:
+            for i,d in enumerate(tr):
                 html.append('        <td>'+d+'</td>\n')
             html.append('    </tr>\n')
         html.append('</tbody>\n')
@@ -1532,7 +1557,8 @@ class OOTable(WebTable):
         return ' '.join(ret)
 
     @classmethod
-    def add_url_rule(cls, app):
+    def add_url_rule(cls, app, extend=[]):
+        super().add_url_rule(app, extend)
         app.add_url_rule('/ootable/ootable_html', view_func=cls._table_html)
 
     @classmethod
@@ -1542,7 +1568,10 @@ class OOTable(WebTable):
 
 
 class Var(WebComponentBootstrap):
-    pass
+
+    def __init__(self, parent, **kwargs):
+        kwargs['parent'] = parent
+        super().__init__(**kwargs)
 
 
 class LVar(Var):

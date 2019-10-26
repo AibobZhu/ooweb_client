@@ -325,7 +325,13 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def add_url_rule(cls, app):
+    def add_url_rule(cls, app, extend=[]):
+        '''
+        Add the urls which are used by this class. and also can add some extend urls for customizing
+        :param app:
+        :param extended:
+        :return:
+        '''
         pass
 
     @classmethod
