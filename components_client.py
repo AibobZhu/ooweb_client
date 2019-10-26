@@ -1374,6 +1374,12 @@ class OOCalendarBar(WebDiv):
 
 
 class WebTable(WebComponentBootstrap):
+    '''
+    WebTable generates a html table from a data including schema and records.
+    schema leads to table heads and records lead to table body.
+    The implementation of this class is different from other classes. The not all rendering of WebTable is on the
+    server side, some render is on client side.
+    '''
 
     def __init__(self, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
         super().__init__(**kwargs)
@@ -1540,6 +1546,7 @@ class OOTable(WebTable):
     def test_request(cls, methods=['GET']):
         cls.add_url_rule(app=current_app)
         return super().test_request()
+
 
 class Var(WebComponentBootstrap):
     pass
