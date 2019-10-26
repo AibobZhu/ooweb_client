@@ -793,13 +793,10 @@ class WebDiv(WebComponentBootstrap):
 
 
 class OODatePicker(WebInputGroup):
-
+    pass
+    '''
     @classmethod
     def on_post(cls):
-        '''
-        TODO: query data by user model
-        :return:
-        '''
         r = super().on_post()
 
         # just for test
@@ -817,7 +814,7 @@ class OODatePicker(WebInputGroup):
         # test end
 
         return jsonify({'status': 'success', 'data': data})
-
+    '''
 
 class WebSvg(WebComponentBootstrap):
     pass
@@ -946,8 +943,8 @@ class OOGeneralSelector(WebBtnGroup):
     def call_on_select(self):
         pass
 
-    @staticmethod
-    def default_data():
+    @classmethod
+    def _example_data(cls):
         fmt = OOGeneralSelector.data_format()
         data = []
         for i in range(3):
@@ -964,10 +961,6 @@ class OOGeneralSelector(WebBtnGroup):
         button['name'] = 'test' + str(3)
         data.append(button)
         return data
-
-    @classmethod
-    def _example_data(cls):
-        return OOGeneralSelector.default_data()
 
     @classmethod
     def on_post(cls):

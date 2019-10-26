@@ -197,9 +197,6 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def data_format(self):
         raise NotImplementedError
 
-    def default_data(self):
-        raise NotImplementedError
-
 
 class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
 
