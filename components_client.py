@@ -1427,22 +1427,22 @@ class WebTable(WebComponentBootstrap):
                 {'name': 'Email','attr': ''},
                 {'name': 'friend', 'attr': '',
                  'subhead': [{'name': 'Firstname', 'attr': ''}, {'name': 'Middlename', 'attr': ''}]},
-
+                {'name': 'registered', 'type':'checkbox'}
             ],
             'records':[
-                ('John','','Doe','john@example.com','Maria','Lopez'),
-                ('Mary','','Moe','mary@example.com','James', 'Garcia'),
-                ('July','','Dooley','july@example.com','Daniel', 'Rodriguez'),
-                ('David', '', 'Jones', 'david@example.com','David', 'Jones'),
-                ('Michael', '', 'Johnson', 'michael@example.com','Paul', 'Rodriguez'),
-                ('Chris', '', 'Lee', 'chris@example.com','Mark', 'Williams'),
-                ('Mike', '', 'Brown', 'Mike@example.com','Mike', 'Brown'),
-                ('Mark', '', 'Williams', 'mark@example.com','Chris', 'Lee'),
-                ('Paul', '', 'Rodriguez', 'paul@example.com','Michael', 'Johnson'),
-                ('David', '', 'Jones', 'david@example.com','David', 'Jones'),
-                ('Daniel', '', 'Rodriguez', 'daniel@example.com','July','Dooley'),
-                ('James', '', 'Garcia', 'james@example.com','Mary','Moe'),
-                ('Maria','','Lopez','maria@example.com','John','Doe')
+                ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':'Maria'},{'data':'Lopez'}, {'data':True, 'attr':''}),
+                ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':'James'}, {'data':'Garcia'}, {'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':'Daniel'}, {'data':'Rodriguez'}, {'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':'David'}, {'data':'Jones'}, {'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':'Paul'}, {'data':'Rodriguez'}, {'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':'Mark'}, {'data':'Williams'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':'Mike'}, {'data':'Brown'},{'data':True, 'attr':''}),
+                ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':'Chris'}, {'data':'Lee'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':'Michael'}, {'data':'Johnson'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':'David'}, {'data':'Jones'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':'July'},{'data':'Dooley'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':'Mary'},{'data':'Moe'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':'John'},{'data':'Doe'},{'data':True, 'attr':'disabled=\"disabled\"'})
             ]
         }
 
@@ -1481,26 +1481,60 @@ class WebTable(WebComponentBootstrap):
                     _head_rowspan(sh, max_levels-1)
 
         def _head_matrix(head, matrix, index):
-
+            attr = head['attr'] if 'attr' in head else ''
+            style = head['style'] if 'style' in head else ''
+            type = head['type'] if 'type' in head else ''
             if len(matrix) <= index:
                 for i in range(len(matrix), index+1):
                     matrix.append([])
             if matrix[index]:
-                matrix[index].append({'name': head['name'], 'attr': head['attr']})
+                matrix[index].append({'name': head['name'], 'attr': attr, 'style':style, 'type':type})
             else:
-                matrix[index] = [{'name': head['name'], 'attr': head['attr']}]
+                matrix[index] = [{'name': head['name'], 'attr': attr, 'style':style, 'type':type}]
             if 'subhead' in head and head['subhead']:
                 if len(matrix) <= index + 1:
                     matrix.append([])
                 for sh in head['subhead']:
                     _head_matrix(sh, matrix, index+1)
 
+        def _columns(matrix, matrix_index, columns, max_cs):
+            columns_count = 0
+            for th in matrix[matrix_index]:
+                if th['attr'].find('colspan') >=0:
+                    th_attr = th['attr'].split(' ')
+                    for attr in th_attr:
+                        if attr.find('colspan') >=0:
+                            colspan = int(attr.split('=')[1].split('"')[1])
+                            sub_matrix_index = matrix_index
+                            while True:
+                                sub_matrix_index = sub_matrix_index + 1
+                                if sub_matrix_index >= len(matrix):
+                                    return columns_count
+                                columns_count = _columns(matrix, sub_matrix_index, columns, colspan)
+                                if columns_count >= colspan:
+                                    break
+                else:
+                    col = {}
+                    if 'attr' in th:
+                        col['attr'] = th['attr']
+                    if 'type' in th:
+                        col['type'] = th['type']
+                    if 'style' in th:
+                        col['style'] = th['style']
+                    columns.append(col)
+                    columns_count = columns_count + 1
+                if columns_count >= max_cs:
+                    return max_cs
+
         def _head(html, schema):
             max_level = 0
+            max_cs = 0
             for h in schema:
                 cs, ml = _head_colspan(h)
+                max_cs = max_cs + cs
                 if ml > max_level:
                     max_level = ml
+
             for h in schema:
                 _head_rowspan(h,max_level)
 
@@ -1514,22 +1548,40 @@ class WebTable(WebComponentBootstrap):
                     html.append('        <th class="{}" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['attr'], th['name']))
                 html.append('    </tr>\n')
 
-            return matrix
+            columns = []
+            _columns(matrix, 0, columns, max_cs)
+
+            return columns
 
         html = []
-        matrix = []
+        columns = []
         if 'schema' in data and data['schema']:
             html.append('<thead>\n')
-            matrix = _head(html, data['schema'])
+            columns = _head(html, data['schema'])
             html.append('</thead>\n')
 
         html.append('<tbody style="{}">\n'.format(WebTable._body_styles_str()))
         for tr in data['records']:
             html.append('    <tr>\n')
             for i,d in enumerate(tr):
-                html.append('        <td>'+d+'</td>\n')
+                td = ''
+                classes = d['class'] if 'class' in d else ''
+                style = d['style'] if 'style' in d else ''
+                attr = d['attr'] if 'attr' in d else ''
+                if columns and 'type' in columns[i] and columns[i]['type']:
+                    if columns[i]['type'].find('checkbox') == 0:
+                        if d['data']:
+                            td = '        <input type="checkbox" checked="checked" class="{}" style="{}" {}>'.format(classes, style, attr)
+                        else:
+                            td = '        <input type="checkbox" class="{}" style="{}" {}>'.format(classes, style, attr)
+                    else:
+                        raise NotImplementedError
+                else:
+                    td = d['data']
+                html.append('<td class="{}" style="{}" {} >{}</td>'.format(classes, style, attr, td))
             html.append('    </tr>\n')
         html.append('</tbody>\n')
+
         return html
 
     def __enter__(self):
