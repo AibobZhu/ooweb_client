@@ -219,7 +219,8 @@ class Format(BootstrapInf, FormatInf, ClientBase):
         raise NotImplementedError
 
     def height(self, height=None):
-        raise NotImplementedError
+        params = {'height': height}
+        return self.func_call(params=params)
 
     def align(self, align=None):
         raise NotImplementedError
@@ -1425,26 +1426,24 @@ class WebTable(WebComponentBootstrap):
                 {'name': 'Firstname','attr':'', 'subhead':[{'name':'Firstname','attr':''},{'name':'Middlename','attr':''}]},
                 {'name': 'Lastname','attr':''},
                 {'name': 'Email','attr': ''},
-                {'name': 'friend', 'attr': '',
-                 'subhead': [{'name': 'Firstname', 'attr': ''}, {'name': 'Middlename', 'attr': ''}]},
                 {'name': 'registered', 'type':'checkbox'}
             ],
             'records':[
-                ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':'Maria'},{'data':'Lopez'}, {'data':True, 'attr':''}),
-                ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':'James'}, {'data':'Garcia'}, {'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':'Daniel'}, {'data':'Rodriguez'}, {'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':'David'}, {'data':'Jones'}, {'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':'Paul'}, {'data':'Rodriguez'}, {'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':'Mark'}, {'data':'Williams'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':'Mike'}, {'data':'Brown'},{'data':True, 'attr':''}),
-                ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':'Chris'}, {'data':'Lee'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':'Michael'}, {'data':'Johnson'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':'David'}, {'data':'Jones'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':'July'},{'data':'Dooley'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':'Mary'},{'data':'Moe'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':'John'},{'data':'Doe'},{'data':True, 'attr':'disabled=\"disabled\"'})
+                ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':True, 'attr':''}),
+                ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':True, 'attr':''}),
+                ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'})
             ]
-        }
+        } ,
 
     @classmethod
     def _html(cls, data):
@@ -1452,6 +1451,7 @@ class WebTable(WebComponentBootstrap):
         def _head_colspan(head):
             colspan = 0
             sub_max_levels = 0
+
             if 'subhead' not in head or not head['subhead']:
                 colspan = 1
             else:
@@ -1586,14 +1586,15 @@ class WebTable(WebComponentBootstrap):
 
     def __enter__(self):
         ret = super().__enter__()
-        self.add_context_list(self._html(data=self._example_data()))
-        return ret
+        self.add_context_list(self._html(data=WebTable._example_data()[0]))
+        return self
+
 
     @classmethod
     def test_request(cls, methods=['GET']):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="200px")) as c1:
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'],
                                                               head_classes=['text-center'])) as bar:
                         pass
@@ -1604,14 +1605,26 @@ class WebTable(WebComponentBootstrap):
 class OOTable(WebTable):
 
     @classmethod
-    def _table_html(cls):
-        ret = cls._html(data=cls._example_data())
-        return ' '.join(ret)
+    def _example_data(cls):
+        table = super()._example_data()[0]
+        datatable = {
+            'scrollY': '50vh',
+            'scrollCollapse': True,
+            'paging': False
+        }
+        return table, datatable
+
+    @classmethod
+    def on_html(cls, methods=['GET']):
+        html_data = cls._example_data()[0]
+        datatable_setting = cls._example_data()[1]
+        html = ''.join(cls._html(data=html_data))
+        return json.dumps({'table':html, 'datatable':datatable_setting})
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
-        app.add_url_rule('/ootable/ootable_html', view_func=cls._table_html)
+        app.add_url_rule('/ootable/ootable_html', view_func=cls.on_html)
 
     @classmethod
     def test_request(cls, methods=['GET']):
