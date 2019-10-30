@@ -14,13 +14,14 @@ import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
-from share import create_payload, extract_data, APIs
+from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange
 import sys, os
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 import json
 from test_class import *
 import copy
+import random
 
 sys.setrecursionlimit(2000)
 
@@ -626,6 +627,16 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def gvar_w(self, name='data'):
         raise NotImplementedError
 
+    @classmethod
+    def get_data(cls, model=None, query=None):
+        if not model or not query:
+            return cls._example_data()
+        else:
+            data = model.query(query)
+            if not data:
+                return cls._example_data()
+            else:
+                return data
 
 class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
@@ -1382,7 +1393,12 @@ class WebTable(WebComponentBootstrap):
     schema leads to table heads and records lead to table body.
     The implementation of this class is different from other classes. The not all rendering of WebTable is on the
     server side, some render is on client side.
+
+    TODO: Change the members of model and query from class to object
     '''
+
+    MODEL = None
+    QUERY = None
 
     def __init__(self, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
         super().__init__(**kwargs)
@@ -1421,12 +1437,13 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def _example_data(cls):
+        '''
         return {
             'schema':[
-                {'name': 'Firstname','attr':'', 'subhead':[{'name':'Firstname','attr':''},{'name':'Middlename','attr':''}]},
-                {'name': 'Lastname','attr':''},
-                {'name': 'Email','attr': ''},
-                {'name': 'registered', 'type':'checkbox'}
+                {'name': 'Firstname','subhead':[{'name':'Firstname', 'style':'width:16%','attr':''},{'name':'Middlename','style':'width:16%', 'attr':''}]},
+                {'name': 'Lastname','style':'width:32%'},
+                {'name': 'Email','style': 'width:32%'},
+                {'name': 'registered', 'style': 'width:4%', 'type':'checkbox'}
             ],
             'records':[
                 ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':True, 'attr':''}),
@@ -1444,10 +1461,58 @@ class WebTable(WebComponentBootstrap):
                 ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'})
             ]
         } ,
+        '''
+        data = {
+            'schema': [
+                {
+                    'name': '事件列表',
+                    'subhead': [
+                        {'name': '事件', 'style': 'width:21.7%', 'attr': ''},
+                        {'name': '审批', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
+                        {'name': '完成', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
+                        {'name': '审核', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
+                        {'name': '开始', 'style': 'width:21.7%', 'attr': ''},
+                        {'name': '结束', 'style': 'width:21.7%', 'attr': ''},
+                        {'name': '备份', 'style': 'width:21.7%', 'attr': ''},
+                    ]
+                },
+            ],
+            'records': []
+        }
+        for i in range(16):
+            approve = True if random.randint(0, 1) else False
+            done = True if random.randint(0, 1) else False
+            check = True if random.randint(0, 1) else False
+
+            start, end = randDatetimeRange()
+            data['records'].append(
+                (
+                    {'data': _getStr(random.randint(3,6))},
+                    {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': start},
+                    {'data': end},
+                    {'data': _getStr(random.randint(10,128))}
+                )
+            )
+        return data,
 
     @classmethod
-    def _html(cls, data):
+    def get_data(cls):
+        if not cls.MODEL or not cls.QUERY:
+            return cls._example_data()
+        else:
+            data = cls.MODEL.query(cls.QUERY)
+            if not data:
+                return cls._example_data()
+            else:
+                return data
 
+    @classmethod
+    def _html(cls):
+
+        data = cls.get_data()[0]
         def _head_colspan(head):
             colspan = 0
             sub_max_levels = 0
@@ -1545,7 +1610,7 @@ class WebTable(WebComponentBootstrap):
             for tr in matrix:
                 html.append('    <tr class="{}" style="{}">\n'.format(' '.join(cls._head_classes), cls._head_styles_str()))
                 for th in tr:
-                    html.append('        <th class="{}" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['attr'], th['name']))
+                    html.append('        <th class="{}" style=\"{}\" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
 
             columns = []
@@ -1586,9 +1651,8 @@ class WebTable(WebComponentBootstrap):
 
     def __enter__(self):
         ret = super().__enter__()
-        self.add_context_list(self._html(data=WebTable._example_data()[0]))
+        self.add_context_list(self._html())
         return self
-
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -1604,21 +1668,41 @@ class WebTable(WebComponentBootstrap):
 
 class OOTable(WebTable):
 
+    _SETTING = {}
+
+    @classmethod
+    def setting(cls, setting=None):
+        if setting:
+            cls._SETTING = setting
+        else:
+            return cls._SETTING
+
     @classmethod
     def _example_data(cls):
         table = super()._example_data()[0]
-        datatable = {
-            'scrollY': '50vh',
-            'scrollCollapse': True,
-            'paging': False
-        }
+        if cls.setting():
+            datatable = cls.setting()
+        else:
+            datatable = {
+                'scrollY': '400px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'columnDefs':[
+                    {'orderable': False, 'targets': 1},
+                    {'orderable': False, 'targets': 2},
+                    {'orderable': False, 'targets': 3},
+                    {'orderable': False, 'targets': 6}
+                ],
+                'order':[[5, 'asc']]
+            }
         return table, datatable
 
     @classmethod
     def on_html(cls, methods=['GET']):
-        html_data = cls._example_data()[0]
-        datatable_setting = cls._example_data()[1]
-        html = ''.join(cls._html(data=html_data))
+        html_data = cls.get_data()[0]
+        datatable_setting = cls.get_data()[1]
+        html = ''.join(cls._html())
         return json.dumps({'table':html, 'datatable':datatable_setting})
 
     @classmethod

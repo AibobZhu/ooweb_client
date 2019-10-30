@@ -5,6 +5,9 @@ import json, zlib
 import random
 import binascii
 import uuid
+from dateutil.relativedelta import relativedelta
+import datetime
+
 #TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
 APIs = {
@@ -83,3 +86,24 @@ def _getStr(leng):
 
 def _getSUUID():
 	return str(uuid.uuid4()).split("-")[0]
+
+def getDatetimeStr(years=(2019,2019),months=(1,12),days=(1,28),delta_days=None):
+  year = random.randint(years[0],years[1])
+  month = random.randint(months[0],months[1])
+  day = random.randint(days[0],days[1])
+  dd=str(year)+"-"+str(month)+"-"+str(day)
+  fmt="%Y-%m-%d"
+  start = datetime.datetime.strptime(dd, fmt)
+  if not delta_days:
+    delta_days = random.randint(3,15)
+  end = start + relativedelta(days=delta_days)
+  return start.strftime(fmt), end.strftime(fmt)
+
+def randDatetimeRange(delta_days_range=(0,30)):
+    today = datetime.datetime.today()
+    before_days = random.randint(delta_days_range[0],delta_days_range[1])
+    after_days = random.randint(delta_days_range[0], delta_days_range[1])
+    fmt = "%Y-%m-%d %H:%M:%S"
+    start = today - relativedelta(days=before_days)
+    end = today + relativedelta(days=after_days)
+    return start.strftime(fmt), end.strftime(fmt)

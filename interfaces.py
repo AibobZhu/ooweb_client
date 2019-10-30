@@ -197,6 +197,10 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def data_format(self):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def get_data(self):
+        pass
+
 
 class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -219,22 +223,16 @@ class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
         '''
         pass
 
+    @classmethod
     @abc.abstractmethod
-    def load_data(self, data=None):
+    def get_data(cls, model=None, query=None):
         '''
         Load data from user or model modules, and expect it in the correct format already,
             for the data should be created in the format defined by CustomToolbar.data_format
 
-        :param data:
-        :return:
-        '''
-        pass
-
-    @abc.abstractmethod
-    def query_data(self, qeury):
-        '''
-        Let the user of custom complex controller query data in a format , like the endpoint to response post request
-        :return: queried data
+        :param model is the user or database model
+        :param query is query conditions
+        :return: the queried data from the model
         '''
         pass
 
