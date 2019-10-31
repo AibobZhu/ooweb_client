@@ -1464,18 +1464,13 @@ class WebTable(WebComponentBootstrap):
         '''
         data = {
             'schema': [
-                {
-                    'name': '事件列表',
-                    'subhead': [
-                        {'name': '事件', 'style': 'width:21.7%', 'attr': ''},
-                        {'name': '审批', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
-                        {'name': '完成', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
-                        {'name': '审核', 'style': 'width:4.3%', 'attr': '', 'type':'checkbox'},
-                        {'name': '开始', 'style': 'width:21.7%', 'attr': ''},
-                        {'name': '结束', 'style': 'width:21.7%', 'attr': ''},
-                        {'name': '备份', 'style': 'width:21.7%', 'attr': ''},
-                    ]
-                },
+                {'name': '事件', 'style': '', 'attr': ''},
+                {'name': '审批', 'style': '', 'attr': '', 'type':'checkbox'},
+                {'name': '完成', 'style': '', 'attr': '', 'type':'checkbox'},
+                {'name': '审核', 'style': '', 'attr': '', 'type':'checkbox'},
+                {'name': '开始', 'style': '', 'attr': ''},
+                {'name': '结束', 'style': '', 'attr': ''},
+                {'name': '备份', 'style': '', 'attr': ''},
             ],
             'records': []
         }
@@ -1493,7 +1488,7 @@ class WebTable(WebComponentBootstrap):
                     {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': start},
                     {'data': end},
-                    {'data': _getStr(random.randint(10,128))}
+                    {'data': _getStr(random.randint(10,128)), 'attr':'nowrap'}
                 )
             )
         return data,
@@ -1549,13 +1544,14 @@ class WebTable(WebComponentBootstrap):
             attr = head['attr'] if 'attr' in head else ''
             style = head['style'] if 'style' in head else ''
             type = head['type'] if 'type' in head else ''
+            classes = head['class'] if 'class' in head else ''
             if len(matrix) <= index:
                 for i in range(len(matrix), index+1):
                     matrix.append([])
             if matrix[index]:
-                matrix[index].append({'name': head['name'], 'attr': attr, 'style':style, 'type':type})
+                matrix[index].append({'name': head['name'], 'class': classes, 'attr': attr, 'style':style, 'type':type})
             else:
-                matrix[index] = [{'name': head['name'], 'attr': attr, 'style':style, 'type':type}]
+                matrix[index] = [{'name': head['name'], 'class': classes, 'attr': attr, 'style':style, 'type':type}]
             if 'subhead' in head and head['subhead']:
                 if len(matrix) <= index + 1:
                     matrix.append([])
@@ -1610,7 +1606,7 @@ class WebTable(WebComponentBootstrap):
             for tr in matrix:
                 html.append('    <tr class="{}" style="{}">\n'.format(' '.join(cls._head_classes), cls._head_styles_str()))
                 for th in tr:
-                    html.append('        <th class="{}" style=\"{}\" {}>{}</th>\n'.format(' '.join(cls._head_classes), th['style'], th['attr'], th['name']))
+                    html.append('        <th class="{}" style=\"{}\" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
 
             columns = []
@@ -1658,9 +1654,8 @@ class WebTable(WebComponentBootstrap):
     def test_request(cls, methods=['GET']):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="200px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'],
-                                                              head_classes=['text-center'])) as bar:
+                with r1.add_child(WebColumn(width=['md4'], offset=['mdo7'],height="400px")) as c1:
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'row-border', 'responsive'])) as bar:
                         pass
         html = page.render()
         return render_template_string(html)
@@ -1669,6 +1664,11 @@ class WebTable(WebComponentBootstrap):
 class OOTable(WebTable):
 
     _SETTING = {}
+
+    @classmethod
+    def get_data(cls):
+        data = super().get_data()
+        return data, cls.SETTING
 
     @classmethod
     def setting(cls, setting=None):
@@ -1684,10 +1684,11 @@ class OOTable(WebTable):
             datatable = cls.setting()
         else:
             datatable = {
-                'scrollY': '400px',
+                'scrollY': '500px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': False,
+                'searching': False,
                 'columnDefs':[
                     {'orderable': False, 'targets': 1},
                     {'orderable': False, 'targets': 2},
