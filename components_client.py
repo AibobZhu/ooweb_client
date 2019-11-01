@@ -1663,19 +1663,22 @@ class WebTable(WebComponentBootstrap):
 
 class OOTable(WebTable):
 
-    _SETTING = {}
+    SETTING = {}
 
     @classmethod
     def get_data(cls):
         data = super().get_data()
-        return data, cls.SETTING
+        if len(data) == 1:
+            return data, cls.SETTING
+        else:
+            return data
 
     @classmethod
     def setting(cls, setting=None):
         if setting:
-            cls._SETTING = setting
+            cls.SETTING = setting
         else:
-            return cls._SETTING
+            return cls.SETTING
 
     @classmethod
     def _example_data(cls):
@@ -1704,7 +1707,7 @@ class OOTable(WebTable):
         html_data = cls.get_data()[0]
         datatable_setting = cls.get_data()[1]
         html = ''.join(cls._html())
-        return json.dumps({'table':html, 'datatable':datatable_setting})
+        return json.dumps({'html':html, 'setting':datatable_setting})
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
