@@ -1502,7 +1502,7 @@ class WebTable(WebComponentBootstrap):
             if not data:
                 return cls._example_data()
             else:
-                return data
+                return data,cls.SETTING
 
     @classmethod
     def _html(cls):
