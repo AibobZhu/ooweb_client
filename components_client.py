@@ -368,7 +368,13 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             kwargs['_value'] = self._value
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
-        self.add_context(context)
+        self._mycont = self.add_context(context)
+
+    def add_app(self):
+        if hasattr(self, "app") and self.app:
+            self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
+        else:
+            self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
     def __enter__(self):
         '''
@@ -437,12 +443,35 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         pass
 
     def render(self):
+        '''
+        render and return a complete page information in html
+        :return:
+        '''
         #components = components_factory(self.context())
         payload = create_payload(self.context())
-        #print('WebPage::render api:{}'.format(self._api))
+        #print('WebPage::render api:{}'.format(self._ap_i))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
         return render_template_string(html)
+
+    def render_content(self):
+        '''
+        render and return the component information in html, and its script,script files, style and style files
+        :return : context in html, scripts, script files, styles, style files
+        '''
+        payload = create_payload(self._mycont)
+        # print('WebPage::render api:{}'.format(self._ap_i))
+        r = post(url=self._api + '_content', json=payload)
+        rjson = extract_data(r.json()['data'])
+        rdata = json.loads(rjson)
+        return {
+            'content': render_template_string(rdata['content']),
+            'scripts':rdata['scripts'],
+            'script_files':rdata['script_files'],
+            'styles':rdata['styles'],
+            'styles_files':rdata['style_files']
+        }
+
 
     def context(self):
         if self._parent:
@@ -478,6 +507,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     @classmethod
     def _add_context(cls, cont):
         cls._cur_context_stack[-1].append(cont)
+        return cls._cur_context_stack[-1]
 
     @classmethod
     def _push_current_context(cls, cont):
@@ -490,7 +520,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def scripts(self):
         raise NotImplementedError
 
-    def add_scripts(self, scripts):
+    def add_script(self, scripts):
         '''
         context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
@@ -522,6 +552,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         raise NotImplementedError
 
     def add_styles(self, styles):
+        raise NotImplementedError
+
+    def add_style(self,styles):
         raise NotImplementedError
 
     @contextmanager
@@ -565,7 +598,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         finally:
             self._pop_current_context()
 
-    def add_global_styles(self, styles):
+    def add__style(self, styles):
         raise NotImplementedError
 
     def global_styles(self):
@@ -577,7 +610,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def add_style_files(self, files):
         raise NotImplementedError
 
-    def get_global_styles(self):
+    def get_style(self):
         raise NotImplementedError
 
     def get_script_files(self):
@@ -638,6 +671,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             else:
                 return data
 
+
 class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
     def has_class(self, class_):
@@ -693,10 +727,7 @@ class WebPage(WebComponentBootstrap,TestPage):
         self._set_context([])
         self._root_class = WebComponentBootstrap
         super().__init__(test=test, **kwargs)
-        if hasattr(self, "app") and self.app:
-            self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
-        else:
-            self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
+        self.add_app()
 
 
 class WebA(WebComponentBootstrap):
@@ -808,6 +839,10 @@ class WebUl(WebComponentBootstrap):
 
 
 class WebDiv(WebComponentBootstrap):
+    pass
+
+
+class WebCheckbox(WebDiv):
     pass
 
 
@@ -939,13 +974,13 @@ class OOGeneralSelector(WebBtnGroup):
                 '''
                 with test.on_select():
                     test.set_script_indent(-1)
-                    test.add_scripts('''"alert(btn.name + '.' + event.target.text);"''')
+                    test.add_script('''"alert(btn.name + '.' + event.target.text);"''')
                     test.set_script_indent(1)
                     with test.post_w():
                         pass
                 '''
         with test.on_event_w('select'):
-            #test.add_scripts('''"var data = " + test.fix_cmd(test.val())''')
+            #test.add_script('''"var data = " + test.fix_cmd(test.val())''')
             with Var(parent=test) as data:
                 test.val()
             with test.post_w():
@@ -1436,6 +1471,16 @@ class WebTable(WebComponentBootstrap):
         return ret
 
     @classmethod
+    def _body_classes_str(cls):
+        if cls._body_classes:
+            return ' '.join(cls._body_classes)
+
+    @classmethod
+    def _head_classes_str(cls):
+        if cls._head_classes:
+            return ' '.join(cls._head_classes)
+
+    @classmethod
     def _example_data(cls):
         '''
         return {
@@ -1482,13 +1527,13 @@ class WebTable(WebComponentBootstrap):
             start, end = randDatetimeRange()
             data['records'].append(
                 (
-                    {'data': _getStr(random.randint(3,6))},
+                    {'data': _getStr(random.randint(3,6)), 'attr':'nowrap'},
                     {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': start},
                     {'data': end},
-                    {'data': _getStr(random.randint(10,128)), 'attr':'nowrap'}
+                    {'data': _getStr(random.randint(10,128))}
                 )
             )
         return data,
@@ -1604,7 +1649,7 @@ class WebTable(WebComponentBootstrap):
                 _head_matrix(h, matrix,0)
 
             for tr in matrix:
-                html.append('    <tr class="{}" style="{}">\n'.format(' '.join(cls._head_classes), cls._head_styles_str()))
+                html.append('    <tr class="{}" style="{}">\n'.format(cls._head_classes_str(), cls._head_styles_str()))
                 for th in tr:
                     html.append('        <th class="{}" style=\"{}\" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
@@ -1621,7 +1666,7 @@ class WebTable(WebComponentBootstrap):
             columns = _head(html, data['schema'])
             html.append('</thead>\n')
 
-        html.append('<tbody style="{}">\n'.format(WebTable._body_styles_str()))
+        html.append('<tbody class="{}" style="{}">\n'.format(WebTable._body_classes_str(), WebTable._body_styles_str()))
         for tr in data['records']:
             html.append('    <tr>\n')
             for i,d in enumerate(tr):
@@ -1654,8 +1699,12 @@ class WebTable(WebComponentBootstrap):
     def test_request(cls, methods=['GET']):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md4'], offset=['mdo7'],height="400px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'row-border', 'responsive'])) as bar:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
+                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as bar:
+                        #pass
+                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'row-border', 'responsive'])) as bar:
+                        #pass
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'])) as bar:
                         pass
         html = page.render()
         return render_template_string(html)
@@ -1669,7 +1718,7 @@ class OOTable(WebTable):
     def get_data(cls):
         data = super().get_data()
         if len(data) == 1:
-            return data, cls.SETTING
+            return data[0], cls.SETTING
         else:
             return data
 
@@ -1718,6 +1767,64 @@ class OOTable(WebTable):
     def test_request(cls, methods=['GET']):
         cls.add_url_rule(app=current_app)
         return super().test_request()
+
+
+class OOTagGroup(WebTable):
+
+    SETTING = {
+        'scrollY': '500px',
+        'scrollX': True,
+        'scrollCollapse': True,
+        'paging': False,
+        'searching': False,
+    }
+
+    def __init__(self, value=[], **kwargs):
+        super().__init__(**kwargs)
+        self._value = value
+
+    @classmethod
+    def _example_data(cls):
+        data = {
+            'schema': [
+                {'name': '', 'style': '', 'attr': ''},
+                {'name': '', 'style': '', 'attr': ''},
+                {'name': '', 'style': '', 'attr': ''},
+                {'name': '', 'style': '', 'attr': ''},
+                {'name': '', 'style': '', 'attr': ''},
+                {'name': '', 'style': '', 'attr': ''}
+            ],
+            'records': []
+        }
+
+        with WebCheckbox(value='测试') as wc:
+            pass
+        wc.add_app()
+        wc_content = wc.render_content()
+
+        for i in range(6):
+            approve = True if random.randint(0, 1) else False
+            done = True if random.randint(0, 1) else False
+            check = True if random.randint(0, 1) else False
+
+            start, end = randDatetimeRange()
+            td = []
+            for i in range(len(data['schema'])):
+                td.append({'data': wc_content['content'], 'attr': 'nowrap'})
+            data['records'].append(td)
+        return data,
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        #cls.add_url_rule(app=current_app)
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md6'], offset=['mdo3'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], attrs={'border':'0'})) as bar:
+                        pass
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class Var(WebComponentBootstrap):

@@ -135,6 +135,10 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def render_content(self):
+        pass
+    
+    @abc.abstractmethod
     def context(self):
         pass
 
@@ -151,7 +155,7 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_scripts(self, scripts):
+    def add_script(self, scripts):
         pass
 
     @abc.abstractmethod
@@ -179,11 +183,11 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_global_styles(self):
+    def get_style(self):
         pass
 
     @abc.abstractmethod
-    def add_global_styles(self, styles):
+    def add_style(self, styles):
         pass
 
     @abc.abstractmethod
