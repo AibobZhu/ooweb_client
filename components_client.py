@@ -62,6 +62,7 @@ class ClientBase(metaclass=abc.ABCMeta):
         context = self._get_objcall_context(func='with', params={'obj_id': self.id()})
         context['sub_context'] = []
         self.add_context(context)
+        self._mycont.append(context)
         self._push_current_context(context['sub_context'])
 
 
@@ -368,7 +369,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             kwargs['_value'] = self._value
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
-        self._mycont = self.add_context(context)
+        #self._mycont = self.add_context(context)
+        self._mycont = [context]
+        self.add_context(context)
 
     def add_app(self):
         if hasattr(self, "app") and self.app:
@@ -1700,12 +1703,12 @@ class WebTable(WebComponentBootstrap):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
-                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as bar:
-                        #pass
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as bar:
+                        pass
                     #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'row-border', 'responsive'])) as bar:
                         #pass
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'])) as bar:
-                        pass
+                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'])) as bar:
+                        #pass
         html = page.render()
         return render_template_string(html)
 
@@ -1797,11 +1800,6 @@ class OOTagGroup(WebTable):
             'records': []
         }
 
-        with WebCheckbox(value='测试') as wc:
-            pass
-        wc.add_app()
-        wc_content = wc.render_content()
-
         for i in range(6):
             approve = True if random.randint(0, 1) else False
             done = True if random.randint(0, 1) else False
@@ -1810,7 +1808,12 @@ class OOTagGroup(WebTable):
             start, end = randDatetimeRange()
             td = []
             for i in range(len(data['schema'])):
+                with WebCheckbox(value=_getStr(random.randint(2,5))) as locals()['wc'+str(i)]:
+                    pass
+                locals()['wc'+str(i)].add_app()
+                wc_content = locals()['wc'+str(i)].render_content()
                 td.append({'data': wc_content['content'], 'attr': 'nowrap'})
+                del locals()['wc'+str(i)]
             data['records'].append(td)
         return data,
 
