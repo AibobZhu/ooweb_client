@@ -845,7 +845,7 @@ class WebDiv(WebComponentBootstrap):
     pass
 
 
-class WebCheckbox(WebDiv):
+class WebCheckbox(WebSpan):
     pass
 
 
@@ -1782,23 +1782,20 @@ class OOTagGroup(WebTable):
         'searching': False,
     }
 
-    def __init__(self, value=[], **kwargs):
+    def __init__(self, value=[], col_num = 5, **kwargs):
         super().__init__(**kwargs)
         self._value = value
+        OOTagGroup.COL_NUM = col_num
 
     @classmethod
     def _example_data(cls):
         data = {
-            'schema': [
-                {'name': '', 'style': '', 'attr': ''},
-                {'name': '', 'style': '', 'attr': ''},
-                {'name': '', 'style': '', 'attr': ''},
-                {'name': '', 'style': '', 'attr': ''},
-                {'name': '', 'style': '', 'attr': ''},
-                {'name': '', 'style': '', 'attr': ''}
-            ],
+            'schema': [],
             'records': []
         }
+
+        for j in range(cls.COL_NUM):
+            data['schema'].append({'name':''})
 
         for i in range(6):
             approve = True if random.randint(0, 1) else False
@@ -1823,8 +1820,11 @@ class OOTagGroup(WebTable):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md6'], offset=['mdo3'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], attrs={'border':'0'})) as bar:
+                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], col_num=3, attrs={'border':'0'})) as test:
                         pass
+
+        with test.on_event_w('change'):
+            test.alert('$("#{} :checked").val()'.format(test.id()))
 
         html = page.render()
         return render_template_string(html)
