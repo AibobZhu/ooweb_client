@@ -1819,12 +1819,14 @@ class OOTagGroup(WebTable):
         #cls.add_url_rule(app=current_app)
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md6'], offset=['mdo3'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], col_num=3, attrs={'border':'0'})) as test:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], col_num=4   , attrs={'border':'0'})) as test:
                         pass
 
         with test.on_event_w('change'):
-            test.alert('$("#{} :checked").val()'.format(test.id()))
+            with LVar(parent=test, var_name='checked_var') as data:
+                test.val()
+            test.alert('checked_var.join(",")')
 
         html = page.render()
         return render_template_string(html)
