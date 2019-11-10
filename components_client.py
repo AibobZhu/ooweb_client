@@ -274,7 +274,7 @@ class Format(BootstrapInf, FormatInf, ClientBase):
     def get_offset_name(self, offset):
         raise NotImplementedError
 
-    def get_width_name(self, width):
+    def _get_width_name(self, width):
         raise NotImplementedError
 
     def base_context(self):
@@ -1438,12 +1438,14 @@ class WebTable(WebComponentBootstrap):
     MODEL = None
     QUERY = None
 
-    def __init__(self, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
+    def __init__(self, model=None, query=None, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
         super().__init__(**kwargs)
         WebTable._head_styles = head_styles
         WebTable._body_styles = body_styles
         WebTable._head_classes = head_classes
         WebTable._body_classes = body_classes
+        WebTable.MODEL = model
+        WebTable.QUERY = query
 
     @classmethod
     def _head_styles_str(cls):
@@ -1510,6 +1512,7 @@ class WebTable(WebComponentBootstrap):
             ]
         } ,
         '''
+
         data = {
             'schema': [
                 {'name': '事件', 'style': '', 'attr': ''},
@@ -1539,6 +1542,7 @@ class WebTable(WebComponentBootstrap):
                     {'data': _getStr(random.randint(10,128))}
                 )
             )
+
         return data,
 
     @classmethod
@@ -1705,10 +1709,7 @@ class WebTable(WebComponentBootstrap):
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as bar:
                         pass
-                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'row-border', 'responsive'])) as bar:
-                        #pass
-                    #with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'bordered', 'responsive'])) as bar:
-                        #pass
+
         html = page.render()
         return render_template_string(html)
 
@@ -1717,6 +1718,10 @@ class OOTable(WebTable):
 
     SETTING = {}
 
+    def __init__(self, setting={}, **kwargs):
+        OOTable.SETTING = setting
+        super().__init__(**kwargs)
+
     @classmethod
     def get_data(cls):
         data = super().get_data()
@@ -1724,6 +1729,10 @@ class OOTable(WebTable):
             return data[0], cls.SETTING
         else:
             return data
+
+    def search(self, pattern):
+        params = {'pattern': pattern}
+        return self.func_call(params)
 
     @classmethod
     def setting(cls, setting=None):
@@ -1738,6 +1747,7 @@ class OOTable(WebTable):
         if cls.setting():
             datatable = cls.setting()
         else:
+            '''
             datatable = {
                 'scrollY': '500px',
                 'scrollX': True,
@@ -1751,6 +1761,14 @@ class OOTable(WebTable):
                     {'orderable': False, 'targets': 6}
                 ],
                 'order':[[5, 'asc']]
+            }
+            '''
+            datatable = {
+                'scrollY': '500px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': True,
+                'searching': True,
             }
         return table, datatable
 
@@ -1769,23 +1787,41 @@ class OOTable(WebTable):
     @classmethod
     def test_request(cls, methods=['GET']):
         cls.add_url_rule(app=current_app)
-        return super().test_request()
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(WebBtn(value='test')) as btn:
+                        pass
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="400px")) as c1:
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                        pass
+        with btn.on_event_w('click'):
+            with LVar(parent=page,var_name='data') as data:
+                btn.val()
+            test.search("data")
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class OOTagGroup(WebTable):
 
     SETTING = {
+        'paging': False,
         'scrollY': '500px',
         'scrollX': True,
+        'searching': True,
         'scrollCollapse': True,
-        'paging': False,
-        'searching': False,
     }
 
-    def __init__(self, value=[], col_num = 5, **kwargs):
+    COL_NUM = 3
+
+    def __init__(self, value=[], col_num = 0, **kwargs):
         super().__init__(**kwargs)
         self._value = value
-        OOTagGroup.COL_NUM = col_num
+        if col_num:
+            OOTagGroup.COL_NUM = col_num
 
     @classmethod
     def _example_data(cls):
@@ -1797,7 +1833,7 @@ class OOTagGroup(WebTable):
         for j in range(cls.COL_NUM):
             data['schema'].append({'name':''})
 
-        for i in range(6):
+        for i in range(2):
             approve = True if random.randint(0, 1) else False
             done = True if random.randint(0, 1) else False
             check = True if random.randint(0, 1) else False
@@ -1820,13 +1856,13 @@ class OOTagGroup(WebTable):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], col_num=4   , attrs={'border':'0'})) as test:
+                    with c1.add_child(globals()[cls.__name__](mytype=['hover', 'borderless', 'responsive'], col_num=4, attrs={'border':'0'})) as test:
                         pass
 
         with test.on_event_w('change'):
             with LVar(parent=test, var_name='checked_var') as data:
                 test.val()
-            test.alert('checked_var.join(",")')
+            test.alert('checked_var')
 
         html = page.render()
         return render_template_string(html)

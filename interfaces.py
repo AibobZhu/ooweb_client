@@ -56,7 +56,7 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_width_name(self, width):
+    def _get_width_name(self, width):
         pass
 
     @abc.abstractmethod
