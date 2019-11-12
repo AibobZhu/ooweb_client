@@ -72,19 +72,33 @@ TODO: try with eval, just pass the function calling and express in string, then 
 
 class Action(CommandInf, ActionInf, Test, ClientBase):
 
+    @contextmanager
     def if_w(self):
-        raise NotImplementedError
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
 
+    @contextmanager
     def else_w(self):
-        raise NotImplementedError
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def equal(self,right, left=None):
+        params = {'right': right, 'left':left}
+        self.func_call(params=params)
 
     def for_w(self):
-        raise NotImplementedError
-
-    def var(self, value=None):
-        raise NotImplementedError
-
-    def g_var(self, value=None):
         raise NotImplementedError
 
     def is_js(self):
@@ -95,16 +109,34 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         self.func_call(params=params)
 
     def is_condition(self):
-        raise NotImplementedError
+        params = {'cond': cond}
+        self.func_call(params=params)
 
     def set_condition(self, cond):
-        raise NotImplementedError
+        params = {'cond': cond}
+        self.func_call(params=params)
 
+    @contextmanager
     def condition_w(self):
-        raise NotImplementedError
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
 
+    @contextmanager
     def cmds_w(self):
-        raise NotImplementedError
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
 
     def has_class(self, class_):
         raise NotImplementedError
@@ -561,31 +593,6 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         raise NotImplementedError
 
     @contextmanager
-    def if_w(self):
-        raise NotImplementedError
-
-    @contextmanager
-    def else_w(self):
-        raise  NotImplementedError
-
-    @contextmanager
-    def condition_w(self):
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(),
-                                            params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        '''
-        self.with_call({})
-        try:
-            yield
-        except:
-            pass
-        finally:
-            self._pop_current_context()
-
-    @contextmanager
     def cmds(self):
         '''
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
@@ -805,8 +812,26 @@ class WebBtn(WebComponentBootstrap):
     pass
 
 
-class WebBtnDropdownToggle(WebComponentBootstrap):
-    pass
+class WebBtnDropdown(WebBtn):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](value='测试',select_options=[{'name':'测试1','href':'#'},{'name':'测试2','href':'#'}])) as btn:
+                pass
+
+        with btn.on_event_w('change'):
+            with LVar(parent=btn, var_name='text') as text:
+                btn.val()
+            with btn.if_w():
+                with btn.condition_w():
+                    text.equal(right='测试2')
+                with btn.cmds_w():
+                    page.alert('"Find 测试2"')
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
 
 class WebFormGroup(WebComponentBootstrap):
@@ -1624,7 +1649,7 @@ class WebTable(WebComponentBootstrap):
                                 if sub_matrix_index >= len(matrix):
                                     return columns_count
                                 columns_count = _columns(matrix, sub_matrix_index, columns, colspan)
-                                if columns_count >= colspan:
+                                if columns_count and columns_count >= colspan:
                                     break
                 else:
                     col = {}
@@ -1658,7 +1683,7 @@ class WebTable(WebComponentBootstrap):
             for tr in matrix:
                 html.append('    <tr class="{}" style="{}">\n'.format(cls._head_classes_str(), cls._head_styles_str()))
                 for th in tr:
-                    html.append('        <th class="{}" style=\"{}\" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
+                    html.append('        <th class="{}" style="{}" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
 
             columns = []

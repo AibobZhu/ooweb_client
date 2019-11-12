@@ -448,22 +448,9 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
     def for_w(self):
         pass
 
-    '''
-    Replace with Var, LVar, GVar classes
-    '''
-    '''
     @abc.abstractmethod
-    def var_w(self, name='data'):
+    def equal(self,right, lef=None):
         pass
-
-    @abc.abstractmethod
-    def lvar_w(self, name='data'):
-        pass
-
-    @abc.abstractmethod
-    def gvar_w(self, name='data'):
-        pass
-    '''
 
     @abc.abstractmethod
     def is_js(self):
