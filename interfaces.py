@@ -83,6 +83,9 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
     def remove_width(self, width):
         pass
 
+    @abc.abstractmethod
+    def empty(self):
+        pass
 
 class ComponentInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -107,7 +110,11 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_child(self, child=None, id=None):
+    def add_child(self, child=None, child_id=None, objs=None):
+        pass
+
+    @abc.abstractmethod
+    def remove_child(self,child=None, child_id=None,objs=None):
         pass
 
     @abc.abstractmethod
@@ -314,6 +321,14 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def empty(self):
+        '''
+        Empty the element's value or children, can be used in val when parameter is blank.
+        :return:
+        '''
+        pass
+
+    @abc.abstractmethod
     def add_attrs(self, attrs):
         pass
 
@@ -339,6 +354,13 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def _example_data(cls):
+        pass
+
+
+class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def empty(self):
         pass
 
 

@@ -223,6 +223,10 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {'value': value}
         self.func_call(params)
 
+    def empty(self):
+        params = {}
+        self.func_call(params)
+
     def disable(self, disable):
         params = {'disable': disable}
         self.func_call(params)
@@ -458,6 +462,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         params = {'child_id': child.id()}
         self.func_call(params)
         return  child
+
+    def remove_child(self,child=None, child_id=None,objs=None):
+        pass
 
     def empty_children(self):
         self._children.clear()
@@ -814,8 +821,13 @@ class WebBtn(WebComponentBootstrap):
 
 class WebBtnDropdown(WebBtn):
 
+    def set_options(self,options=None):
+        params={'options':options}
+        self.func_call(params)
+
     @classmethod
     def test_request(cls, methods=['GET']):
+        '''
         with WebPage() as page:
             with page.add_child(globals()[cls.__name__](value='测试',select_options=[{'name':'测试1','href':'#'},{'name':'测试2','href':'#'}])) as btn:
                 pass
@@ -832,7 +844,45 @@ class WebBtnDropdown(WebBtn):
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
+        '''
 
+        with WebPage(test=True) as page:
+            with page.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'}, {'name': '测试2', 'href': '#'}])) as btn:
+                pass  # btn.clear(call=True)
+
+        # response to change event and pop up an alert
+        with btn.on_event_w('change'):
+            page.alert('"WebBtnDropdown " + $(event.currentTarget).attr("id") + " is changed!"')
+            with LVar(parent=btn, var_name='text') as text:
+                btn.val()
+            with btn.if_w():
+                with btn.condition_w():
+                    text.equal('测试2')
+                with btn.cmds_w():
+                    page.alert('"Find 测试2"')
+                    new_options = [{'name': 'test1', 'href': '#'}, {'name': 'test2', 'href': '#'}]
+                    btn.set_options(options=new_options)
+
+        # trigger the click a event
+        with btn.on_event_w(event='click', filter='a'):
+            page.alert('"WebBtnDropdown " + $(event.currentTarget).attr("id") + " click a event triggered!"')
+
+        # trigger a click a event and expect an alert poping up
+        # btn.trigger_event(event='click',filter='a')
+
+        btn.set_js(True)
+        btn.val('"新测试"')  # expect a change event alert poping up
+        btn.set_js(False)
+
+        # set value of the dropdown button programingly, expecte poping up an alert of change event
+        '''
+        btn.set_js(True)
+        btn.val('"新测试"')
+        btn.set_js(False)
+        '''
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
 class WebFormGroup(WebComponentBootstrap):
     pass
