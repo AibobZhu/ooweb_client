@@ -1809,6 +1809,13 @@ class OOTable(WebTable):
         params = {'pattern': pattern}
         return self.func_call(params)
 
+    def customer_search(self, search):
+        params = {'search': search}
+        return self.func_call(params)
+
+    def draw(self):
+        return self.func_call({})
+
     @classmethod
     def setting(cls, setting=None):
         if setting:
@@ -1865,16 +1872,35 @@ class OOTable(WebTable):
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                    with c2.add_child(WebBtn(value='test')) as btn:
+                    with c2.add_child(WebInput(value='search')) as input:
                         pass
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="400px")) as c1:
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
-                        pass
-        with btn.on_event_w('click'):
-            with LVar(parent=page,var_name='data') as data:
-                btn.val()
-            test.search("data")
+                        customer_search = []
+                        '''
+                        customer_search.append('var time = $("#{}").val();\n')
+                        customer_search.append('var half_day = $("#{}").val();\n')
+                        customer_search.append('if (time === "时间段"){\n')
+                        customer_search.append('    if(half_day === "全天"){\n')
+                        customer_search.append('        return true;\n')
+                        customer_search.append('     }else if(half_day === "上午"){\n')
+                        customer_search.append('     }else if(half_day === "下午"){\n')
+                        customer_search.append('     };\n')
+                        customer_search.append('}else{\n')
+                        customer_search.append('};\n')
+                        '''
+                        customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
+                        customer_search.append('if (! filter || data[0] === filter){\n')
+                        customer_search.append('    return true;\n')
+                        customer_search.append('}else{\n')
+                        customer_search.append('    return false;\n')
+                        customer_search.append('};\n')
+                        test.customer_search(customer_search)
+
+        with input.on_event_w('change'):
+            page.alert('"searching ... "')
+            test.draw()
 
         html = page.render()
         return render_template_string(html)
