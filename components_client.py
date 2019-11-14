@@ -84,6 +84,17 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
             self._pop_current_context()
 
     @contextmanager
+    def elif_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
     def else_w(self):
         params = {}
         self.with_call(params)
@@ -1792,10 +1803,16 @@ class WebTable(WebComponentBootstrap):
 class OOTable(WebTable):
 
     SETTING = {}
+    HTML_URL = '/ootable/ootable_html'
 
-    def __init__(self, setting={}, **kwargs):
+    def __init__(self, setting={}, html_url='/ootable/ootable_html', render_func_name='ootable_render', **kwargs):
         OOTable.SETTING = setting
+        OOTable.HTML_URL = html_url
+        kwargs['html_url'] = html_url
+        kwargs['render_func_name'] = render_func_name
         super().__init__(**kwargs)
+        self._html_url = html_url
+        self._render_func_name = render_func_name
 
     @classmethod
     def get_data(cls):
@@ -1822,6 +1839,10 @@ class OOTable(WebTable):
             cls.SETTING = setting
         else:
             return cls.SETTING
+
+    def render_func(self,id='id',html='html',setting='setting'):
+        params={'id':id,'html':html,'setting':setting}
+        return self.func_call(params)
 
     @classmethod
     def _example_data(cls):
@@ -1855,16 +1876,22 @@ class OOTable(WebTable):
         return table, datatable
 
     @classmethod
-    def on_html(cls, methods=['GET']):
+    def on_html(cls, methods=['GET','POST']):
         html_data = cls.get_data()[0]
         datatable_setting = cls.get_data()[1]
         html = ''.join(cls._html())
-        return json.dumps({'html':html, 'setting':datatable_setting})
+        if request.method == 'GET':
+            return json.dumps({'html':html, 'setting':datatable_setting})
+        elif request.method == 'POST':
+            datatable_setting['destroy'] = True
+            return jsonify({'data':{'html':html, 'setting':datatable_setting}})
+        else:
+            raise NotImplementedError
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
-        app.add_url_rule('/ootable/ootable_html', view_func=cls.on_html)
+        app.add_url_rule(cls.HTML_URL, view_func=cls.on_html, methods=['GET','POST'])
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -1872,24 +1899,13 @@ class OOTable(WebTable):
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                    with c2.add_child(WebInput(value='search')) as input:
+                    with c2.add_child(WebInput(value='')) as input:
                         pass
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="400px")) as c1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="700px")) as c1:
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                        test.render_func()
                         customer_search = []
-                        '''
-                        customer_search.append('var time = $("#{}").val();\n')
-                        customer_search.append('var half_day = $("#{}").val();\n')
-                        customer_search.append('if (time === "时间段"){\n')
-                        customer_search.append('    if(half_day === "全天"){\n')
-                        customer_search.append('        return true;\n')
-                        customer_search.append('     }else if(half_day === "上午"){\n')
-                        customer_search.append('     }else if(half_day === "下午"){\n')
-                        customer_search.append('     };\n')
-                        customer_search.append('}else{\n')
-                        customer_search.append('};\n')
-                        '''
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
                         customer_search.append('if (! filter || data[0] === filter){\n')
                         customer_search.append('    return true;\n')
@@ -1897,7 +1913,18 @@ class OOTable(WebTable):
                         customer_search.append('    return false;\n')
                         customer_search.append('};\n')
                         test.customer_search(customer_search)
+            with page.add_child(WebRow()) as r3:
+                with r3.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r3:
+                    with r3.add_child(WebBtn(value='render')) as render_btn:
+                        with render_btn.on_event_w('click'):
+                            render_btn.alert('"rendering again"')
+                            with LVar(parent=render_btn,var_name='data') as data:
+                                render_btn.val()
+                            with test.post_w(url=cls.HTML_URL,data='data'):
+                                test.render_func(id='"{}"'.format(test.id()),html='data.html',setting='data.setting')
 
+        scroll_event = []
+        scroll_event.append('')
         with input.on_event_w('change'):
             page.alert('"searching ... "')
             test.draw()

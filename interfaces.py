@@ -463,6 +463,10 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def elif_w(self):
+        pass
+
+    @abc.abstractmethod
     def else_w(self):
         pass
 
