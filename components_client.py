@@ -255,25 +255,13 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
                 else:
                     raise RuntimeError
 
-    def custom_func(self,func_name, params=[], body=[]):
-        func = []
+    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
+        params={'fname':fname,'fparams':fparams,'fbody':fbody}
+        return self.func_call(params)
 
-        params_=''
-        if params:
-            params_ = ' '.join(params)
-
-        if isinstance(body,list):
-            raise Exception('body should be in list type!')
-
-        func.append('function {}({}){\n'.format(func_name, params_))
-        if body:
-            for i,v in enumerate(body):
-                body[i] = '    ' + v
-        func.extend(body)
-        func.append('};\n')
-
-        if self.script().find(func[0]) < 0:
-            self.add_script_list(func, place=WebComponentBootstrap.CUSTOM_FUNC_END)
+    def call_custom_func(self, fname='', fparams={}):
+        params={'fname':fname,'fparams':fparams}
+        return self.func_call(params)
 
 
 class Format(BootstrapInf, FormatInf, ClientBase):
@@ -562,8 +550,10 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         '''
         self.context_call(params={'context':''.join(context_list)})
 
+    '''
     def add_script_list(self, script_list):
         raise NotImplementedError
+    '''
 
     def remove_context(self, cont):
         self._remove_context(cont)
@@ -847,7 +837,52 @@ class WebBtnToolbar(WebComponentBootstrap):
 
 
 class WebBtn(WebComponentBootstrap):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage(test=True) as page:
+            with page.add_child(WebBtn(styles={"border-top-left-radius": "10px"}, test=True)) as btn1:
+                pass
+            with page.add_child(WebBtn(value='Disable button')) as btn2:
+                pass
+            with page.add_child(WebBtn(value='Enable button')) as btn3:
+                pass
+            with page.add_child(WebBtn(value='Test custom function')) as btn4:
+                pass
+
+        # response click event of the button
+        with btn1.on_event_w(event="click"):
+            btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is clicked!' ")
+
+        # response change event of the button
+        with btn1.on_event_w(event='change'):
+            btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is changed!' ")
+            btn1.trigger_event(event='change')  # expect not any alert pop up
+
+        # expect trigger change event, but jquery actually not, fixed in val()
+        btn1.set_js(True)
+        btn1.val('"新测试"')
+        btn1.set_js(False)
+
+        # Expect btn1 is disabled by clicking btn2
+        with btn2.on_event_w('click'):
+            btn1.disable(disable=True)
+
+        # Expect btn1 is enabled by clicking btn3
+        with btn3.on_event_w('click'):
+            btn1.disable(disable=False)
+
+        # Test custom function
+        custom_func = [
+            "alert('custom_func works!');\n",
+        ]
+        btn4.declare_custom_func('test_custom_func', fbody=custom_func)
+        with btn4.on_event_w('click'):
+            btn4.call_custom_func('test_custom_func')
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
 
 class WebBtnDropdown(WebBtn):

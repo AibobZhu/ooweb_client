@@ -503,11 +503,11 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def declare_custom_func(self, func_name='', params=[], body=[]):
+    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
         pass
 
     @abc.abstractmethod
-    def call_custom_func(self, func_name='', params={}):
+    def call_custom_func(self, fname='', fparams={}):
         pass
 
 
