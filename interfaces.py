@@ -162,11 +162,11 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_script(self, scripts):
+    def add_script(self, scripts, indent=True, place=None):
         pass
 
     @abc.abstractmethod
-    def add_script_list(self, script_list):
+    def add_script_list(self, script_list, place=None):
         pass
 
     @abc.abstractmethod
@@ -500,6 +500,14 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def cmds_w(self):
+        pass
+
+    @abc.abstractmethod
+    def declare_custom_func(self, func_name='', params=[], body=[]):
+        pass
+
+    @abc.abstractmethod
+    def call_custom_func(self, func_name='', params={}):
         pass
 
 

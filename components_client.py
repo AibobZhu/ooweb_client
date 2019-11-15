@@ -255,6 +255,26 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
                 else:
                     raise RuntimeError
 
+    def custom_func(self,func_name, params=[], body=[]):
+        func = []
+
+        params_=''
+        if params:
+            params_ = ' '.join(params)
+
+        if isinstance(body,list):
+            raise Exception('body should be in list type!')
+
+        func.append('function {}({}){\n'.format(func_name, params_))
+        if body:
+            for i,v in enumerate(body):
+                body[i] = '    ' + v
+        func.extend(body)
+        func.append('};\n')
+
+        if self.script().find(func[0]) < 0:
+            self.add_script_list(func, place=WebComponentBootstrap.CUSTOM_FUNC_END)
+
 
 class Format(BootstrapInf, FormatInf, ClientBase):
 
@@ -573,12 +593,12 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def scripts(self):
         raise NotImplementedError
 
-    def add_script(self, scripts):
+    def add_script(self, scripts, indent=True):
         '''
         context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
         '''
-        params = {'scripts': scripts}
+        params = {'scripts': scripts,'indent':indent}
         return self.func_call(params)
 
     def add_script_list(self, script_list):
@@ -1822,6 +1842,10 @@ class OOTable(WebTable):
         else:
             return data
 
+    def data(self,filter=''):
+        params={'filter':filter}
+        return self.func_call(params)
+
     def search(self, pattern):
         params = {'pattern': pattern}
         return self.func_call(params)
@@ -2009,3 +2033,37 @@ class LVar(Var):
 
 class GVar(Var):
     pass
+
+
+class OOList(WebComponentBootstrap):
+
+    @contextmanager
+    def append(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(WebBtn(value='test')) as btn1:
+                        pass
+
+        with btn1.on_event_w('click'):
+            with LVar(parent=btn1) as data:
+                with OOList(parent=data) as list_data:
+                    with list_data.append():
+                        btn1.val()
+                    with list_data.append():
+                        btn1.val()
+            btn1.alert("data.join(' ')")
+
+        html = page.render()
+        return render_template_string(html)
