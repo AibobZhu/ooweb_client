@@ -583,21 +583,21 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def scripts(self):
         raise NotImplementedError
 
-    def add_script(self, scripts, indent=True):
+    def add_script(self, scripts, indent=True, place=None):
         '''
         context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
         '''
-        params = {'scripts': scripts,'indent':indent}
+        params = {'scripts': scripts,'indent':indent, "place":place}
         return self.func_call(params)
 
-    def add_script_list(self, script_list):
+    def add_script_list(self, script_list, indent=True, place=None):
         '''
         Add scripts in a list
         :param ls: scripts in list
         :return: self.func_call(params)
         '''
-        params = {'script_list',script_list}
+        params = {'script_list':script_list,'indent':indent, 'place':place}
         return self.func_call(params)
 
     def set_script_indent(self, indent):
@@ -876,9 +876,9 @@ class WebBtn(WebComponentBootstrap):
         custom_func = [
             "alert('custom_func works!');\n",
         ]
-        btn4.declare_custom_func('test_custom_func', fbody=custom_func)
+        btn4.declare_custom_func('test_custom_func', fparams=['id'], fbody=custom_func)
         with btn4.on_event_w('click'):
-            btn4.call_custom_func('test_custom_func')
+            btn4.call_custom_func('test_custom_func', fparams={'id':'"{}"'.format(btn4.id())})
 
         html = page.render()
         print(pprint.pformat(html))
