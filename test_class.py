@@ -51,8 +51,8 @@ class Test(MinXin):
         return '''alert('!@#class_name!@#');\n'''.replace('!@#class_name!@#',self.__class__.__name__)
 
     @classmethod
-    def test_result(cls, methods=['GET']):
-        '''sub class should over'''
+    def test_result(cls):
+        '''sub class should overwr'''
 
         #return 'OK', 201
         raise NotImplementedError

@@ -839,6 +839,16 @@ class WebBtnToolbar(WebComponentBootstrap):
 class WebBtn(WebComponentBootstrap):
 
     @classmethod
+    def on_post(cls):
+        r = super().on_post()
+        print('WebBtn.test_result, got request:{}'.format(r['data']))
+        return jsonify({'status':'success', 'data':'test post_w success!'})
+
+    @classmethod
+    def test_result(cls):
+        return cls.on_post()
+
+    @classmethod
     def test_request(cls, methods=['GET']):
         with WebPage(test=True) as page:
             with page.add_child(WebBtn(styles={"border-top-left-radius": "10px"}, test=True)) as btn1:
@@ -849,6 +859,12 @@ class WebBtn(WebComponentBootstrap):
                 pass
             with page.add_child(WebBtn(value='Test custom function')) as btn4:
                 pass
+            with page.add_child(WebBtn(value='Test post_w function')) as post_btn:
+                with post_btn.on_event_w('click'):
+                    with LVar(parent=post_btn) as post_data:
+                        post_data.add_script('"Test post_w function";\n',indent=False)
+                    with post_data.post_w('/test_WebBtn_result', data=post_data):
+                        post_btn.alert('"Test post_w function success! result: " + data')
 
         # response click event of the button
         with btn1.on_event_w(event="click"):
@@ -883,6 +899,13 @@ class WebBtn(WebComponentBootstrap):
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
+
+
+    @classmethod
+    def on_post(cls):
+        r = super().on_post()
+        print('WebBtn.test_result, get data:{}'.format(r['data']))
+        return jsonify({'status':'success', 'data':'test post_w function success!'})
 
 
 class WebBtnDropdown(WebBtn):
