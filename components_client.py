@@ -1707,7 +1707,7 @@ class WebTable(WebComponentBootstrap):
                 )
             )
 
-        return data,
+        return data
 
     @classmethod
     def get_data(cls):
@@ -1718,12 +1718,13 @@ class WebTable(WebComponentBootstrap):
             if not data:
                 return cls._example_data()
             else:
-                return data,cls.SETTING
+                return data
 
     @classmethod
     def _html(cls):
 
-        data = cls.get_data()[0]
+        data = cls.get_data()
+
         def _head_colspan(head):
             colspan = 0
             sub_max_levels = 0
@@ -1871,7 +1872,7 @@ class WebTable(WebComponentBootstrap):
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as bar:
+                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
 
         html = page.render()
@@ -1884,7 +1885,10 @@ class OOTable(WebTable):
     HTML_URL = '/ootable/ootable_html'
 
     def __init__(self, setting={}, html_url='/ootable/ootable_html', render_func_name='ootable_render', **kwargs):
-        OOTable.SETTING = setting
+        if setting:
+            OOTable.SETTING = setting
+        else:
+            OOTable.SETTING = self._example_setting()
         OOTable.HTML_URL = html_url
         kwargs['html_url'] = html_url
         kwargs['render_func_name'] = render_func_name
@@ -1892,17 +1896,11 @@ class OOTable(WebTable):
         self._html_url = html_url
         self._render_func_name = render_func_name
 
-    @classmethod
-    def get_data(cls):
-        data = super().get_data()
-        if len(data) == 1:
-            return data[0], cls.SETTING
-        else:
-            return data
-
+    '''
     def data(self,filter=''):
         params={'filter':filter}
         return self.func_call(params)
+    '''
 
     def search(self, pattern):
         params = {'pattern': pattern}
@@ -1922,51 +1920,30 @@ class OOTable(WebTable):
         else:
             return cls.SETTING
 
+    '''
     def render_func(self,id='id',html='html',setting='setting'):
         params={'id':id,'html':html,'setting':setting}
         return self.func_call(params)
+    '''
 
     @classmethod
-    def _example_data(cls):
-        table = super()._example_data()[0]
-        if cls.setting():
-            datatable = cls.setting()
-        else:
-            '''
-            datatable = {
-                'scrollY': '500px',
-                'scrollX': True,
-                'scrollCollapse': True,
-                'paging': False,
-                'searching': False,
-                'columnDefs':[
-                    {'orderable': False, 'targets': 1},
-                    {'orderable': False, 'targets': 2},
-                    {'orderable': False, 'targets': 3},
-                    {'orderable': False, 'targets': 6}
-                ],
-                'order':[[5, 'asc']]
-            }
-            '''
-            datatable = {
+    def _example_setting(cls):
+        return {
                 'scrollY': '500px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': True,
                 'searching': True,
+                'destroy':True
             }
-        return table, datatable
 
     @classmethod
     def on_html(cls, methods=['GET','POST']):
-        html_data = cls.get_data()[0]
-        datatable_setting = cls.get_data()[1]
-        datatable_setting['destroy'] = True
         html = ''.join(cls._html())
         if request.method == 'GET':
-            return json.dumps({'html':html, 'setting':datatable_setting})
+            return json.dumps({'html':html, 'setting':cls.setting()})
         elif request.method == 'POST':
-            return jsonify({'data':{'html':html, 'setting':datatable_setting}})
+            return jsonify({'data':{'html':html, 'setting':cls.setting()}})
         else:
             raise NotImplementedError
 
