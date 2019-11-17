@@ -861,7 +861,7 @@ class WebBtn(WebComponentBootstrap):
                 pass
             with page.add_child(WebBtn(value='Test post_w function')) as post_btn:
                 with post_btn.on_event_w('click'):
-                    with LVar(parent=post_btn) as post_data:
+                    with LVar(parent=post_btn, var_name='post_data') as post_data:
                         post_data.add_script('"Test post_w function";\n',indent=False)
                     with post_data.post_w('/test_WebBtn_result', data=post_data):
                         post_btn.alert('"Test post_w function success! result: " + data')
@@ -1961,11 +1961,11 @@ class OOTable(WebTable):
     def on_html(cls, methods=['GET','POST']):
         html_data = cls.get_data()[0]
         datatable_setting = cls.get_data()[1]
+        datatable_setting['destroy'] = True
         html = ''.join(cls._html())
         if request.method == 'GET':
             return json.dumps({'html':html, 'setting':datatable_setting})
         elif request.method == 'POST':
-            datatable_setting['destroy'] = True
             return jsonify({'data':{'html':html, 'setting':datatable_setting}})
         else:
             raise NotImplementedError
@@ -1986,7 +1986,7 @@ class OOTable(WebTable):
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="700px")) as c1:
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
-                        test.render_func()
+                        #test.render_func()
                         customer_search = []
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
                         customer_search.append('if (! filter || data[0] === filter){\n')
@@ -2003,7 +2003,14 @@ class OOTable(WebTable):
                             with LVar(parent=render_btn,var_name='data') as data:
                                 render_btn.val()
                             with test.post_w(url=cls.HTML_URL,data='data'):
-                                test.render_func(id='"{}"'.format(test.id()),html='data.html',setting='data.setting')
+                                test.call_custom_func(
+                                    fname=test._render_func_name,
+                                    fparams={
+                                        'id':'"{}"'.format(test.id()),
+                                        'html':'data.html',
+                                        'setting':'data.setting'
+                                    }
+                                )
 
         scroll_event = []
         scroll_event.append('')
