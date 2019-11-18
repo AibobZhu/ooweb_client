@@ -18,6 +18,18 @@
     }
 }(function($, undefined){
 
+    function ISO8601_week_no(dt){
+         var tdt = new Date(dt.valueOf());
+         var dayn = (dt.getDay() + 6) % 7;
+         tdt.setDate(tdt.getDate() - dayn + 3);
+         var firstThursday = tdt.valueOf();
+         tdt.setMonth(0, 1);
+         if (tdt.getDay() !== 4){
+             tdt.setMonth(0, 1 + ((4 - tdt.getDay()) + 7) % 7);
+         }
+         return 1 + Math.ceil((firstThursday - tdt) / 604800000);
+    }
+
 	function UTCDate(){
 		return new Date(Date.UTC.apply(Date, arguments));
 	}
@@ -375,15 +387,16 @@
 			var defaultWeekPicker = {
 				separator: ' - ',
 				formatWeek: function(startWeekDate, options, $datepicker) {
-					var endWeekDate = new Date(startWeekDate.getTime() + 6 * 864e5);
-					return DPGlobal.formatDate(startWeekDate, options.format, options.language) + options.weekPicker.separator
-						+ DPGlobal.formatDate(endWeekDate, options.format, options.language);
+					return DPGlobal.formatDate(startWeekDate, options.format, options.language)
+					/*var endWeekDate = new Date(startWeekDate.getTime() + 6 * 864e5);
+					var start = DPGlobal.formatDate(startWeekDate, options.format, options.language);
+					var end   = DPGlobal.formatDate(endWeekDate, options.format, options.language)
+					return start + options.weekPicker.separator + end;*/
 				},
 				getWeekStart: function(weekString, options, $datepicker) {
 					return DPGlobal.parseDate(weekString.split(options.weekPicker.separator)[0], options.format, options.language);
 				}
 			};
-
 			if (o.weekPicker) {
 				if (typeof o.weekPicker != 'object'){
 				    // o.weekPicker == true
@@ -399,7 +412,7 @@
 			        //o.weekPicker == false
 			        o.weekPickerBak = defaultWeekPicker;
 			    }
-			};
+			}
 
 		},
 		
@@ -794,10 +807,13 @@
 
 		getFormattedDate: function(format){
 			if (this.o.weekPicker) {
+                /*
 				var dates = [];
 				for (var i=6; i < this.dates.length; i+=7)
 				    dates.push(this.o.weekPicker.formatWeek(this.dates[i], this.o, this.element));
 				return dates.join(this.o.multidateSeparator);
+                */
+				return this.o.weekPicker.formatWeek(this.viewDate, this.o, this.element)
 			} else {
 				if (format === undefined)
 				    format = this.o.format;
@@ -944,7 +960,7 @@
 
 		_allow_update: true,
 		update: function(){
-      //console.log("## update")
+            //console.log("## update")
 			if (!this._allow_update)
 				return this;
 
@@ -1366,8 +1382,8 @@
 			if (this.o.beforeShowMonth !== $.noop){
 				var that = this;
 				$.each(months, function(i, month){
-          var moDate = new Date(year, i, 1);
-          var before = that.o.beforeShowMonth(moDate);
+                    var moDate = new Date(year, i, 1);
+                    var before = that.o.beforeShowMonth(moDate);
 					if (before === undefined)
 						before = {};
 					else if (typeof(before) === 'boolean')
@@ -1629,8 +1645,8 @@
 				$(this._focused_from).focus();
 			}
 			delete this._focused_from;
-      var testdate = $(".datepicker");
-      //console.log("!!!clicked ", testdate);
+            var testdate = $(".datepicker");
+            //console.log("!!!clicked ", testdate);
 		},
 
 		_getSelectedDate: function($target, oChangePart) {
@@ -1986,7 +2002,6 @@
 			});
 		},
 		dateUpdated: function(e){
-      //console.log("!!!dateUpdated")
 			// `this.updating` is a workaround for preventing infinite recursion
 			// between `changeDate` triggering and `setUTCDate` calling.  Until
 			// there is a better mechanism.
@@ -2064,7 +2079,6 @@
 	var old = $.fn.datepicker;
 
 	var datepickerPlugin = function(option, cb){
-        console.log("==>datepickerPlugin, option,cb:",option,cb)
 		var args = Array.apply(null, arguments);
 		args.shift();
 		var internal_return;
