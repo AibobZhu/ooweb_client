@@ -824,7 +824,7 @@ class WebBtnToolbar(WebComponentBootstrap):
                 with test.add_child(OOGeneralSelector(test=True)) as sel1:
                     pass
                 with test.add_child(WebBtnGroup(test=True)) as btng1:
-                    with btng1.add_child(OODatePicker(test=True)) as dp1:
+                    with btng1.add_child(OODatePickerRange(test=True)) as dp1:
                         pass
         html = page.render()
         print(pprint.pformat(html))
@@ -973,6 +973,7 @@ class WebBtnDropdown(WebBtn):
         print(pprint.pformat(html))
         return render_template_string(html)
 
+
 class WebFormGroup(WebComponentBootstrap):
     pass
 
@@ -1012,8 +1013,41 @@ class WebDiv(WebComponentBootstrap):
 class WebCheckbox(WebSpan):
     pass
 
+class OODatePickerSimple(WebInputGroup):
 
-class OODatePicker(WebInputGroup):
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
+
+        # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](test=True)) as test:
+                pass
+            with page.add_child(WebBtn(value='周测试')) as week_btn:
+                pass
+            with page.add_child(WebBtn(value='月测试')) as month_btn:
+                pass
+            with page.add_child(WebBtn(value='日测试')) as day_btn:
+                pass
+
+        with test.on_event_w(event='change'):
+            with LVar(parent=test, var_name='date_data') as data:
+                test.val()
+            test.add_script('console.log("OODatePicker value: ", date_data);')
+
+        with week_btn.on_event_w(event='click'):
+            test.val("{'select':'周', 'date': new Date}")
+        with month_btn.on_event_w(event='click'):
+            test.val("{'select':'月', 'date': new Date}")
+        with day_btn.on_event_w(event='click'):
+            test.val("{'select':'日', 'date': new Date}")
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+
+
+class OODatePickerRange(OODatePickerSimple):
     pass
     '''
     @classmethod
@@ -1036,6 +1070,7 @@ class OODatePicker(WebInputGroup):
 
         return jsonify({'status': 'success', 'data': data})
     '''
+
 
 class WebSvg(WebComponentBootstrap):
     pass
