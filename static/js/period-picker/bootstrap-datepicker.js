@@ -773,10 +773,24 @@
 			}
 		},
 		setDates: function(){
+
+            /*
+		    let viewDate = null;
+		    if(this.o.weekPicker){
+		        //when set dates under week mode,  use viewDate instead of the passed date, the viewDate should have been assigned previously
+		       if(arguments[0] != null && arguments[0] != ""){
+		            arguments[0] = this.viewDate;
+		            viewDate = this.viewDate;
+		        }
+		    }*/
 			var args = $.isArray(arguments[0]) ? arguments[0] : arguments;
 			this.update.apply(this, args);
 			this._trigger('changeDate');
 			this.setValue();
+			/*
+			if(viewDate){
+			    this.viewDate = viewDate;
+			}*/
 			return this;
 		},
 
@@ -813,7 +827,22 @@
 				    dates.push(this.o.weekPicker.formatWeek(this.dates[i], this.o, this.element));
 				return dates.join(this.o.multidateSeparator);
                 */
-				return this.o.weekPicker.formatWeek(this.viewDate, this.o, this.element)
+                if(this.dates == null || this.dates == ""){
+                    return "";
+                }
+                let week_str = this.o.weekPicker.formatWeek(this.viewDate, this.o, this.element);
+                if(this.o.weekPicker && week_str != "" && week_str != null){
+                    if(this.viewDate.getDay() == 0){
+                        //fix the issue about jsSimpleFormat threat sunday of the first day of a week, it causes the weeknumber greater 1 then the real
+                        let week1 = week_str.split('第');
+                        let week2 = parseInt(week1[week1.length-1].split("周")[0])
+                        if(week2 > 1){
+                            week = week2-1
+                            week_str = week1[0] + "第" + week.toString() + "周"
+                        }
+                    }
+                }
+				return week_str;
 			} else {
 				if (format === undefined)
 				    format = this.o.format;
@@ -992,13 +1021,21 @@
 			}
 
 			dates = $.map(dates, $.proxy(function(date){
-				var date = DPGlobal.parseDate(date, this.o.format, this.o.language, this.o.assumeNearbyYear);
-				if (!date) return null;
-				if (this._time) {
-					this._time = [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()];
-					date = UTCDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+
+			    //Fix issue about first day of week, if set to monday, should return monday.
+			    let _date = null;
+			    if(this.o.weekPicker && this.viewDate && dates != "" && dates != null){
+			        _date = this.viewDate;
+			    }else{
+				    _date = DPGlobal.parseDate(date, this.o.format, this.o.language, this.o.assumeNearbyYear);
 				}
-				return this.o.weekPicker ? DPGlobal.getWeekStart(date, this.o.weekStart) : date;
+				if (!_date) return null;
+				if (this._time) {
+					this._time = [_date.getUTCHours(), _date.getUTCMinutes(), _date.getUTCSeconds()];
+					_date = UTCDate(_date.getUTCFullYear(), _date.getUTCMonth(), _date.getUTCDate());
+				}
+				ret =  this.o.weekPicker ? DPGlobal.getWeekStart(_date, this.o.weekStart) : _date;
+				return ret;
 			}, this));
 			dates = $.grep(dates, $.proxy(function(date){
 				return (
@@ -1013,15 +1050,19 @@
 			}
 			this.dates.replace(dates);
 
-			if (this.dates.length)
-				this.viewDate = new Date(this.dates.get(-1));
-			else if (this.viewDate < this.o.startDate)
-				this.viewDate = new Date(this.o.startDate);
-			else if (this.viewDate > this.o.endDate)
-				this.viewDate = new Date(this.o.endDate);
-			else
-				this.viewDate = this.o.defaultViewDate;
-
+            if (this.o.weekPicker && this.viewDate != null && this.viewDate != ""){
+                ; //this.viewDate should have been refreshed before setValue, if viewDate is not null, should is the assignment from another OODatePicker object
+                ;//so needn't refresh viewDate
+            }else{
+                if (this.dates.length)
+                    this.viewDate = new Date(this.dates.get(-1));
+                else if (this.viewDate < this.o.startDate)
+                    this.viewDate = new Date(this.o.startDate);
+                else if (this.viewDate > this.o.endDate)
+                    this.viewDate = new Date(this.o.endDate);
+                else
+                    this.viewDate = this.o.defaultViewDate;
+            }
 			if (fromArgs){
 				// setting date by clicking
 				this.setValue();
@@ -1950,15 +1991,15 @@
 
 		showMode: function(dir){
       //console.log("##showModel this:",this)
-			if (dir){
-				this.viewMode = Math.max(this.o.minViewMode, Math.min(this.o.maxViewMode, this.viewMode + dir));
-			}
-			this.picker
-				.children('div')
-				.hide()
-				.filter('.datepicker-' + DPGlobal.modes[this.viewMode].clsName)
-					.show();
-			this.updateNavArrows();
+        if (dir){
+            this.viewMode = Math.max(this.o.minViewMode, Math.min(this.o.maxViewMode, this.viewMode + dir));
+        }
+        this.picker
+            .children('div')
+            .hide()
+            .filter('.datepicker-' + DPGlobal.modes[this.viewMode].clsName)
+                .show();
+        this.updateNavArrows();
       //console.log("##this.viewModel:",this.viewMode)
       //console.log("##class:",'.datepicker-' + DPGlobal.modes[this.viewMode].clsName)
 		}
@@ -2115,7 +2156,7 @@
 			internal_return instanceof Datepicker ||
 			internal_return instanceof DateRangePicker
 		)
-			return this;
+		return this;
 
 		if (this.length > 1)
 			throw new Error('Using only allowed for the collection of a single element (' + option + ' function)');

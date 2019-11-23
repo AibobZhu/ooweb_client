@@ -1017,11 +1017,13 @@ class OODatePickerSimple(WebInputGroup):
 
     @classmethod
     def test_request(cls, methods=['GET']):
-        '''Create a testing page containing the component which is being tested'''
-
-        # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+         # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         with WebPage() as page:
-            with page.add_child(globals()[cls.__name__](test=True)) as test:
+            with page.add_child(globals()[cls.__name__]()) as test1:
+                pass
+            with page.add_child(globals()[cls.__name__]()) as test2:
+                pass
+            with page.add_child(WebBr()) as br:
                 pass
             with page.add_child(WebBtn(value='周测试')) as week_btn:
                 pass
@@ -1030,17 +1032,28 @@ class OODatePickerSimple(WebInputGroup):
             with page.add_child(WebBtn(value='日测试')) as day_btn:
                 pass
 
-        with test.on_event_w(event='change'):
-            with LVar(parent=test, var_name='date_data') as data:
-                test.val()
-            test.add_script('console.log("OODatePicker value: ", date_data);')
+        with test1.on_event_w(event='change'):
+            with LVar(parent=test1, var_name='date_data') as data:
+                test1.val()
+            test1.alert("' Test1 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            test2.val("date_data")
+
+        with test2.on_event_w(event='change'):
+            with LVar(parent=test1, var_name='date_data') as data:
+                test2.val()
+            test2.alert("' Test2 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            test1.val("date_data")
 
         with week_btn.on_event_w(event='click'):
-            test.val("{'select':'周', 'date': new Date}")
+            test1.val("{'select':'周', 'date': new Date}")
+
         with month_btn.on_event_w(event='click'):
-            test.val("{'select':'月', 'date': new Date}")
+            test1.val("{'select':'月', 'date': new Date}")
+
         with day_btn.on_event_w(event='click'):
-            test.val("{'select':'日', 'date': new Date}")
+            test1.val("{'select':'日', 'date': new Date}")
+
+
 
         html = page.render()
         print(pprint.pformat(html))
@@ -1048,28 +1061,62 @@ class OODatePickerSimple(WebInputGroup):
 
 
 class OODatePickerRange(OODatePickerSimple):
-    pass
-    '''
     @classmethod
-    def on_post(cls):
-        r = super().on_post()
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component which is being tested'''
 
-        # just for test
-        select_data = r['data']
-        data = cls.default_data()
-        for index, btn in enumerate(data):
-            if index < len(select_data):
-                sbtn = select_data[index]
-                if sbtn['select']:
-                    btn['select'] = sbtn['select']
-            elif index == len(select_data):
+        #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        with WebPage() as page:
+            with page.add_child(globals()[cls.__name__](test=True)) as test1:
                 pass
-            else:
-                btn['options'].call_clear()
-        # test end
+            with page.add_child(globals()[cls.__name__](test=True)) as test2:
+                pass
 
-        return jsonify({'status': 'success', 'data': data})
-    '''
+        #process change event of OODatePicker test1, pops up alerts to show which widget triggered the change event
+        # keep OODatePicker test2 the same
+
+        with test1.on_event_w(event='change'):
+            with LVar(parent=test1, var_name="test1_data") as test1_data:
+                test1.val()
+            test2.val(value='test1_data')
+
+        with test2.on_event_w(event='change'):
+            with LVar(parent=test2, var_name='test2_data') as test2_data:
+                test2.val()
+            test1.val(value='test2_data')
+
+        #trigger change event by programming, expect an alert of change event poping up
+        #test1.trigger_event(event='change')
+
+        # Add the buttons to set values into datepicker 1 and expect poping up an alert of change event
+        with page.add_child(WebBtn(value='测试:周清除')) as test_btn_week:
+            pass
+        with page.add_child(WebBtn(value="测试:月清除")) as test_btn_month:
+            pass
+        with page.add_child(WebBtn(value='测试:日清除')) as test_btn_day:
+            pass
+        with page.add_child(WebBtn(value='Disable Test1')) as disable_test1:
+            pass
+        with page.add_child(WebBtn(value='Enable Test1')) as enable_test1:
+            pass
+
+        # set value into test1
+        with test_btn_week.on_event_w(event="click"):
+            test1.val("{'select':'周', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'end_viewDate': new Date}")
+        with test_btn_month.on_event_w(event="click"):
+            test1.val("{'select':'月', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
+        with test_btn_day.on_event_w(event="click"):
+            test1.val("{'select':'日', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
+
+        #disable/enable datepicker test1
+        with disable_test1.on_event_w(event='click'):
+            test1.disable(True)
+        with enable_test1.on_event_w('click'):
+            test1.disable(False)
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
 
 class WebSvg(WebComponentBootstrap):
