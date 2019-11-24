@@ -537,3 +537,16 @@ class ClientInf(MinXin, metaclass=abc.ABCMeta):
     def _get_objcall_context(self, func, caller_id=None, parent_id=None, params=None, sub_context=[]):
         pass
 
+
+class ListInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def append(self):
+        pass
+
+
+class DictInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def update(self, dict):
+        pass

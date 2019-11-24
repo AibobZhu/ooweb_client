@@ -1015,14 +1015,23 @@ class WebCheckbox(WebSpan):
 
 class OODatePickerSimple(WebInputGroup):
 
+    def __init__(self, value='day', views=['day','month','week'], **kwargs):
+        kwargs['value'] = value
+        kwargs['views'] = views
+        super().__init__(**kwargs)
+
+    def disable(self, btn_only=False, disable=True):
+        params={'btn_only':btn_only, 'disable':disable}
+        self.func_call(params)
+
     @classmethod
     def test_request(cls, methods=['GET']):
          # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         with WebPage() as page:
-            with page.add_child(globals()[cls.__name__]()) as test1:
-                pass
-            with page.add_child(globals()[cls.__name__]()) as test2:
-                pass
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
+                test1.disable(option='btn', disable=True)
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test2:
+                test2.disable(option='btn', disable=True)
             with page.add_child(WebBr()) as br:
                 pass
             with page.add_child(WebBtn(value='周测试')) as week_btn:
@@ -1061,6 +1070,7 @@ class OODatePickerSimple(WebInputGroup):
 
 
 class OODatePickerRange(OODatePickerSimple):
+
     @classmethod
     def test_request(cls, methods=['GET']):
         '''Create a testing page containing the component which is being tested'''
@@ -1099,6 +1109,10 @@ class OODatePickerRange(OODatePickerSimple):
             pass
         with page.add_child(WebBtn(value='Enable Test1')) as enable_test1:
             pass
+        with page.add_child(WebBtn(value='Disable test1 btn')) as disable_test1_btn:
+            pass
+        with page.add_child(WebBtn(value='Enable Test1 btn')) as enable_test1_btn:
+            pass
 
         # set value into test1
         with test_btn_week.on_event_w(event="click"):
@@ -1110,9 +1124,13 @@ class OODatePickerRange(OODatePickerSimple):
 
         #disable/enable datepicker test1
         with disable_test1.on_event_w(event='click'):
-            test1.disable(True)
+            test1.disable(disable=True)
         with enable_test1.on_event_w('click'):
-            test1.disable(False)
+            test1.disable(disable=False)
+        with disable_test1_btn.on_event_w(event='click'):
+            test1.disable(btn_only=True,disable=True)
+        with enable_test1_btn.on_event_w(event='click'):
+            test1.disable(btn_only=True, disable=False)
 
         html = page.render()
         print(pprint.pformat(html))
@@ -2159,7 +2177,7 @@ class GVar(Var):
     pass
 
 
-class OOList(WebComponentBootstrap):
+class OOList(ListInf, WebComponentBootstrap):
 
     @contextmanager
     def append(self):
@@ -2190,4 +2208,43 @@ class OOList(WebComponentBootstrap):
             btn1.alert("data.join(' ')")
 
         html = page.render()
+        return render_template_string(html)
+
+
+class OODict(DictInf, WebComponentBootstrap):
+
+    @contextmanager
+    def update(self, key):
+        params={'key':key}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage(test=True) as page:
+            with page.add_child(WebBtn(value='Test dict')) as btn1:
+                pass
+            with page.add_child(WebBtn(value='Test dict update')) as btn2:
+                pass
+
+        with btn1.on_event_w('click'):
+            with OODict(parent=page, dict={'key1': 'val1', 'key2': 'val2'}, var_name='test_dict') as dict:
+                pass
+            btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+
+        with btn2.on_event_w("click"):
+            with OODict(parent=page, dict={'key1': 'val1', 'key2': 'val2'}, var_name='test_dict_update') as dict_update:
+                pass
+            with dict_update.update(key='key2'):
+                dict_update.add_script('"val_updated"', indent=False)
+            btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+
+
+        html = page.render()
+        print(pprint.pformat(html))
         return render_template_string(html)
