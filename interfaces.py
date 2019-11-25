@@ -356,6 +356,18 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def _example_data(cls):
         pass
 
+    @abc.abstractmethod
+    def false(self):
+        pass
+
+    @abc.abstractmethod
+    def true(self):
+        pass
+
+    @abc.abstractmethod
+    def null(self):
+        pass
+
 
 class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
 
@@ -549,4 +561,14 @@ class DictInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update(self, dict):
+        pass
+
+class VarInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def equal(self):
+        pass
+
+    @abc.abstractmethod
+    def assign_w(self):
         pass

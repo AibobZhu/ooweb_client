@@ -109,6 +109,17 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {'right': right, 'left':left}
         self.func_call(params=params)
 
+    @contextmanager
+    def assign_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
     def for_w(self):
         raise NotImplementedError
 
@@ -261,6 +272,21 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
 
     def call_custom_func(self, fname='', fparams={}):
         params={'fname':fname,'fparams':fparams}
+        return self.func_call(params)
+
+    @property
+    def true(self):
+        params={}
+        return self.func_call(params)
+
+    @property
+    def false(self):
+        params = {}
+        return self.func_call(params)
+
+    @property
+    def null(self):
+        params = {}
         return self.func_call(params)
 
 
@@ -784,6 +810,14 @@ class WebHead1(WebComponentBootstrap):
     pass
 
 
+class WebHead2(WebComponentBootstrap):
+    pass
+
+
+class WebHead3(WebComponentBootstrap):
+    pass
+
+
 class WebField(WebComponentBootstrap):
     pass
 
@@ -1013,14 +1047,16 @@ class WebDiv(WebComponentBootstrap):
 class WebCheckbox(WebSpan):
     pass
 
+
 class OODatePickerSimple(WebInputGroup):
 
-    def __init__(self, value='day', views=['day','month','week'], **kwargs):
+    def __init__(self, value='day', views=['day','month','week'], place_holders=('开始', '结束'),**kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
+        kwargs['place_holders'] = place_holders
         super().__init__(**kwargs)
 
-    def disable(self, btn_only=False, disable=True):
+    def disable(self, disable, btn_only=False):
         params={'btn_only':btn_only, 'disable':disable}
         self.func_call(params)
 
@@ -1029,9 +1065,13 @@ class OODatePickerSimple(WebInputGroup):
          # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         with WebPage() as page:
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
-                test1.disable(option='btn', disable=True)
+                test1.set_js(True)
+                test1.disable(btn_only=True, disable=True)
+                test1.set_js(False)
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test2:
-                test2.disable(option='btn', disable=True)
+                test1.set_js(True)
+                test2.disable(btn_only=True, disable=True)
+                test1.set_js(False)
             with page.add_child(WebBr()) as br:
                 pass
             with page.add_child(WebBtn(value='周测试')) as week_btn:
@@ -1062,7 +1102,28 @@ class OODatePickerSimple(WebInputGroup):
         with day_btn.on_event_w(event='click'):
             test1.val("{'select':'日', 'date': new Date}")
 
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
+
+class OODatePickerIcon(WebInputGroup):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=["md8"],offset=['mdo2'])) as c1:
+                    with page.add_child(WebHead1(value="Test OODatePickerIcon with week view")):
+                        pass
+            with page.add_child(WebBr()) as br1:
+                pass
+            with page.add_child(WebBr()) as br2:
+                pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=["md8"], offset=['mdo2'])) as c2:
+                    with page.add_child(globals()[cls.__name__](value='week')) as test1:
+                        pass
 
         html = page.render()
         print(pprint.pformat(html))
@@ -2174,7 +2235,23 @@ class LVar(Var):
 
 
 class GVar(Var):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        with WebPage(test=True) as page:
+            with page.add_child(WebHead1(value='Test GVar and js values')) as head1:
+                pass
+            with page.add_child(WebHead3(value='var test = false;')) as head3:
+                pass
+            with page.add_child(GVar(parent=page, var_name='test')) as gv:
+                gv.false
+            with page.add_child(WebBtn(value='Test GVar assign')) as btn:
+                pass
+
+        with btn.on_event_w('click'):
+            with gv.assign_w():
+                gv.true
+            btn.alert('"GVar value should be true, real:"+test')
 
 
 class OOList(ListInf, WebComponentBootstrap):
