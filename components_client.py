@@ -524,8 +524,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         return self.__class__.__name__
 
     def url(self, url=None):
-        raise NotImplementedError
-    
+        params = {'url':url}
+        return self.func_call(params)
+
     def url_for(self, context):
         pass
 
@@ -1772,8 +1773,13 @@ class WebTable(WebComponentBootstrap):
 
     MODEL = None
     QUERY = None
+    HTML_URL = '/webtable/webtable_html'
 
-    def __init__(self, model=None, query=None, head_classes=[], body_classes=[], head_styles=None, body_styles=None,**kwargs):
+    def __init__(self, model=None, query=None, head_classes=[], body_classes=[], head_styles=None, body_styles=None, url=None, **kwargs):
+        if not url:
+            kwargs['url'] = self.HTML_URL
+        else:
+            kwargs['url'] = url
         super().__init__(**kwargs)
         WebTable._head_styles = head_styles
         WebTable._body_styles = body_styles
@@ -2055,7 +2061,7 @@ class WebTable(WebComponentBootstrap):
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
-        app.add_url_rule('/webtable_html', view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
+        app.add_url_rule(cls.HTML_URL, view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2079,15 +2085,17 @@ class OOTable(WebTable):
     RENDER_FUNC_NAME = 'ootable_rander'
     RENDER_FUNC_ARGS = ['id', 'html', 'setting']
 
-    def __init__(self, setting={}, html_url='/ootable/ootable_html', **kwargs):
+    def __init__(self, setting={}, **kwargs):
         if setting:
             OOTable.SETTING = setting
         else:
             OOTable.SETTING = self._example_setting()
+        '''
         OOTable.HTML_URL = html_url
         kwargs['html_url'] = html_url
+        '''
         super().__init__(**kwargs)
-        self._html_url = html_url
+        #self._html_url = html_url
 
     '''
     def data(self,filter=''):
@@ -2140,10 +2148,12 @@ class OOTable(WebTable):
         else:
             raise NotImplementedError
 
+    '''
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
         app.add_url_rule(cls.HTML_URL, view_func=cls.on_post, methods=['GET','POST'])
+    '''
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2165,22 +2175,24 @@ class OOTable(WebTable):
                         customer_search.append('    return false;\n')
                         customer_search.append('};\n')
                         test.customer_search(customer_search)
+
             with page.add_child(WebRow()) as r3:
                 with r3.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r3:
                     with r3.add_child(WebBtn(value='render')) as render_btn:
                         with render_btn.on_event_w('click'):
                             render_btn.alert('"rendering again"')
+                            '''
                             with LVar(parent=render_btn,var_name='data') as data:
-                                render_btn.val()
-                            with test.post_w(url=cls.HTML_URL,data='data'):
+                                data.add_script('{"data":"rander"}')
+                            with test.post_w(url=test.url(),data='data'):
                                 test.call_custom_func(
                                     fname=test.RENDER_FUNC_NAME,
                                     fparams={
-                                        'id':'"{}"'.format(test.id()),
-                                        'html':'data.html',
-                                        'setting':'data.setting'
+                                        'id': '"{}"'.format(test.id()),
+                                        'data': 'data',
                                     }
                                 )
+                            '''
 
         scroll_event = []
         scroll_event.append('')
@@ -2203,6 +2215,8 @@ class OOTagGroup(WebTable):
     }
 
     COL_NUM = 3
+
+    HTML_URL = '/ootaggroup/ootaggroup_html'
 
     def __init__(self, value=[], col_num = 0, **kwargs):
         super().__init__(**kwargs)
@@ -2239,7 +2253,7 @@ class OOTagGroup(WebTable):
 
     @classmethod
     def test_request(cls, methods=['GET']):
-        #cls.add_url_rule(app=current_app)
+        cls.add_url_rule(app=current_app)
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
