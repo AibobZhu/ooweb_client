@@ -312,8 +312,8 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def post_w(self, url, data, success):
         pass
 
-    @staticmethod
-    def on_post():
+    @classmethod
+    def on_post(cls):
         raise NotImplementedError
     
     @abc.abstractmethod

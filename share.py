@@ -107,3 +107,29 @@ def randDatetimeRange(delta_days_range=(0,30)):
     start = today - relativedelta(days=before_days)
     end = today + relativedelta(days=after_days)
     return start.strftime(fmt), end.strftime(fmt)
+
+def day_2_week_number(self, date, first_day=0):
+    import numpy as np
+    calendar.setfirstweek(first_day) # first_day 0 for monday, 6 for sunday
+    year = date.year
+    month = date.month
+    day = date.day
+    x = np.array(calendar.monthcalendar(year, month))
+    week_of_month = np.where(x == day)[0][0] + 1
+    return week_of_month
+
+def week_2_dates(week_str, first_day=0):
+    import numpy as np
+    def _week_end(week):
+        for i in range(0, week.__len__())[::-1]:
+            if week[i] != 0:
+                return week[i]
+
+    calendar.setfirstweek(first_day) # 0 for monday, 6 for sunday
+    year = int(week_str.split('年')[0])
+    month = int(week_str.split('月')[0].split(' ')[-1])
+    week_num = int(week_str.split('周')[0].split('第')[-1])
+
+    weeks = np.array(calendar.monthcalendar(year,month))
+    week = weeks[week_num]
+    return (datetime.datetime(year,month,week[0]),datetime.datetime(year,month,_week_end(week)))

@@ -726,10 +726,20 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
     @classmethod
     def get_data(cls, model=None, query=None):
-        if not model or not query:
+
+        if model:
+            _model = model
+        else:
+            _model = cls.MODEL
+        if query:
+            _query = query
+        else:
+            _query = cls.QUERY
+
+        if not _model or not _query:
             return cls._example_data()
         else:
-            data = model.query(query)
+            data = _model.query(**_query)
             if not data:
                 return cls._example_data()
             else:
@@ -1870,6 +1880,7 @@ class WebTable(WebComponentBootstrap):
 
         return data
 
+    '''
     @classmethod
     def get_data(cls):
         if not cls.MODEL or not cls.QUERY:
@@ -1880,11 +1891,15 @@ class WebTable(WebComponentBootstrap):
                 return cls._example_data()
             else:
                 return data
+    '''
 
     @classmethod
-    def _html(cls):
+    def _html(cls, data=None):
 
-        data = cls.get_data()
+        if not data:
+            _data = cls.get_data(cls.MODEL, cls.QUERY)
+        else:
+            _data = data
 
         def _head_colspan(head):
             colspan = 0
@@ -1994,13 +2009,13 @@ class WebTable(WebComponentBootstrap):
 
         html = []
         columns = []
-        if 'schema' in data and data['schema']:
+        if 'schema' in _data and _data['schema']:
             html.append('<thead>\n')
-            columns = _head(html, data['schema'])
+            columns = _head(html, _data['schema'])
             html.append('</thead>\n')
 
         html.append('<tbody class="{}" style="{}">\n'.format(WebTable._body_classes_str(), WebTable._body_styles_str()))
-        for tr in data['records']:
+        for tr in _data['records']:
             html.append('    <tr>\n')
             for i,d in enumerate(tr):
                 td = ''
@@ -2099,19 +2114,19 @@ class OOTable(WebTable):
             }
 
     @classmethod
-    def on_html(cls, methods=['GET','POST']):
+    def on_post(cls, methods=['GET','POST']):
         html = ''.join(cls._html())
         if request.method == 'GET':
-            return json.dumps({'html':html, 'setting':cls.setting()})
+            return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST':
-            return jsonify({'data':{'html':html, 'setting':cls.setting()}})
+            return jsonify({'data': {'html': html, 'setting': cls.setting()}})
         else:
             raise NotImplementedError
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
-        app.add_url_rule(cls.HTML_URL, view_func=cls.on_html, methods=['GET','POST'])
+        app.add_url_rule(cls.HTML_URL, view_func=cls.on_post, methods=['GET','POST'])
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2203,7 +2218,7 @@ class OOTagGroup(WebTable):
                 td.append({'data': wc_content['content'], 'attr': 'nowrap'})
                 del locals()['wc'+str(i)]
             data['records'].append(td)
-        return data,
+        return data
 
     @classmethod
     def test_request(cls, methods=['GET']):
