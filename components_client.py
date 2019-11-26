@@ -908,7 +908,7 @@ class WebBtn(WebComponentBootstrap):
                 with post_btn.on_event_w('click'):
                     with LVar(parent=post_btn, var_name='post_data') as post_data:
                         post_data.add_script('"Test post_w function";\n',indent=False)
-                    with post_data.post_w('/test_WebBtn_result', data=post_data):
+                    with post_data.post_w('"/test_WebBtn_result"', data=post_data):
                         post_btn.alert('"Test post_w function success! result: " + data')
 
         # response click event of the button
@@ -2061,7 +2061,7 @@ class WebTable(WebComponentBootstrap):
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(app, extend)
-        app.add_url_rule(cls.HTML_URL, view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
+        app.add_url_rule(rule=cls.HTML_URL, endpoint='{}.on_post'.format(cls.__name__), view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2181,10 +2181,11 @@ class OOTable(WebTable):
                     with r3.add_child(WebBtn(value='render')) as render_btn:
                         with render_btn.on_event_w('click'):
                             render_btn.alert('"rendering again"')
-                            '''
                             with LVar(parent=render_btn,var_name='data') as data:
-                                data.add_script('{"data":"rander"}')
-                            with test.post_w(url=test.url(),data='data'):
+                                data.add_script('{"data":"rander"}', indent=False)
+                            with LVar(parent=render_btn, var_name='url') as url_data:
+                                test.url()
+                            with test.post_w(url='url',data='data'):
                                 test.call_custom_func(
                                     fname=test.RENDER_FUNC_NAME,
                                     fparams={
@@ -2192,7 +2193,7 @@ class OOTable(WebTable):
                                         'data': 'data',
                                     }
                                 )
-                            '''
+
 
         scroll_event = []
         scroll_event.append('')
