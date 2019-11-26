@@ -2038,13 +2038,29 @@ class WebTable(WebComponentBootstrap):
 
         return html
 
+    @classmethod
+    def on_post(cls):
+        ret = Action.on_post()
+        _request = ret['data']
+        _data = {'html':''}
+        if _request['data'] == 'render':
+            _data['html'] = cls._html() #TODO: add current user get data into _html(data=current_user.get_data())
+        return jsonify({'status':'success','data':_data})
+
     def __enter__(self):
         ret = super().__enter__()
-        self.add_context_list(self._html())
+        #self.add_context_list(self._html())
         return self
 
     @classmethod
+    def add_url_rule(cls, app, extend=[]):
+        super().add_url_rule(app, extend)
+        app.add_url_rule('/webtable_html', view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
+
+    @classmethod
     def test_request(cls, methods=['GET']):
+
+        cls.add_url_rule(current_app)
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
