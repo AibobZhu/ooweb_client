@@ -2060,17 +2060,18 @@ class OOTable(WebTable):
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
-    def __init__(self, setting={}, html_url='/ootable/ootable_html', render_func_name='ootable_render', **kwargs):
+    RENDER_FUNC_NAME = 'ootable_rander'
+    RENDER_FUNC_ARGS = ['id', 'html', 'setting']
+
+    def __init__(self, setting={}, html_url='/ootable/ootable_html', **kwargs):
         if setting:
             OOTable.SETTING = setting
         else:
             OOTable.SETTING = self._example_setting()
         OOTable.HTML_URL = html_url
         kwargs['html_url'] = html_url
-        kwargs['render_func_name'] = render_func_name
         super().__init__(**kwargs)
         self._html_url = html_url
-        self._render_func_name = render_func_name
 
     '''
     def data(self,filter=''):
@@ -2157,7 +2158,7 @@ class OOTable(WebTable):
                                 render_btn.val()
                             with test.post_w(url=cls.HTML_URL,data='data'):
                                 test.call_custom_func(
-                                    fname=test._render_func_name,
+                                    fname=test.RENDER_FUNC_NAME,
                                     fparams={
                                         'id':'"{}"'.format(test.id()),
                                         'html':'data.html',
