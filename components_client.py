@@ -1768,8 +1768,15 @@ class WebTable(WebComponentBootstrap):
     The implementation of this class is different from other classes. The not all rendering of WebTable is on the
     server side, some render is on client side.
 
+    HOW TO:
+        Initial:
+            set url
+            prepare model and query
+            call create_url_rule when initial app
+
     TODO: Change the members of model and query from class to object
     '''
+
 
     MODEL = None
     QUERY = None
