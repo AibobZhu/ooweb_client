@@ -105,8 +105,12 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         finally:
             self._pop_current_context()
 
-    def equal(self,right, left=None):
-        params = {'right': right, 'left':left}
+    def equal(self,right, left=None, force_condition=False):
+        params = {'right': right, 'left':left, 'force_condition':force_condition}
+        self.func_call(params=params)
+
+    def is_(self, element_name):
+        params = {'element_name':element_name}
         self.func_call(params=params)
 
     @contextmanager
@@ -259,12 +263,16 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
     def add_url_rule(cls, app, extend=[]):
         if extend:
             for e in extend:
-                if len(e) == 3:
-                    app.add_url_rule(e[0], e[1], methods=e[2])
-                elif len(e) == 2:
-                    app.add_url_rule(e[0], e[1])
+                if e['endpoint'] and e['methods']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'], methods=e['methods'])
+                elif e['endpoint']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
+                elif e['methods']:
+                    app.add_url_rule(rule=e['rule'], view_func=e['view_func'], methods=e['methods'])
+                elif not e['rule'] or e['view_func']:
+                    raise RuntimeError('add_url_rule extend should have "rule" and "view_func"')
                 else:
-                    raise RuntimeError
+                    app.add_url_rule(rule=e['rule'],view_func=e['view_func'])
 
     def declare_custom_func(self, fname='', fparams=[], fbody=[]):
         params={'fname':fname,'fparams':fparams,'fbody':fbody}
@@ -906,21 +914,45 @@ class WebBtn(WebComponentBootstrap):
                 pass
             with page.add_child(WebBtn(value='Test post_w function')) as post_btn:
                 with post_btn.on_event_w('click'):
-                    with LVar(parent=post_btn, var_name='post_data') as post_data:
-                        post_data.add_script('"Test post_w function";\n',indent=False)
-                    with post_data.post_w('"/test_WebBtn_result"', data=post_data):
-                        post_btn.alert('"Test post_w function success! result: " + data')
+                    with LVar(parent=post_btn, var_name='data') as post_data:
+                        post_data.add_script('"test_post";\n', indent=False)
+                    with post_btn.post_w('"/test_WebBtn_result"', data=post_data):
+                        post_btn.alert('"Test post success with result:"+data')
+            with page.add_child(WebBtn(value='Test dict')) as dict_btn:
+                pass
+            with page.add_child(WebBtn(value='Test "is" method')) as is_btn:
+                with is_btn.on_event_w('click'):
+                    with LVar(parent=page, var_name='target') as target:
+                        target.add_script("$(event.target)", indent=False)
+                    with is_btn.if_w():
+                        with is_btn.condition_w():
+                            target.is_('button')
+                    with is_btn.cmds_w():
+                        target.alert('"is methods works!"')
+            with page.add_child(WebBtn(value='Test nest if ')) as nest_if_btn:
+                with nest_if_btn.on_event_w('click'):
+                    with LVar(parent=page, var_name='target2') as target2:
+                        target2.add_script("$(event.target)", indent=False)
+                    with nest_if_btn.if_w():
+                        with nest_if_btn.condition_w():
+                            target2.is_('button')
+                    with nest_if_btn.cmds_w():
+                        with nest_if_btn.if_w():
+                            with nest_if_btn.condition_w():
+                                target2.equal(right='"test"', force_condition=True)
+                            with nest_if_btn.cmds_w():
+                                target2.alert('"target is test!"')
 
-        # response click event of the button
+            # response click event of the button
         with btn1.on_event_w(event="click"):
             btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is clicked!' ")
 
-        # response change event of the button
+            # response change event of the button
         with btn1.on_event_w(event='change'):
             btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is changed!' ")
             btn1.trigger_event(event='change')  # expect not any alert pop up
 
-        # expect trigger change event, but jquery actually not, fixed in val()
+            # expect trigger change event, but jquery actually not, fixed in val()
         btn1.set_js(True)
         btn1.val('"新测试"')
         btn1.set_js(False)
@@ -939,12 +971,16 @@ class WebBtn(WebComponentBootstrap):
         ]
         btn4.declare_custom_func('test_custom_func', fparams=['id'], fbody=custom_func)
         with btn4.on_event_w('click'):
-            btn4.call_custom_func('test_custom_func', fparams={'id':'"{}"'.format(btn4.id())})
+            btn4.call_custom_func('test_custom_func', fparams={'id': '"{}"'.format(btn4.id())})
+
+        with dict_btn.on_event_w('click'):
+            with OODict(parent=page, dict={'key1': 'val1', 'key2': 'val2'}, var_name='test_dict') as dict:
+                pass
+            dict_btn.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
 
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
-
 
     @classmethod
     def on_post(cls):
@@ -1296,6 +1332,9 @@ class OOGeneralSelector(WebBtnGroup):
 
     '''
 
+    VAL_BY_BTN_NAME = 'oogeneral_selector_val_by_btn'
+    VAL_BY_BTN_PARAMS = ['btn_id']
+
     @staticmethod
     def data_format():
         return {
@@ -1324,6 +1363,12 @@ class OOGeneralSelector(WebBtnGroup):
                 test.val()
             with test.post_w():
                 test.val(data)
+
+        # Test getting general selector value by its button id
+        with test.on_event_w('change'):
+            with LVar(parent=test, var_name='gs_value') as gs_value:
+                test.call_custom_func(fname=test.VAL_BY_BTN_NAME, fparams={'btn_id': '$(event.target).attr("id")'})
+            test.alert('"The general selector\'s value:"+gs_value')
 
         html = page.render()
         return render_template_string(html)
@@ -2067,8 +2112,12 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
-        super().add_url_rule(app, extend)
-        app.add_url_rule(rule=cls.HTML_URL, endpoint='{}.on_post'.format(cls.__name__), view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
+        super().add_url_rule(cls, app, extend)
+        if extend:
+            for e in extend:
+                if e['view_func'] == cls.on_post:
+                    return
+        app.add_url_rule(rule=cls.HTML_URL, endpoint='{}_on_post'.format(cls.__name__), view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2151,7 +2200,7 @@ class OOTable(WebTable):
         if request.method == 'GET':
             return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST':
-            return jsonify({'data': {'html': html, 'setting': cls.setting()}})
+            return jsonify({'status':'success', 'data': {'html': html, 'setting': cls.setting()}})
         else:
             raise NotImplementedError
 

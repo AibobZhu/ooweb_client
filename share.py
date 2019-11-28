@@ -108,9 +108,10 @@ def randDatetimeRange(delta_days_range=(0,30)):
     end = today + relativedelta(days=after_days)
     return start.strftime(fmt), end.strftime(fmt)
 
-def day_2_week_number(self, date, first_day=0):
+def day_2_week_number(date, first_day=0):
     import numpy as np
-    calendar.setfirstweek(first_day) # first_day 0 for monday, 6 for sunday
+    import calendar
+    calendar.setfirstweekday(first_day) # first_day 0 for monday, 6 for sunday
     year = date.year
     month = date.month
     day = date.day

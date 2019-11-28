@@ -375,6 +375,9 @@ class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
     def empty(self):
         pass
 
+    @abc.abstractmethod
+    def is_(self):
+        pass
 
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
