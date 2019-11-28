@@ -202,7 +202,13 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         self.add_context(context)
         self._push_current_context(context['sub_context'])
         '''
-        params = {'url':url, 'data':data, 'success':success}
+        data_ = data
+        if not isinstance(data, str):
+            data_ = '{}'.format(str(data))
+        url_ = url
+        if not isinstance(url, str):
+            url_ = '"{}"'.format(str(url))
+        params = {'url':str(url), 'data':data_, 'success':success}
         self.with_call(params)
         try:
             yield
@@ -976,7 +982,9 @@ class WebBtn(WebComponentBootstrap):
         with dict_btn.on_event_w('click'):
             with OODict(parent=page, dict={'key1': 'val1', 'key2': 'val2'}, var_name='test_dict') as dict:
                 pass
-            dict_btn.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+            with dict.update_w(key='key_updated'):
+                dict.add_script('"val_updated"', indent=False)
+            dict_btn.alert('"Test dict: { key1:" + test_dict.key1 + ",key_updated: " + test_dict.key_updated + " }"')
 
         html = page.render()
         print(pprint.pformat(html))
@@ -2101,7 +2109,7 @@ class WebTable(WebComponentBootstrap):
         ret = Action.on_post()
         _request = ret['data']
         _data = {'html':''}
-        if _request['data'] == 'render':
+        if _request['data'] == 'ootable_render':
             _data['html'] = cls._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
 
@@ -2195,8 +2203,8 @@ class OOTable(WebTable):
             }
 
     @classmethod
-    def on_post(cls, methods=['GET','POST']):
-        html = ''.join(cls._html())
+    def on_post(cls, data=None, methods=['GET','POST']):
+        html = ''.join(cls._html(data=data))
         if request.method == 'GET':
             return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST':
@@ -2237,11 +2245,11 @@ class OOTable(WebTable):
                     with r3.add_child(WebBtn(value='render')) as render_btn:
                         with render_btn.on_event_w('click'):
                             render_btn.alert('"rendering again"')
-                            with LVar(parent=render_btn,var_name='data') as data:
-                                data.add_script('{"data":"rander"}', indent=False)
+                            with LVar(parent=render_btn,var_name='post_data') as post_data:
+                                post_data.add_script('{"data":"ootable_rander"}', indent=False)
                             with LVar(parent=render_btn, var_name='url') as url_data:
                                 test.url()
-                            with test.post_w(url='url',data='data'):
+                            with test.post_w(url='url',data='post_data'):
                                 test.call_custom_func(
                                     fname=test.RENDER_FUNC_NAME,
                                     fparams={
@@ -2249,7 +2257,6 @@ class OOTable(WebTable):
                                         'data': 'data',
                                     }
                                 )
-
 
         scroll_event = []
         scroll_event.append('')
@@ -2328,9 +2335,14 @@ class OOTagGroup(WebTable):
 
 class Var(WebComponentBootstrap):
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, var_name, **kwargs):
         kwargs['parent'] = parent
+        kwargs['var_name'] = var_name
         super().__init__(**kwargs)
+        self._var_name = var_name
+
+    def __repr__(self):
+        return self._var_name
 
 
 class LVar(Var):
@@ -2390,11 +2402,28 @@ class OOList(ListInf, WebComponentBootstrap):
         html = page.render()
         return render_template_string(html)
 
+    def __init__(self, parent, var_name, **kwargs):
+        kwargs['parent'] = parent
+        kwargs['var_name'] = var_name
+        super().__init__(**kwargs)
+        self._var_name = var_name
+
+    def __repr__(self):
+        return self._var_name
 
 class OODict(DictInf, WebComponentBootstrap):
 
+    def __init__(self, parent, var_name, **kwargs):
+        kwargs['parent'] = parent
+        kwargs['var_name'] = var_name
+        super().__init__(**kwargs)
+        self._var_name = var_name
+
+    def __repr__(self):
+        return self._var_name
+
     @contextmanager
-    def update(self, key):
+    def update_w(self, key):
         params={'key':key}
         self.with_call(params)
         try:
@@ -2420,7 +2449,7 @@ class OODict(DictInf, WebComponentBootstrap):
         with btn2.on_event_w("click"):
             with OODict(parent=page, dict={'key1': 'val1', 'key2': 'val2'}, var_name='test_dict_update') as dict_update:
                 pass
-            with dict_update.update(key='key2'):
+            with dict_update.update_w(key='key2'):
                 dict_update.add_script('"val_updated"', indent=False)
             btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
 

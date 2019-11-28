@@ -563,7 +563,7 @@ class ListInf(MinXin, metaclass=abc.ABCMeta):
 class DictInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def update(self, dict):
+    def update_w(self, dict):
         pass
 
 class VarInf(MinXin, metaclass=abc.ABCMeta):
