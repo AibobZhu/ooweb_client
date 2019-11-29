@@ -379,6 +379,15 @@ class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
     def is_(self):
         pass
 
+    @abc.abstractmethod
+    def data(self):
+        pass
+
+    @abc.abstractmethod
+    def declare_event(self, event, use_clsname=False, selector=None, filter=''):
+        pass
+
+
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod

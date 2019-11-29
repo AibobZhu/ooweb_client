@@ -303,6 +303,10 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {}
         return self.func_call(params)
 
+    def declare_event(self, event, use_clsname=False, selector=None, filter=''):
+        params = {'event':event, 'use_clsname':use_clsname, 'selector':selector, 'filter':filter}
+        return self.func_call(params)
+
 
 class Format(BootstrapInf, FormatInf, ClientBase):
 
@@ -1934,13 +1938,13 @@ class WebTable(WebComponentBootstrap):
             start, end = randDatetimeRange()
             data['records'].append(
                 (
-                    {'data': _getStr(random.randint(3,6)), 'attr':'nowrap'},
+                    {'data': _getStr(random.randint(3,6)), 'attr':'nowrap data-ootable-details="This is event name"'},
                     {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                    {'data': start},
-                    {'data': end},
-                    {'data': _getStr(random.randint(10,128))}
+                    {'data': start, 'attr':'data-ootable-details="This is start date time"'},
+                    {'data': end, 'attr':'data-ootable-details="This is end date time"'},
+                    {'data': _getStr(random.randint(10,128)), 'attr':'data-ootable-details="This is details"'}
                 )
             )
 
@@ -2083,7 +2087,7 @@ class WebTable(WebComponentBootstrap):
         html.append('<tbody class="{}" style="{}">\n'.format(WebTable._body_classes_str(), WebTable._body_styles_str()))
         for tr in _data['records']:
             html.append('    <tr>\n')
-            for i,d in enumerate(tr):
+            for i, d in enumerate(tr):
                 td = ''
                 classes = d['class'] if 'class' in d else ''
                 style = d['style'] if 'style' in d else ''
@@ -2137,6 +2141,7 @@ class WebTable(WebComponentBootstrap):
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
 
+
         html = page.render()
         return render_template_string(html)
 
@@ -2148,6 +2153,13 @@ class OOTable(WebTable):
 
     RENDER_FUNC_NAME = 'ootable_rander'
     RENDER_FUNC_ARGS = ['id', 'html', 'setting']
+
+    COLREORDER_FUNC_NAME = 'ootable_colreorder'
+    COLREORDER_FUNC_ARGS = ['id', 'order']
+
+    ROW_CHILD_FUNC_NAME =  'ootable_row_child'
+    ROW_CHILD_FUNC_ARGS = ['id']
+
 
     def __init__(self, setting={}, **kwargs):
         if setting:
@@ -2166,6 +2178,10 @@ class OOTable(WebTable):
         params={'filter':filter}
         return self.func_call(params)
     '''
+
+    def col_reorder(self, order):
+        params  = {'order': order}
+        return self.func_call(params)
 
     def search(self, pattern):
         params = {'pattern': pattern}
@@ -2199,7 +2215,8 @@ class OOTable(WebTable):
                 'scrollCollapse': True,
                 'paging': True,
                 'searching': True,
-                'destroy':True
+                'destroy':True,
+                'colReorder': True
             }
 
     @classmethod
@@ -2257,12 +2274,19 @@ class OOTable(WebTable):
                                         'data': 'data',
                                     }
                                 )
+                    with r3.add_child(WebBtn(value='Reorder')) as reorder_btn:
+                        with reorder_btn.on_event_w('click'):
+                            reorder_btn.alert('"Reorder columns"')
+                            test.call_custom_func(fname=test.COLREORDER_FUNC_NAME, fparams={'id':'"{}"'.format(test.id()), 'order':'[6,5,4,3,2,1,0]'})
 
         scroll_event = []
         scroll_event.append('')
         with input.on_event_w('change'):
             page.alert('"searching ... "')
             test.draw()
+
+        with test.on_event_w('click_cell'):
+            test.alert('$(that).data("ootable-details")')
 
         html = page.render()
         return render_template_string(html)
