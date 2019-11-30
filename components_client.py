@@ -193,7 +193,17 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         '''
         r = json.loads(request.form.get('data'))
         return {"status": "sucess", 'data': r}
-    
+
+    @contextmanager
+    def each_w(self):
+        self.with_call({})
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+
     @contextmanager
     def post_w(self, url=None, data=None, success=None):
         '''
@@ -2285,8 +2295,21 @@ class OOTable(WebTable):
             page.alert('"searching ... "')
             test.draw()
 
+        '''
+        Test click cell event
         with test.on_event_w('click_cell'):
             test.alert('$(that).data("ootable-details")')
+        '''
+
+        '''
+        Test click row event
+        '''
+        with test.on_event_w('click_row'):
+            with LVar(parent=test, var_name='tds') as tr:
+                tr.add_script('$(that).children()', indent=False)
+            with tr.each_w():
+                tr.add_script("console.log($(this).data('ootable-details'));\n")
+
 
         html = page.render()
         return render_template_string(html)
