@@ -279,16 +279,17 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
     def add_url_rule(cls, app, extend=[]):
         if extend:
             for e in extend:
-                if e['endpoint'] and e['methods']:
+                if 'endpoint' in e and e['endpoint'] and 'methods' in e and e['methods']:
                     app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'], methods=e['methods'])
-                elif e['endpoint']:
+                elif 'endpoint' in e and e['endpoint']:
                     app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
-                elif e['methods']:
+                elif 'methods' in e and e['methods']:
                     app.add_url_rule(rule=e['rule'], view_func=e['view_func'], methods=e['methods'])
-                elif not e['rule'] or e['view_func']:
+                elif not 'rule' in e or not e['rule'] or not 'view_func' in e or not e['view_func']:
                     raise RuntimeError('add_url_rule extend should have "rule" and "view_func"')
                 else:
-                    app.add_url_rule(rule=e['rule'],view_func=e['view_func'])
+                    url = e['rule']
+                    app.add_url_rule(rule=url, view_func=e['view_func'])
 
     def declare_custom_func(self, fname='', fparams=[], fbody=[]):
         params={'fname':fname,'fparams':fparams,'fbody':fbody}
@@ -1901,7 +1902,7 @@ class WebTable(WebComponentBootstrap):
             return ' '.join(cls._head_classes)
 
     @classmethod
-    def _example_data(cls):
+    def _example_data(cls, schema_only = False):
         '''
         return {
             'schema':[
@@ -1928,8 +1929,7 @@ class WebTable(WebComponentBootstrap):
         } ,
         '''
 
-        data = {
-            'schema': [
+        schema = [
                 {'name': '事件', 'style': '', 'attr': ''},
                 {'name': '审批', 'style': '', 'attr': '', 'type':'checkbox'},
                 {'name': '完成', 'style': '', 'attr': '', 'type':'checkbox'},
@@ -1937,7 +1937,12 @@ class WebTable(WebComponentBootstrap):
                 {'name': '开始', 'style': '', 'attr': ''},
                 {'name': '结束', 'style': '', 'attr': ''},
                 {'name': '备份', 'style': '', 'attr': ''},
-            ],
+            ]
+        if schema_only:
+            return schema
+
+        data = {
+            'schema': schema,
             'records': []
         }
         for i in range(16):
@@ -2170,6 +2175,11 @@ class OOTable(WebTable):
     ROW_CHILD_FUNC_NAME =  'ootable_row_child'
     ROW_CHILD_FUNC_ARGS = ['id']
 
+    GET_ROW_DATA_FUNC_NAME = 'ootable_get_row_data'
+    GET_ROW_DATA_FUNC_ARGS = ['that']
+
+    ROW_CHILD_FUNC_NAME = 'ootable_row_child'
+    ROW_CHILD_FUNC_ARGS = ['tr','url']
 
     def __init__(self, setting={}, **kwargs):
         if setting:
@@ -2247,8 +2257,25 @@ class OOTable(WebTable):
     '''
 
     @classmethod
-    def test_request(cls, methods=['GET']):
+    def test_request(cls, methods=['GET', 'POST']):
+        row_child_url = '/ootable_test_row_child'
+        if request.method == 'POST':
+            if row_child_url in request.url_rule.rule:
+                cell_datas = json.loads(request.form.get('cell_datas'))
+                data = {'schema':cls._example_data(schema_only=True)}
+                data['records'] = [[{'data':cell_data} for cell_data in cell_datas]]
+                child_html = "<table style='background-color:#eee'>\n{}\n</table>\n".format(''.join(cls._html(data)))
+                return jsonify({'status':'success', 'child_html':child_html, 'setting':{'scrollY': '100px',
+                    'scrollX': True,
+                    'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy':True,
+                'bInfo': False}})
+
         cls.add_url_rule(app=current_app)
+        cls.add_url_rule(app=current_app, extend=[{'rule':row_child_url, 'view_func':cls.test_request, 'methods':['POST']}])
+
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
@@ -2305,11 +2332,12 @@ class OOTable(WebTable):
         Test click row event
         '''
         with test.on_event_w('click_row'):
-            with LVar(parent=test, var_name='tds') as tr:
-                tr.add_script('$(that).children()', indent=False)
-            with tr.each_w():
-                tr.add_script("console.log($(this).data('ootable-details'));\n")
-
+            '''
+            with LVar(parent=test, var_name='row_data') as row_data:
+                test.call_custom_func(fname=test.GET_ROW_DATA_FUNC_NAME, fparams={'that':'that'})
+            test.alert('row_data')
+            '''
+            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr':'that', 'url':'"{}"'.format(row_child_url)})
 
         html = page.render()
         return render_template_string(html)
