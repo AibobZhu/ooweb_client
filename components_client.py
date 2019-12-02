@@ -1965,19 +1965,6 @@ class WebTable(WebComponentBootstrap):
 
         return data
 
-    '''
-    @classmethod
-    def get_data(cls):
-        if not cls.MODEL or not cls.QUERY:
-            return cls._example_data()
-        else:
-            data = cls.MODEL.query(cls.QUERY)
-            if not data:
-                return cls._example_data()
-            else:
-                return data
-    '''
-
     @classmethod
     def _html(cls, data=None):
 
@@ -2132,11 +2119,6 @@ class WebTable(WebComponentBootstrap):
             _data['html'] = cls._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
 
-    def __enter__(self):
-        ret = super().__enter__()
-        #self.add_context_list(self._html())
-        return self
-
     @classmethod
     def add_url_rule(cls, app, extend=[]):
         super().add_url_rule(cls, app, extend)
@@ -2179,25 +2161,34 @@ class OOTable(WebTable):
     GET_ROW_DATA_FUNC_ARGS = ['that']
 
     ROW_CHILD_FUNC_NAME = 'ootable_row_child'
-    ROW_CHILD_FUNC_ARGS = ['tr','url']
+    ROW_CHILD_FUNC_ARGS = ['tr','data_attr=ootable-details']
+
+    ROW_CHILD_FORMAT_FUNC_NAME = 'ootable_row_child_format'
+    ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
+    ROW_CHILD_FORMAT_FUNC_BODY = (
+        '   var $this_tr = $(tr);\n',
+        '   var tr_class = $this_tr.attr("class"); if(typeof tr_class == "undefined"){tr_class = ""};\n',
+        '   var tr_style = $this_tr.attr("style"); if(typeof tr_style == "undefined"){tr_style = ""};\n',
+        '   var this_td_data = data;\n',
+        '   var next_tr = \'<tr class="<class>" style="<style>" >\'.replace("<class>", tr_class).replace("<style>", tr_style);\n',
+        '   this_td_data.forEach(function(element,index){\n',
+        '       let klass="";if(typeof element.klass != "undefined"){ klass = element.klass };\n',
+        '       let style="";if(typeof element.style != "undefined"){ style = element.style };\n',
+        '       let data="";if(typeof element.data != "undefined"){ data = element.data };\n',
+        '       next_tr += \'<td class="!@#class!@#" style="!@#style!@# background-color:Plum">!@#data!@#</td>\'.replace("!@#class!@#", klass).replace("!@#style!@#", style).replace("!@#data!@#", data)\n',
+        '   });\n',
+        '   next_tr += "</tr>";\n',
+        '   return next_tr;\n',
+    )
 
     def __init__(self, setting={}, **kwargs):
         if setting:
             OOTable.SETTING = setting
         else:
             OOTable.SETTING = self._example_setting()
-        '''
-        OOTable.HTML_URL = html_url
-        kwargs['html_url'] = html_url
-        '''
+
         super().__init__(**kwargs)
         #self._html_url = html_url
-
-    '''
-    def data(self,filter=''):
-        params={'filter':filter}
-        return self.func_call(params)
-    '''
 
     def col_reorder(self, order):
         params  = {'order': order}
@@ -2221,12 +2212,6 @@ class OOTable(WebTable):
         else:
             return cls.SETTING
 
-    '''
-    def render_func(self,id='id',html='html',setting='setting'):
-        params={'id':id,'html':html,'setting':setting}
-        return self.func_call(params)
-    '''
-
     @classmethod
     def _example_setting(cls):
         return {
@@ -2249,12 +2234,12 @@ class OOTable(WebTable):
         else:
             raise NotImplementedError
 
-    '''
-    @classmethod
-    def add_url_rule(cls, app, extend=[]):
-        super().add_url_rule(app, extend)
-        app.add_url_rule(cls.HTML_URL, view_func=cls.on_post, methods=['GET','POST'])
-    '''
+
+    def __enter__(self):
+        ret = super().__enter__()
+        #self.add_context_list(self._html())
+        self.declare_custom_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS, self.ROW_CHILD_FORMAT_FUNC_BODY)
+        return self
 
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
@@ -2262,16 +2247,12 @@ class OOTable(WebTable):
         if request.method == 'POST':
             if row_child_url in request.url_rule.rule:
                 cell_datas = json.loads(request.form.get('cell_datas'))
-                data = {'schema':cls._example_data(schema_only=True)}
+                data = {}
+                #data = {'schema':cls._example_data(schema_only=True)}
+                data = {'schema': [ {'name':'.'} for _ in cell_datas ] }
                 data['records'] = [[{'data':cell_data} for cell_data in cell_datas]]
                 child_html = "<table style='background-color:#eee'>\n{}\n</table>\n".format(''.join(cls._html(data)))
-                return jsonify({'status':'success', 'child_html':child_html, 'setting':{'scrollY': '100px',
-                    'scrollX': True,
-                    'scrollCollapse': True,
-                'paging': False,
-                'searching': False,
-                'destroy':True,
-                'bInfo': False}})
+                return jsonify({'status':'success', 'child_html':child_html, 'setting':{'scrollY': '100px','scrollX': True,'scrollCollapse': True,'paging': False,'searching': False,'destroy':True, 'bInfo':False}})
 
         cls.add_url_rule(app=current_app)
         cls.add_url_rule(app=current_app, extend=[{'rule':row_child_url, 'view_func':cls.test_request, 'methods':['POST']}])
@@ -2322,22 +2303,8 @@ class OOTable(WebTable):
             page.alert('"searching ... "')
             test.draw()
 
-        '''
-        Test click cell event
-        with test.on_event_w('click_cell'):
-            test.alert('$(that).data("ootable-details")')
-        '''
-
-        '''
-        Test click row event
-        '''
         with test.on_event_w('click_row'):
-            '''
-            with LVar(parent=test, var_name='row_data') as row_data:
-                test.call_custom_func(fname=test.GET_ROW_DATA_FUNC_NAME, fparams={'that':'that'})
-            test.alert('row_data')
-            '''
-            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr':'that', 'url':'"{}"'.format(row_child_url)})
+            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr':'that'})
 
         html = page.render()
         return render_template_string(html)
