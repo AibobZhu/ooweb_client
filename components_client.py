@@ -2172,7 +2172,7 @@ class OOTable(WebTable):
         '       let klass="";if(typeof element.klass != "undefined"){ klass = element.klass };\n',
         '       let style="";if(typeof element.style != "undefined"){ style = element.style };\n',
         '       let data="";if(typeof element.data != "undefined"){ data = element.data };\n',
-        '       next_tr += \'<td class="!@#class!@#" style="!@#style!@# background-color:Plum">!@#data!@#</td>\'.replace("!@#class!@#", klass).replace("!@#style!@#", style).replace("!@#data!@#", data)\n',
+        '       next_tr += \'<td class="!@#class!@#" style="!@#style!@# white-space:pre;background-color:Plum">!@#data!@#</td>\'.replace("!@#class!@#", klass).replace("!@#style!@#", style).replace("!@#data!@#", data)\n',
         '   });\n',
         '   next_tr += "</tr>";\n',
         '   return next_tr;\n',
