@@ -2154,9 +2154,6 @@ class OOTable(WebTable):
     COLREORDER_FUNC_NAME = 'ootable_colreorder'
     COLREORDER_FUNC_ARGS = ['id', 'order']
 
-    ROW_CHILD_FUNC_NAME =  'ootable_row_child'
-    ROW_CHILD_FUNC_ARGS = ['id']
-
     GET_ROW_DATA_FUNC_NAME = 'ootable_get_row_data'
     GET_ROW_DATA_FUNC_ARGS = ['that']
 
