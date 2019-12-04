@@ -2312,8 +2312,8 @@ class OOTable(WebTable):
             if test_img_url in request.url_rule.rule:
                 table = OOTable(value={'model':cls.model,'query':{'test':'img'}})
                 html = ''.join(table._html())
-                return jsonify({'status': 'success', 'data': {'html': html, 'setting': cls.setting()}})
-
+                setting = table.get_data(setting_only=True)
+                return jsonify({'status': 'success', 'data': {'html': html, 'setting': setting}})
 
         cls.add_url_rule(app=current_app)
         cls.add_url_rule(app=current_app, extend=[{'rule':test_img_url, 'view_func':cls.test_request, 'methods':['POST']}])
