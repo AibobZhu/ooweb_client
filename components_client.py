@@ -854,11 +854,23 @@ class WebHead1(WebComponentBootstrap):
     pass
 
 
-class WebHead2(WebComponentBootstrap):
+class WebHead2(WebHead1):
     pass
 
 
-class WebHead3(WebComponentBootstrap):
+class WebHead3(WebHead1):
+    pass
+
+
+class WebHead4(WebHead1):
+    pass
+
+
+class WebHead5(WebHead1):
+    pass
+
+
+class WebHead6(WebHead1):
     pass
 
 
@@ -2129,6 +2141,7 @@ class WebTable(WebComponentBootstrap):
         _request = ret['data']
         _data = {'html':''}
         if _request['data'] == 'ootable_render':
+
             _data['html'] = cls._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
 
@@ -2253,8 +2266,9 @@ class OOTable(WebTable):
 
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
-        row_child_url = '/ootable_test_row_child'
+        #row_child_url = '/ootable_test_row_child'
         if request.method == 'POST':
+            '''
             if row_child_url in request.url_rule.rule:
                 cell_datas = json.loads(request.form.get('cell_datas'))
                 data = {}
@@ -2262,10 +2276,13 @@ class OOTable(WebTable):
                 data = {'schema': [ {'name':'.'} for _ in cell_datas ] }
                 data['records'] = [[{'data':cell_data} for cell_data in cell_datas]]
                 child_html = "<table style='background-color:#eee'>\n{}\n</table>\n".format(''.join(cls._html(data)))
-                return jsonify({'status':'success', 'child_html':child_html, 'setting':{'scrollY': '100px','scrollX': True,'scrollCollapse': True,'paging': False,'searching': False,'destroy':True, 'bInfo':False}})
-
+                return jsonify({'status':'success', 'child_html':child_html,
+                                'setting':{'scrollY': '100px','scrollX': True,
+                                           'scrollCollapse': True,'paging': False,
+                                           'searching': False,'destroy':True, 'bInfo':False}})
+            '''
         cls.add_url_rule(app=current_app)
-        cls.add_url_rule(app=current_app, extend=[{'rule':row_child_url, 'view_func':cls.test_request, 'methods':['POST']}])
+        #cls.add_url_rule(app=current_app, extend=[{'rule':row_child_url, 'view_func':cls.test_request, 'methods':['POST']}])
 
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
@@ -2307,6 +2324,12 @@ class OOTable(WebTable):
                             reorder_btn.alert('"Reorder columns"')
                             test.call_custom_func(fname=test.COLREORDER_FUNC_NAME, fparams={'id':'"{}"'.format(test.id()), 'order':'[6,5,4,3,2,1,0]'})
 
+            with page.add_child(WebRow()) as r4:
+                with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r4:
+                    with r4.add_child(OOTable(mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
+                        pass
+
+
         scroll_event = []
         scroll_event.append('')
         with input.on_event_w('change'):
@@ -2314,7 +2337,9 @@ class OOTable(WebTable):
             test.draw()
 
         with test.on_event_w('click_row'):
-            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr':'that'})
+            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
+
+
 
         html = page.render()
         return render_template_string(html)
