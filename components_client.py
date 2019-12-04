@@ -2136,7 +2136,7 @@ class WebTable(WebComponentBootstrap):
         _request = ret['data']
         _data = {'html':''}
         if _request['data'] == 'webtable_render':
-            table = WebTable()
+            table = globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])
             _data['html'] = table._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
 
@@ -2364,7 +2364,7 @@ class OOTagGroup(WebTable):
             OOTagGroup.COL_NUM = col_num
 
     @classmethod
-    def _example_data(cls):
+    def _example_data(cls, schema_only = False):
         data = {
             'schema': [],
             'records': []
@@ -2389,6 +2389,18 @@ class OOTagGroup(WebTable):
                 del locals()['wc'+str(i)]
             data['records'].append(td)
         return data
+
+    '''
+    @classmethod
+    def on_post(cls):
+        ret = Action.on_post()
+        _request = ret['data']
+        _data = {'html': ''}
+        if _request['data'] == 'webtable_render':
+            table = OOTagGroup()
+            _data['html'] = table._html()  # TODO: add current user get data into _html(data=current_user.get_data())
+        return jsonify({'status': 'success', 'data': _data})
+    '''
 
     @classmethod
     def test_request(cls, methods=['GET']):
