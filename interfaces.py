@@ -395,6 +395,7 @@ class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
     def each_w(self):
         pass
 
+
 class FormatInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -535,6 +536,10 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def declare_custom_func(self, fname='', fparams=[], fbody=[]):
+        pass
+
+    @abc.abstractmethod
+    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
         pass
 
     @abc.abstractmethod

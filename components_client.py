@@ -295,6 +295,10 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params={'fname':fname,'fparams':fparams,'fbody':fbody}
         return self.func_call(params)
 
+    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
+        params={'fname':fname, 'fparams':fparams,'fbody':fbody}
+        return self.func_call(params)
+
     def call_custom_func(self, fname='', fparams={}):
         params={'fname':fname,'fparams':fparams}
         return self.func_call(params)
@@ -1447,6 +1451,15 @@ class OOGeneralSelector(WebBtnGroup):
         # test end
 
         return jsonify({'status': 'success', 'data': data})
+
+
+class OOBanner(WebDiv):
+
+    def __init__(self, imgs=None, height="300px", interval=3000, **kwargs):
+        kwargs['imgs'] = imgs
+        kwargs['height'] = height
+        kwargs['interval'] = interval
+        super().__init__(**kwargs)
 
 
 class OOCalendar(WebDiv):
