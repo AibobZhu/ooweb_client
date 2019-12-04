@@ -758,24 +758,22 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def gvar_w(self, name='data'):
         raise NotImplementedError
 
-    @classmethod
-    def get_data(cls, model=None, query=None):
+    def get_data(self):
 
-        if model:
-            _model = model
-        else:
-            _model = cls.MODEL
-        if query:
-            _query = query
-        else:
-            _query = cls.QUERY
+        _model = None
+        if hasattr(self,'_value') and 'model' in self._value:
+            _model = self._value['model']
+
+        _query = None
+        if hasattr(self, '_value') and 'query' in self._value:
+            _query = self._value['query']
 
         if not _model or not _query:
-            return cls._example_data()
+            return self._example_data()
         else:
             data = _model.query(**_query)
             if not data:
-                return cls._example_data()
+                return self._example_data()
             else:
                 return data
 
@@ -1871,22 +1869,20 @@ class WebTable(WebComponentBootstrap):
     '''
 
 
-    MODEL = None
-    QUERY = None
     HTML_URL = '/webtable/webtable_html'
 
-    def __init__(self, model=None, query=None, head_classes=[], body_classes=[], head_styles=None, body_styles=None, url=None, **kwargs):
+    def __init__(self, value={'model':None, 'value':None}, head_classes=[],
+                 body_classes=[], head_styles=None, body_styles=None, url=None, **kwargs):
         if not url:
             kwargs['url'] = self.HTML_URL
         else:
             kwargs['url'] = url
+        kwargs['value'] = value
         super().__init__(**kwargs)
         WebTable._head_styles = head_styles
         WebTable._body_styles = body_styles
         WebTable._head_classes = head_classes
         WebTable._body_classes = body_classes
-        WebTable.MODEL = model
-        WebTable.QUERY = query
 
     @classmethod
     def _head_styles_str(cls):
@@ -1990,11 +1986,10 @@ class WebTable(WebComponentBootstrap):
 
         return data
 
-    @classmethod
-    def _html(cls, data=None):
+    def _html(self, data=None):
 
         if not data:
-            _data = cls.get_data(cls.MODEL, cls.QUERY)
+            _data = self.get_data()
         else:
             _data = data
 
@@ -2094,7 +2089,7 @@ class WebTable(WebComponentBootstrap):
                 _head_matrix(h, matrix,0)
 
             for tr in matrix:
-                html.append('    <tr class="{}" style="{}">\n'.format(cls._head_classes_str(), cls._head_styles_str()))
+                html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
                 for th in tr:
                     html.append('        <th class="{}" style="{}" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
@@ -2140,9 +2135,9 @@ class WebTable(WebComponentBootstrap):
         ret = Action.on_post()
         _request = ret['data']
         _data = {'html':''}
-        if _request['data'] == 'ootable_render':
-
-            _data['html'] = cls._html() #TODO: add current user get data into _html(data=current_user.get_data())
+        if _request['data'] == 'webtable_render':
+            table = WebTable()
+            _data['html'] = table._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
 
     @classmethod
@@ -2249,11 +2244,13 @@ class OOTable(WebTable):
 
     @classmethod
     def on_post(cls, data=None, methods=['GET','POST']):
-        html = ''.join(cls._html(data=data))
+
         if request.method == 'GET':
             raise NotImplementedError
             return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST': # rule for default value
+            table = OOTable()
+            html = ''.join(table._html())
             return jsonify({'status':'success', 'data': {'html': html, 'setting': cls.setting()}})
         else:
             raise NotImplementedError
