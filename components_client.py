@@ -2251,8 +2251,9 @@ class OOTable(WebTable):
     def on_post(cls, data=None, methods=['GET','POST']):
         html = ''.join(cls._html(data=data))
         if request.method == 'GET':
+            raise NotImplementedError
             return json.dumps({'html': html, 'setting': cls.setting()})
-        elif request.method == 'POST':
+        elif request.method == 'POST': # rule for default value
             return jsonify({'status':'success', 'data': {'html': html, 'setting': cls.setting()}})
         else:
             raise NotImplementedError
