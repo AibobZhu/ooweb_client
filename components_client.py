@@ -8,7 +8,7 @@
 #########################################
 from interfaces import *
 
-from flask import current_app, render_template_string, request, jsonify
+from flask import current_app, render_template_string, request, jsonify, url_for
 import uuid
 import pprint
 import inspect
@@ -1877,8 +1877,8 @@ class WebTable(WebComponentBootstrap):
             kwargs['url'] = self.HTML_URL
         else:
             kwargs['url'] = url
-        kwargs['value'] = value
         super().__init__(**kwargs)
+        self._value = value
         WebTable._head_styles = head_styles
         WebTable._body_styles = body_styles
         WebTable._head_classes = head_classes
@@ -2199,6 +2199,41 @@ class OOTable(WebTable):
         '   return next_tr;\n',
     )
 
+    class OOTableExampleData(ExampleData):
+
+        def example_data_img(self):
+            schema = [
+                {'name': ''},
+                {'name': ''},
+                {'name': ''}
+            ]
+            records = []
+            for _ in range(random.randint(6, 10)):
+                records.append((
+                    {'data': "render_img:" + url_for('static', filename='img/demo.jpg')},
+                    {'data': _getStr(random.randint(3, 6))},
+                    {'data': _getStr(random.randint(3, 6))}
+                ))
+            setting = {
+                'scrollY': '200px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy': True,
+                'colReorder': False
+            }
+            return {'schema': schema, 'records': records, 'setting': setting}
+
+        def query(self, test="img"):
+            if test == "img":
+                return self.example_data_img()
+            else:
+                raise NotImplementedError
+
+    model = OOTableExampleData()
+    query = {'example': True}
+
     def __init__(self, setting={}, **kwargs):
         if setting:
             OOTable.SETTING = setting
@@ -2249,12 +2284,19 @@ class OOTable(WebTable):
             raise NotImplementedError
             return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST': # rule for default value
-            table = OOTable()
+            table = OOTable(value={'model':None,'value':None})
             html = ''.join(table._html())
             return jsonify({'status':'success', 'data': {'html': html, 'setting': cls.setting()}})
         else:
             raise NotImplementedError
 
+    def get_data(self, setting_only=False):
+        data = super().get_data()
+        if not data:
+            return None
+        if setting_only:
+            return data['setting']
+        return {'schema': data['schema'], 'records': data['records']}
 
     def __enter__(self):
         ret = super().__enter__()
@@ -2264,23 +2306,17 @@ class OOTable(WebTable):
 
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
-        #row_child_url = '/ootable_test_row_child'
+
+        test_img_url = '/ootable_test_img'
         if request.method == 'POST':
-            '''
-            if row_child_url in request.url_rule.rule:
-                cell_datas = json.loads(request.form.get('cell_datas'))
-                data = {}
-                #data = {'schema':cls._example_data(schema_only=True)}
-                data = {'schema': [ {'name':'.'} for _ in cell_datas ] }
-                data['records'] = [[{'data':cell_data} for cell_data in cell_datas]]
-                child_html = "<table style='background-color:#eee'>\n{}\n</table>\n".format(''.join(cls._html(data)))
-                return jsonify({'status':'success', 'child_html':child_html,
-                                'setting':{'scrollY': '100px','scrollX': True,
-                                           'scrollCollapse': True,'paging': False,
-                                           'searching': False,'destroy':True, 'bInfo':False}})
-            '''
+            if test_img_url in request.url_rule.rule:
+                table = OOTable(value={'model':cls.model,'query':{'test':'img'}})
+                html = ''.join(table._html())
+                return jsonify({'status': 'success', 'data': {'html': html, 'setting': cls.setting()}})
+
+
         cls.add_url_rule(app=current_app)
-        #cls.add_url_rule(app=current_app, extend=[{'rule':row_child_url, 'view_func':cls.test_request, 'methods':['POST']}])
+        cls.add_url_rule(app=current_app, extend=[{'rule':test_img_url, 'view_func':cls.test_request, 'methods':['POST']}])
 
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
@@ -2324,7 +2360,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r4:
                 with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r4:
-                    with r4.add_child(OOTable(mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
+                    with r4.add_child(OOTable(url=test_img_url, value={'model':cls.model,'query':{'test':'img'}},mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
                         pass
 
 

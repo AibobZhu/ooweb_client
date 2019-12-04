@@ -40,7 +40,7 @@ def set_default(obj):
     if isinstance(obj, set):
         return list(obj)
     else:
-        print("Error: Type not support:",type(obj))
+        print("Error: Type not support:{}".format(type(obj)))
         raise TypeError
 
 def create_payload(data_input, compress=True):
