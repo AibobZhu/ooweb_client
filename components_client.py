@@ -2202,7 +2202,7 @@ class OOTable(WebTable):
     RENDER_IMG_FUNC_ARGS = ['data','type','row','meta']
     RENDER_IMG_FUNC_BODY = (
        "if(data.indexOf('render_img:')==0){\n",
-       "    return \"<img width='75%' height='75%' src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
+       "    return \"<img onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
        "};\n",
        "return data;\n",
     )
