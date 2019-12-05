@@ -2159,7 +2159,6 @@ class WebTable(WebComponentBootstrap):
                     with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
 
-
         html = page.render()
         return render_template_string(html)
 
@@ -2199,6 +2198,15 @@ class OOTable(WebTable):
         '   return next_tr;\n',
     )
 
+    RENDER_IMG_FUNC_NAME = 'ootable_render_img'
+    RENDER_IMG_FUNC_ARGS = ['data','type','row','meta']
+    RENDER_IMG_FUNC_BODY = (
+       "if(data.indexOf('render_img:')==0){\n",
+       "    return \"<img width='75%' height='75%' src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
+       "};\n",
+       "return data;\n",
+    )
+
     class OOTableExampleData(ExampleData):
 
         def example_data_img(self):
@@ -2221,7 +2229,8 @@ class OOTable(WebTable):
                 'paging': False,
                 'searching': False,
                 'destroy': True,
-                'colReorder': False
+                'colReorder': False,
+                'columnDefs': []
             }
             return {'schema': schema, 'records': records, 'setting': setting}
 
@@ -2302,6 +2311,8 @@ class OOTable(WebTable):
         ret = super().__enter__()
         #self.add_context_list(self._html())
         self.declare_custom_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS, self.ROW_CHILD_FORMAT_FUNC_BODY)
+        self.declare_custom_func(self.RENDER_IMG_FUNC_NAME, self.RENDER_IMG_FUNC_ARGS, self.RENDER_IMG_FUNC_BODY)
+
         return self
 
     @classmethod
