@@ -51,6 +51,12 @@ class ClientBase(metaclass=abc.ABCMeta):
         self.add_context(context)
         return context
 
+    def class_func_call(self, cls, params):
+        context = self._get_clscall_context(func=inspect.stack()[1][3], cls=cls, params=params)
+        context['sub_context'] = []
+        self.add_context(context)
+        return context
+
     def with_call(self, params):
         context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[1][3],
                                                                                       'params': params})
@@ -450,6 +456,22 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             'sub_context': sub_context
         }
 
+    def _get_clscall_context(self, func, cls, params=None, sub_context=[]):
+        def convert_param_obj(params):
+            if isinstance(params, str):
+                print("error: params is instance of str")
+            for k,v in params.items():
+                if k == 'params':
+                    convert_param_obj(v)
+                if isinstance(v, WebComponent):
+                    params[k] = {'obj_id':v.id()}
+        convert_param_obj(params)
+        return {
+            'function': 'classmethod:'+cls+'.'+func,
+            'params': params,
+            'sub_context': sub_context
+        }
+
     def __init__(self, test=False, **kwargs):
         super().__init__(test=test,**kwargs)
         if 'id' in kwargs:
@@ -703,7 +725,8 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         raise NotImplementedError
 
     def add_script_files(self, files):
-        raise NotImplementedError
+        params={'files':files}
+        return self.func_call(params)
 
     def add_style_files(self, files):
         raise NotImplementedError
@@ -1283,10 +1306,22 @@ class OODatePickerRange(OODatePickerSimple):
 
 
 class WebSvg(WebComponentBootstrap):
-    pass
+
+    def id(self, _id=None):
+        if not _id:
+            if not hasattr(self, '_id') or not self._id:
+                self._id = 'svg_' + str(uuid.uuid4()).split('-')[0]
+            return self._id
+        else:
+            self._id = _id
 
 
 class OOChartNVD3(WebSvg):
+
+    @classmethod
+    def CALL_CREATE_FUNC(cls, svg, chart_type, chart_data, aobj):
+        params={'svg':svg, 'chart_type':chart_type, 'chart_data':chart_data, 'aobj_id': aobj.id()}
+        return aobj.class_func_call(cls=cls.__name__, params=params)
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -1296,8 +1331,25 @@ class OOChartNVD3(WebSvg):
         TODO: Remove WebPageTest class and use WebPage(test=True)
         '''
         with WebPage() as page:
-            with page.add_child(globals()[cls.__name__](value='example_data', height='400px')) as test:
-                pass
+            with page.add_child(WebRow()) as r1:
+                with page.add_child(WebColumn()) as c1:
+                    with c1.add_child(globals()[cls.__name__](value='example_data', height='400px')) as test:
+                        pass
+
+            '''
+            Test creating charts by global methods of class instead of object
+            '''
+            with page.add_child(WebRow()) as row2:
+                with row2.add_child(WebColumn(width=['md8'],offset=['mdo2'])) as col2:
+                    #Create a svg
+                    with LVar(parent=col2, var_name='$test_chart') as test_chart:
+                        test_chart.add_script('$(document.createElementNS(d3.ns.prefix.svg, "svg")); \n', indent=False)
+                    #Create a chart
+                    OOChartNVD3.CALL_CREATE_FUNC(
+                        svg='$test_chart[0]', chart_type='bullet', chart_data='example', aobj=test_chart
+                    )
+                    #Append svg to a html element
+                    col2.add_script('$("#{}").append($test_chart);\n'.format(col2.id()))
 
         html = page.render()
         print(pprint.pformat(html))
@@ -1305,38 +1357,57 @@ class OOChartNVD3(WebSvg):
 
 
 class OOChartLineFinder(OOChartNVD3):
+
     pass
+
 
 class OOChartPie(OOChartNVD3):
+
     pass
+
 
 class OOChartComulativeLine(OOChartNVD3):
+
     pass
+
 
 class OOChartLinePlusBar(OOChartNVD3):
+
     pass
+
 
 class OOChartHorizontalGroupedStackedBar(OOChartNVD3):
+
     pass
+
 
 class OOChartDescreteBar(OOChartNVD3):
+
     pass
+
 
 class OOChartStackedArea(OOChartNVD3):
-    pass
-    
-class OOChartLine(OOChartNVD3):
+
     pass
 
+
+class OOChartLine(OOChartNVD3):
+
+    pass
+
+
 class OOChartScatterBubble(OOChartNVD3):
+
     pass
 
 
 class OOChartMultiBar(OOChartNVD3):
+
     pass
 
 
 class OOChartBullet(OOChartNVD3):
+
     pass
 
 
@@ -2234,9 +2305,36 @@ class OOTable(WebTable):
             }
             return {'schema': schema, 'records': records, 'setting': setting}
 
+        def example_data_chart(self):
+            schema = [
+                {'name': ''},
+                {'name': ''},
+                {'name': ''}
+            ]
+            records = []
+            for _ in range(random.randint(6, 10)):
+                records.append((
+                    {'data': "render_chart:"},
+                    {'data': _getStr(random.randint(3, 6))},
+                    {'data': _getStr(random.randint(3, 6))}
+                ))
+            setting = {
+                'scrollY': '200px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy': True,
+                'colReorder': False,
+                'columnDefs': []
+            }
+            return {'schema': schema, 'records': records, 'setting': setting}
+
         def query(self, test="img"):
             if test == "img":
                 return self.example_data_img()
+            elif test == "chart":
+                return self.example_data_chart()
             else:
                 raise NotImplementedError
 
@@ -2319,15 +2417,21 @@ class OOTable(WebTable):
     def test_request(cls, methods=['GET', 'POST']):
 
         test_img_url = '/ootable_test_img'
+        test_chart_url = '/ootable_test_chart'
         if request.method == 'POST':
             if test_img_url in request.url_rule.rule:
                 table = OOTable(value={'model':cls.model,'query':{'test':'img'}})
                 html = ''.join(table._html())
                 setting = table.get_data(setting_only=True)
                 return jsonify({'status': 'success', 'data': {'html': html, 'setting': setting}})
-
+            if test_chart_url in request.url_rule.rule:
+                table = OOTable(value={'model':cls.model,'query':{'test':'chart'}})
+                html = ''.join(table._html())
+                setting = table.get_data(setting_only=True)
+                return jsonify({'status': 'success', 'data': {'html': html, 'setting': setting}})
         cls.add_url_rule(app=current_app)
         cls.add_url_rule(app=current_app, extend=[{'rule':test_img_url, 'view_func':cls.test_request, 'methods':['POST']}])
+        cls.add_url_rule(app=current_app, extend=[{'rule': test_chart_url, 'view_func': cls.test_request, 'methods': ['POST']}])
 
         with WebPage() as page:
             with page.add_child(WebRow()) as r2:
@@ -2369,11 +2473,40 @@ class OOTable(WebTable):
                             reorder_btn.alert('"Reorder columns"')
                             test.call_custom_func(fname=test.COLREORDER_FUNC_NAME, fparams={'id':'"{}"'.format(test.id()), 'order':'[6,5,4,3,2,1,0]'})
 
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebBr()):
+                pass
+
             with page.add_child(WebRow()) as r4:
-                with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r4:
-                    with r4.add_child(OOTable(url=test_img_url, value={'model':cls.model,'query':{'test':'img'}},mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
+                with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c4:
+                    with c4.add_child(OOTable(url=test_img_url,
+                                              value={'model':cls.model,'query':{'test':'img'}},
+                                              mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
                         pass
 
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebBr()):
+                pass
+
+            with page.add_child(WebRow()) as r5:
+                with r5.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
+                    with c5.add_child(OOTable(url=test_chart_url,
+                                              value={'model':cls.model,'query':{'test':'chart'}},
+                                              mytype=['striped', 'hover', 'borderless', 'responsive'])) as chart_table:
+                        pass
+
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebBr()):
+                pass
+
+            '''create a test chart here'''
+            with page.add_child(WebRow()) as r6:
+                with r6.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c6:
+                    with c6.add_child(WebDiv()) as div:
+                       pass
 
         scroll_event = []
         scroll_event.append('')
@@ -2383,8 +2516,6 @@ class OOTable(WebTable):
 
         with test.on_event_w('click_row'):
             test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
-
-
 
         html = page.render()
         return render_template_string(html)
