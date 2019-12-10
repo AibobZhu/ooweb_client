@@ -1077,17 +1077,23 @@ class WebBtnDropdown(WebBtn):
         '''
 
         with WebPage(test=True) as page:
-            with page.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'}, {'name': '测试2', 'href': '#'}])) as btn:
-                pass  # btn.clear(call=True)
-
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'}, {'name': '测试2', 'href': '#'}])) as btn:
+                        pass  # btn.clear(call=True)
+                    with c1.add_child(WebBtnDropdown(value='测试2', select_options=[{'name': '测试3', 'href': '#'},
+                                                                                  {'name': '测试4',
+                                                                                   'href': '#'}])) as btn2:
+                        pass
         # response to change event and pop up an alert
+        '''
         with btn.on_event_w('change'):
             page.alert('"WebBtnDropdown " + $(event.currentTarget).attr("id") + " is changed!"')
             with LVar(parent=btn, var_name='text') as text:
                 btn.val()
             with btn.if_w():
                 with btn.condition_w():
-                    text.equal('测试2')
+                    text.equal('"测试2"')
                 with btn.cmds_w():
                     page.alert('"Find 测试2"')
                     new_options = [{'name': 'test1', 'href': '#'}, {'name': 'test2', 'href': '#'}]
@@ -1099,17 +1105,23 @@ class WebBtnDropdown(WebBtn):
 
         # trigger a click a event and expect an alert poping up
         # btn.trigger_event(event='click',filter='a')
-
-        btn.set_js(True)
-        btn.val('"新测试"')  # expect a change event alert poping up
-        btn.set_js(False)
-
+        
         # set value of the dropdown button programingly, expecte poping up an alert of change event
-        '''
         btn.set_js(True)
         btn.val('"新测试"')
         btn.set_js(False)
         '''
+
+        # one drop button's action change another drop button value
+        with btn.on_event_w('change'):
+            with LVar(parent=btn, var_name='btn_val') as btn_value:
+                btn.val()
+            time_sel_opt = [{'name': '时间段', 'href': '#'},
+                            {'name': '时间1', 'href': '#'},
+                            {'name': '时间2', 'href': '#'}]
+            btn2.set_options(time_sel_opt)
+            btn2.val('"时间段"')
+
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
@@ -2269,9 +2281,9 @@ class OOTable(WebTable):
         '   return next_tr;\n',
     )
 
-    RENDER_IMG_FUNC_NAME = 'ootable_render_img'
-    RENDER_IMG_FUNC_ARGS = ['data','type','row','meta']
-    RENDER_IMG_FUNC_BODY = (
+    CELL_RENDER_FUNC_NAME = 'ootable_cell_render'
+    CELL_RENDER_FUNC_ARGS = ['data','type','row','meta']
+    CELL_RENDER_FUNC_BODY = (
        "if(data.indexOf('render_img:')==0){\n",
        "    return \"<img onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
        "};\n",
@@ -2391,9 +2403,13 @@ class OOTable(WebTable):
             raise NotImplementedError
             return json.dumps({'html': html, 'setting': cls.setting()})
         elif request.method == 'POST': # rule for default value
-            table = OOTable(value={'model':None,'value':None})
+            if not data:
+                data = {'model':None,'value':None}
+            if 'setting' not in data or not data['setting']:
+                data['setting'] = cls.setting()
+            table = OOTable(value=data)
             html = ''.join(table._html())
-            return jsonify({'status':'success', 'data': {'html': html, 'setting': cls.setting()}})
+            return jsonify({'status':'success', 'data': {'html': html, 'setting': data['setting']}})
         else:
             raise NotImplementedError
 
@@ -2409,7 +2425,7 @@ class OOTable(WebTable):
         ret = super().__enter__()
         #self.add_context_list(self._html())
         self.declare_custom_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS, self.ROW_CHILD_FORMAT_FUNC_BODY)
-        self.declare_custom_func(self.RENDER_IMG_FUNC_NAME, self.RENDER_IMG_FUNC_ARGS, self.RENDER_IMG_FUNC_BODY)
+        self.declare_custom_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS, self.CELL_RENDER_FUNC_BODY)
 
         return self
 
@@ -2540,6 +2556,16 @@ class OOTagGroup(WebTable):
         self._value = value
         if col_num:
             OOTagGroup.COL_NUM = col_num
+
+    @classmethod
+    def _example_setting(cls):
+        return {
+        'paging': False,
+        'scrollY': '500px',
+        'scrollX': True,
+        'searching': True,
+        'scrollCollapse': True,
+    }
 
     @classmethod
     def _example_data(cls, schema_only = False):

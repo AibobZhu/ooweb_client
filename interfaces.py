@@ -577,7 +577,7 @@ class ClientInf(MinXin, metaclass=abc.ABCMeta):
 class ListInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def append(self):
+    def append_w(self):
         pass
 
 
