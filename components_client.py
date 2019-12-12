@@ -1330,9 +1330,13 @@ class WebSvg(WebComponentBootstrap):
 
 class OOChartNVD3(WebSvg):
 
+    OOCHART_CLASSES = {}
+    OOCHART_CREATE_FUNC_NAME = 'oochart_create'
+
     @classmethod
-    def CALL_CREATE_FUNC(cls, svg, chart_type, chart_data, aobj):
-        params={'svg':svg, 'chart_type':chart_type, 'chart_data':chart_data, 'aobj_id': aobj.id()}
+    def CALL_CREATE_FUNC(cls,  svg, chart_type, chart_data, aobj, parent='null', duration=0, simple=False):
+        params={'svg':svg, 'chart_type':chart_type, 'chart_data':chart_data, 'aobj_id': aobj.id(), 'parent':parent,
+                'duration':duration, 'simple':simple}
         return aobj.class_func_call(cls=cls.__name__, params=params)
 
     @classmethod
@@ -1353,16 +1357,27 @@ class OOChartNVD3(WebSvg):
             '''
             with page.add_child(WebRow()) as row2:
                 with row2.add_child(WebColumn(width=['md8'],offset=['mdo2'])) as col2:
-                    #Create a svg
-                    with LVar(parent=col2, var_name='$test_chart') as test_chart:
-                        test_chart.add_script('$(document.createElementNS(d3.ns.prefix.svg, "svg")); \n', indent=False)
-                    #Create a chart
-                    OOChartNVD3.CALL_CREATE_FUNC(
-                        svg='$test_chart[0]', chart_type='bullet', chart_data='example', aobj=test_chart
-                    )
-                    #Append svg to a html element
-                    col2.add_script('$("#{}").append($test_chart);\n'.format(col2.id()))
-
+                    with col2.add_child(WebDiv(styles={'width': '200px', 'height': '150px'})) as div1:
+                        with div1.add_child(WebDiv(styles={'width': '100px', 'height': '100px'})) as div2:
+                            with LVar(parent=col2, var_name='$test_chart') as test_chart:
+                                test_chart.add_script('$(document.createElementNS(d3.ns.prefix.svg, "svg")); \n',
+                                                      indent=False)
+                            #test_chart.add_script('$test_chart[0].setAttribute("viewBox","100,100,10000,10000");\n')
+                            class_type = None
+                            for k, v in OOChartNVD3.OOCHART_CLASSES.items():
+                                if v == cls.__name__:
+                                    class_type = k
+                            OOChartNVD3.CALL_CREATE_FUNC(
+                                svg='$test_chart[0]', chart_type=class_type, chart_data='example', aobj=test_chart,
+                                parent='$("#{}")[0]'.format(div2.id()), simple=True
+                            )
+                            col2.add_script('$("#{}").append($test_chart);\n'.format(div2.id()))
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebBr()):
+                pass
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
@@ -1370,57 +1385,57 @@ class OOChartNVD3(WebSvg):
 
 class OOChartLineFinder(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['linefinder'] = __qualname__
 
 
 class OOChartPie(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['pie'] = __qualname__
 
 
 class OOChartComulativeLine(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['cline'] = __qualname__
 
 
 class OOChartLinePlusBar(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['lpbar'] = __qualname__
 
 
 class OOChartHorizontalGroupedStackedBar(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['hgsbar'] = __qualname__
 
 
 class OOChartDescreteBar(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['dbar'] = __qualname__
 
 
 class OOChartStackedArea(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['stackedarea'] = __qualname__
 
 
 class OOChartLine(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['line'] = __qualname__
 
 
 class OOChartScatterBubble(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['sbubble'] = __qualname__
 
 
 class OOChartMultiBar(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['mbar'] = __qualname__
 
 
 class OOChartBullet(OOChartNVD3):
 
-    pass
+    OOChartNVD3.OOCHART_CLASSES['bullet'] = __qualname__
 
 
 class OOGeneralSelector(WebBtnGroup):
@@ -2285,10 +2300,27 @@ class OOTable(WebTable):
     CELL_RENDER_FUNC_ARGS = ['data','type','row','meta']
     CELL_RENDER_FUNC_BODY = (
        "if(data.indexOf('render_img:')==0){\n",
-       "    return \"<img onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
-       "};\n",
+       "    return \"<img width='40px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
+       "};\n"
        "return data;\n",
     )
+
+    CREATED_CELL_RENDER_FUNC_NAME = 'ootable_created_cell_render'
+    CREATED_CELL_RENDER_FUNC_ARGS = ['td','cellData','rowData','row','col']
+    CREATED_CELL_RENDER_FUNC_BODY = (
+       "if(cellData.indexOf('render_chart:')==0){\n",
+       "    let content = cellData.substr('render_chart:'.length);\n",
+       "    let chart_type = content.split(';')[0];\n",
+       "    let chart_data = content.split(';')[1];\n",
+       "    let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));\n",
+       "    let fn = window[chart_data];\n",
+       "    //$(td).css('width','200px');\n",
+       "    //$(td).css('height','150px');\n",
+       "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
+       "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
+       "};\n",
+    )
+
 
     class OOTableExampleData(ExampleData):
 
@@ -2326,7 +2358,7 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(6, 10)):
                 records.append((
-                    {'data': "render_chart:"},
+                    {'data': "render_chart:"+"mbar;oochart_multibar_example_data"},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -2426,7 +2458,7 @@ class OOTable(WebTable):
         #self.add_context_list(self._html())
         self.declare_custom_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS, self.ROW_CHILD_FORMAT_FUNC_BODY)
         self.declare_custom_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS, self.CELL_RENDER_FUNC_BODY)
-
+        self.declare_custom_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS, self.CREATED_CELL_RENDER_FUNC_BODY)
         return self
 
     @classmethod

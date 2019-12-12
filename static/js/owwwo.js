@@ -1,4 +1,10 @@
-/* Inspired by Lee Byron's test data generator. */
+$.attrHooks['viewbox'] = {
+    set: function(elem, value, name) {
+        elem.setAttributeNS(null, 'viewBox', value + '');
+        return value;
+    }
+};
+
 function stream_layers(n, m, o) {
   if (arguments.length < 3) o = 0;
   function bump(a) {
@@ -40,7 +46,7 @@ function oochart_linefinder_example_data(){
         };
     });
 };
-function oochart_linefinder_create(svg_id,data,svg=null,duration=500){
+function oochart_linefinder_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
 
   var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
@@ -48,7 +54,9 @@ function oochart_linefinder_create(svg_id,data,svg=null,duration=500){
     }
   nv.addGraph(function() {
       var chart = nv.models.lineWithFocusChart();
-
+        if(simple){
+            chart.showLegend(false).showXAxis(false).showYAxis(false);
+        };
       chart.xAxis
         .tickFormat(d3.format(',f'));
 
@@ -79,7 +87,7 @@ function oochart_bullet_example_data(){
       "markers": [250]
     }
 }
-function oochart_bullet_create(svg_id,data,svg=null,duration=1000){
+function oochart_bullet_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -90,8 +98,14 @@ function oochart_bullet_create(svg_id,data,svg=null,duration=1000){
             .transition().duration(duration)
             .call(chart)
             ;
-
         return chart;
+    },function(){
+        if(simple){
+            let title = svg_d3.selectAll('.nv-titles');
+            title.attr('display','none');
+            let tick = svg_d3.selectAll('.nv-tick');
+            tick.attr('display','none');
+        };
     });
 
 }
@@ -133,7 +147,7 @@ function oochart_pie_example_data(){
     ]
 
 }
-function oochart_pie_create(svg_id,data,svg=null,duration=1200){
+function oochart_pie_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
 
   var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
@@ -144,12 +158,23 @@ function oochart_pie_create(svg_id,data,svg=null,duration=1200){
           .x(function(d) { return d.label })
           .y(function(d) { return d.value })
           .showLabels(true);
-
+      if(simple){
+        //chart.margin({top:0,right:0,bottom:0,left:0});
+        chart.showLegend(false).showLabels(false).legend.margin({top:0,right:0,bottom:0,left:0});
+      }
         svg_d3.datum(data)
           .transition().duration(duration)
             .call(chart);
 
       return chart;
+  },function(){
+    if(simple){
+       svg_d3.selectAll('.nv-legend').remove();
+       svg_d3.selectAll('text').remove();
+       svg_d3.selectAll('.nv-legendWrap').remove();
+       svg_d3.selectAll('.nv-pieLabels').remove();
+
+    };
   });
 
 }
@@ -174,7 +199,7 @@ function oochart_cumulativeline_example_data(){
       }
     ]
 }
-function oochart_comulativeline_create(svg_id,data,svg=null,duration=500){
+function oochart_comulativeline_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -203,6 +228,14 @@ function oochart_comulativeline_create(svg_id,data,svg=null,duration=500){
       nv.utils.windowResize(chart.update);
 
       return chart;
+    },function(){
+        if(simple){
+            svg_d3.selectAll('text').remove();
+            svg_d3.selectAll('.nv-axis').remove()
+            svg_d3.selectAll('.nv-legendWrap').remove()
+            svg_d3.selectAll('.nv-controlsWrap').remove()
+
+        };
     });
 
 }
@@ -221,7 +254,7 @@ function oochart_line_plus_bar_example_data(){
     ]
 
 }
-function oochart_lineplusbar_create(svg_id,data,svg=null,duration=500){
+function oochart_lineplusbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -233,7 +266,9 @@ function oochart_lineplusbar_create(svg_id,data,svg=null,duration=500){
           .y(function(d) { return d[1] })
           .color(d3.scale.category10().range())
           ;
-
+        if(simple){
+            chart.showLegend(false);
+        };
         chart.xAxis
           .showMaxMin(false)
           .tickFormat(function(d) {
@@ -257,6 +292,10 @@ function oochart_lineplusbar_create(svg_id,data,svg=null,duration=500){
         nv.utils.windowResize(chart.update);
 
         return chart;
+    },function(){
+        svg_d3.selectAll('.nv-legendWrap').remove();
+        svg_d3.selectAll('.nv-axis').remove();
+
     });
 
 }
@@ -349,7 +388,7 @@ function oochart_hgsbar_example_data(){
       }
     ]
 }
-function oochart_hgsbar_create(svg_id,data,svg=null,duration=500){
+function oochart_hgsbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -361,7 +400,9 @@ function oochart_hgsbar_create(svg_id,data,svg=null,duration=500){
           .margin({top: 30, right: 20, bottom: 50, left: 175})
           .showValues(true)
           .showControls(false);
-
+      if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+        };
       chart.yAxis
           .tickFormat(d3.format(',.2f'));
 
@@ -417,7 +458,7 @@ function ootable_descrete_bar_example_data(){
       }
     ]
 }
-function oochart_discretebar_create(svg_id,data,svg=null,duration=500){
+function oochart_discretebar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
   var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -428,7 +469,9 @@ function oochart_discretebar_create(svg_id,data,svg=null,duration=500){
         .y(function(d) { return d.value })
         .staggerLabels(true)
         .showValues(true)
-
+      if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+        };
       svg_d3.datum(data)
         .transition().duration(duration)
         .call(chart)
@@ -480,7 +523,7 @@ function oochart_stackedarea_example_data(){
 ]
 
 }
-function oochart_stackedarea_create(svg_id,data,svg=null,duration=500){
+function oochart_stackedarea_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
   var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -492,7 +535,9 @@ function oochart_stackedarea_create(svg_id,data,svg=null,duration=500){
                     .clipEdge(true)
                     .useInteractiveGuideline(true)
                     ;
-
+      if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+        };
       chart.xAxis
           .showMaxMin(false)
           .tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
@@ -541,7 +586,7 @@ function oochart_line_example_data(){
     }
   ];
 }
-function oochart_line_create(svg_id,data,svg=null,duration=500){
+function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -550,7 +595,9 @@ function oochart_line_create(svg_id,data,svg=null,duration=500){
       var chart = nv.models.lineChart()
         .useInteractiveGuideline(true)
         ;
-
+      if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+        };
       chart.xAxis
         .axisLabel('Time (ms)')
         .tickFormat(d3.format(',r'))
@@ -595,7 +642,7 @@ function oochart_scatterbubble_example_data(groups=4, points=40){
       }
       return data;
 };
-function oochart_scatterbubble_create(svg_id,data,svg=null,duration=500){
+function oochart_scatterbubble_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
@@ -605,6 +652,9 @@ function oochart_scatterbubble_create(svg_id,data,svg=null,duration=500){
                     .showDistX(true)
                     .showDistY(true)
                     .color(d3.scale.category10().range());
+      if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+        };
 
       chart.xAxis.tickFormat(d3.format('.02f'));
       chart.yAxis.tickFormat(d3.format('.02f'));
@@ -627,29 +677,51 @@ function oochart_multibar_example_data(){
         };
     });
 }
-function oochart_multibar_create(svg_id,data,svg=null,duration=500){
+function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, simple=false){
     var svg_d3 = d3.select('#'+svg_id);
     if(svg_id == null){
         svg_d3 = d3.select(svg);
     }
     nv.addGraph(function() {
-    var chart = nv.models.multiBarChart();
+        var chart = nv.models.multiBarChart();
+        if(simple){
+            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+            chart.margin({top:0,right:0,bottom:0,left:0});
+        };
 
-    chart.xAxis
-        .tickFormat(d3.format(',f'));
+        chart.xAxis
+            .tickFormat(d3.format(',f'));
 
-    chart.yAxis
-        .tickFormat(d3.format(',.1f'));
+        chart.yAxis
+            .tickFormat(d3.format(',.1f'));
 
-    svg_d3.datum(data)
-        .transition().duration(duration)
-        .call(chart)
-        ;
+        svg_d3.datum(data)
+            .transition().duration(duration)
+            .call(chart)
+            ;
 
-    nv.utils.windowResize(chart.update);
+        nv.utils.windowResize(chart.update);
 
-    return chart;
-});
+        return chart;
+    }, function(){
+        if(parent != null){
+            let _$svg = $('#'+svg_id);
+            if(svg != null){
+                _$svg = $(svg);
+            };
+            /*
+            if( simple){
+                let buttons = _$svg.find('.nv-legendWrap');
+                buttons.css('display','none');
+            };*/
+            $(parent).empty();
+            _$svg.attr('viewBox','0 0 450 80')
+            $(parent).attr('width','100px')
+            $(parent).attr('height','70px')
+            //$div = $("<div style='width:100px;height:70px'></div>").append(_$svg);
+            $(parent).append(_$svg);
+        };
+    });
 
 }
 
