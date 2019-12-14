@@ -1982,6 +1982,7 @@ class WebTable(WebComponentBootstrap):
         WebTable._head_classes = head_classes
         WebTable._body_classes = body_classes
 
+
     @classmethod
     def _head_styles_str(cls):
         ret = ''
@@ -2049,8 +2050,8 @@ class WebTable(WebComponentBootstrap):
         '''
 
         schema = [
-                {'name': '事件', 'style': '', 'attr': ''},
-                {'name': '审批', 'style': '', 'attr': '', 'type':'checkbox'},
+                {'name': '事件', 'style': 'width:30%', 'attr': ''},
+                {'name': '审批', 'style': 'width:20%', 'attr': '', 'type':'checkbox'},
                 {'name': '完成', 'style': '', 'attr': '', 'type':'checkbox'},
                 {'name': '审核', 'style': '', 'attr': '', 'type':'checkbox'},
                 {'name': '开始', 'style': '', 'attr': ''},
@@ -2090,6 +2091,9 @@ class WebTable(WebComponentBootstrap):
             _data = self.get_data()
         else:
             _data = data
+
+        if not _data:
+            return None
 
         def _head_colspan(head):
             colspan = 0
@@ -2189,7 +2193,7 @@ class WebTable(WebComponentBootstrap):
             for tr in matrix:
                 html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
                 for th in tr:
-                    html.append('        <th class="{}" style="{}" {}>{}</th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
+                    html.append('        <th class="{}" style="{}" {}><div>{}</div></th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
 
             columns = []
@@ -2300,7 +2304,7 @@ class OOTable(WebTable):
     CELL_RENDER_FUNC_ARGS = ['data','type','row','meta']
     CELL_RENDER_FUNC_BODY = (
        "if(data.indexOf('render_img:')==0){\n",
-       "    return \"<img width='40px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
+       "    return \"<img width='100px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
        "};\n"
        "return data;\n",
     )
@@ -2314,8 +2318,8 @@ class OOTable(WebTable):
        "    let chart_data = content.split(';')[1];\n",
        "    let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));\n",
        "    let fn = window[chart_data];\n",
-       "    //$(td).css('width','200px');\n",
-       "    //$(td).css('height','150px');\n",
+       "    $svg.css('width','100px');\n",
+       "    $svg.css('height','60px');\n",
        "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
        "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
        "};\n",
@@ -2356,7 +2360,7 @@ class OOTable(WebTable):
                 {'name': ''}
             ]
             records = []
-            for _ in range(random.randint(6, 10)):
+            for _ in range(random.randint(2, 2)):
                 records.append((
                     {'data': "render_chart:"+"mbar;oochart_multibar_example_data"},
                     {'data': _getStr(random.randint(3, 6))},
@@ -2542,19 +2546,14 @@ class OOTable(WebTable):
                 with r5.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
                     with c5.add_child(OOTable(url=test_chart_url,
                                               value={'model':cls.model,'query':{'test':'chart'}},
-                                              mytype=['striped', 'hover', 'borderless', 'responsive'])) as chart_table:
+                                              mytype=['striped', 'hover', 'borderless', 'responsive'],
+                                              )) as chart_table:
                         pass
 
             with page.add_child(WebBr()):
                 pass
             with page.add_child(WebBr()):
                 pass
-
-            '''create a test chart here'''
-            with page.add_child(WebRow()) as r6:
-                with r6.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c6:
-                    with c6.add_child(WebDiv()) as div:
-                       pass
 
         scroll_event = []
         scroll_event.append('')

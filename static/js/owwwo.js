@@ -715,10 +715,9 @@ function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, s
                 buttons.css('display','none');
             };*/
             $(parent).empty();
-            _$svg.attr('viewBox','0 0 450 80')
-            $(parent).attr('width','100px')
-            $(parent).attr('height','70px')
-            //$div = $("<div style='width:100px;height:70px'></div>").append(_$svg);
+            _$svg.attr('viewBox','0 0 100 60')
+            //$(parent).attr('width','100px')
+            //$(parent).attr('height','70px')
             $(parent).append(_$svg);
         };
     });

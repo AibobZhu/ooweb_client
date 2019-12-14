@@ -4,7 +4,7 @@
 // set up main nv object
 var nv = {};
 
-// the major global objects under the nv namespace
+// the major global objects under the nv namespacexAxis
 nv.dev = false; //set false when in production
 nv.tooltip = nv.tooltip || {}; // For the tooltip system
 nv.utils = nv.utils || {}; // Utility subsystem
