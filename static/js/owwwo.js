@@ -1,3 +1,23 @@
+var ootable_timely_execute_queue = []
+var ootable_timeout_execute_queue = []
+
+$(function(){
+    setInterval(function(){
+        $.each(ootable_timely_execute_queue, function(index, value){
+          value();
+        });
+    },3000);
+    setTimeout(function(){
+        $.each(ootable_timeout_execute_queue, function(index, value){
+            value();
+        })
+    },10000);
+});
+
+function ootable_init_complete() {
+    this.api().columns.adjust().draw()
+};
+
 $.attrHooks['viewbox'] = {
     set: function(elem, value, name) {
         elem.setAttributeNS(null, 'viewBox', value + '');

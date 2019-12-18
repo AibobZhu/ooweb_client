@@ -2325,6 +2325,7 @@ class OOTable(WebTable):
        "};\n",
     )
 
+    TIMELY_EVENT_QUEUE = "ootable_timely_execute_queue"
 
     class OOTableExampleData(ExampleData):
 
@@ -2409,6 +2410,9 @@ class OOTable(WebTable):
     def customer_search(self, search):
         params = {'search': search}
         return self.func_call(params)
+
+    def columns_adjust(self):
+        return self.func_call({})
 
     def draw(self):
         return self.func_call({})
@@ -2555,8 +2559,10 @@ class OOTable(WebTable):
             with page.add_child(WebBr()):
                 pass
 
-        scroll_event = []
-        scroll_event.append('')
+        with test.on_event_w('timeout'):
+            test.add_script('console.log("ootable on timeout event");\n')
+            test.columns_adjust()
+
         with input.on_event_w('change'):
             page.alert('"searching ... "')
             test.draw()
