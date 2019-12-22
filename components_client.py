@@ -579,8 +579,18 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         return self.__class__.__name__
 
     def url(self, url=None):
+        '''
         params = {'url':url}
         return self.func_call(params)
+        '''
+        if not url:
+            if self._parent:
+                return self._parent.url()
+            else:
+                return self._url
+        else:
+            self._url = url
+            return url
 
     def url_for(self, context):
         pass
@@ -852,11 +862,20 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
 class WebPage(WebComponentBootstrap,TestPage):
 
+    URL = '/WebPage'
+
     def __init__(self,  test=False, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
+        self._url = self.URL
+        kwargs['url'] = self.URL
         super().__init__(test=test, **kwargs)
         self.add_app()
+        if current_app:
+            try:
+                self.add_url_rule(app=current_app, extend=[{'rule': self.URL, 'view_func': self.on_post, 'methods': ['POST']}])
+            except AssertionError:
+                pass
 
 
 class WebA(WebComponentBootstrap):
@@ -1951,6 +1970,7 @@ class OOCalendarBar(WebDiv):
 
 
 class WebTable(WebComponentBootstrap):
+
     '''
     WebTable generates a html table from a data including schema and records.
     schema leads to table heads and records lead to table body.
@@ -1966,22 +1986,15 @@ class WebTable(WebComponentBootstrap):
     TODO: Change the members of model and query from class to object
     '''
 
-
-    HTML_URL = '/webtable/webtable_html'
-
-    def __init__(self, value={'model':None, 'value':None}, head_classes=[],
+    def __init__(self, value=None, head_classes=[],
                  body_classes=[], head_styles=None, body_styles=None, url=None, **kwargs):
-        if not url:
-            kwargs['url'] = self.HTML_URL
-        else:
-            kwargs['url'] = url
-        super().__init__(**kwargs)
         self._value = value
+        kwargs['value'] = value
+        super().__init__(**kwargs)
         WebTable._head_styles = head_styles
         WebTable._body_styles = body_styles
         WebTable._head_classes = head_classes
         WebTable._body_classes = body_classes
-
 
     @classmethod
     def _head_styles_str(cls):
@@ -2085,7 +2098,8 @@ class WebTable(WebComponentBootstrap):
 
         return data
 
-    def _html(self, data=None):
+    @classmethod
+    def _html(cls, data=None, head_class=None, head_style=None):
 
         if not data:
             _data = self.get_data()
@@ -2191,7 +2205,9 @@ class WebTable(WebComponentBootstrap):
                 _head_matrix(h, matrix,0)
 
             for tr in matrix:
-                html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
+                #html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
+                html.append(
+                    '    <tr class="{}" style="{}">\n'.format(head_class, head_style))
                 for th in tr:
                     html.append('        <th class="{}" style="{}" {}><div>{}</div></th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
                 html.append('    </tr>\n')
@@ -2232,6 +2248,7 @@ class WebTable(WebComponentBootstrap):
 
         return html
 
+    '''
     @classmethod
     def on_post(cls):
         ret = Action.on_post()
@@ -2241,6 +2258,7 @@ class WebTable(WebComponentBootstrap):
             table = globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])
             _data['html'] = table._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
+    '''
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
@@ -2254,7 +2272,7 @@ class WebTable(WebComponentBootstrap):
     @classmethod
     def test_request(cls, methods=['GET']):
 
-        cls.add_url_rule(current_app)
+        #cls.add_url_rule(current_app)
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
@@ -2385,6 +2403,18 @@ class OOTable(WebTable):
             elif test == "chart":
                 return self.example_data_chart()
             else:
+                data =  WebTable._example_data()
+                data['setting'] = {
+                    'scrollY': '200px',
+                    'scrollX': True,
+                    'scrollCollapse': True,
+                    'paging': False,
+                    'searching': False,
+                    'destroy': True,
+                    'colReorder': False,
+                    'columnDefs': []
+                }
+                return data
                 raise NotImplementedError
 
     model = OOTableExampleData()
@@ -2472,6 +2502,9 @@ class OOTable(WebTable):
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
 
+        test_url = '/ootable_test'
+
+        '''
         test_img_url = '/ootable_test_img'
         test_chart_url = '/ootable_test_chart'
         if request.method == 'POST':
@@ -2488,15 +2521,45 @@ class OOTable(WebTable):
         cls.add_url_rule(app=current_app)
         cls.add_url_rule(app=current_app, extend=[{'rule':test_img_url, 'view_func':cls.test_request, 'methods':['POST']}])
         cls.add_url_rule(app=current_app, extend=[{'rule': test_chart_url, 'view_func': cls.test_request, 'methods': ['POST']}])
+        '''
 
-        with WebPage() as page:
+        class Page(WebPage):
+            URL = test_url
+
+            @classmethod
+            def on_post(cls):
+                ret = super().on_post()
+                if request.method == 'POST':
+                    if ret['data']['me'] == 'image_table':
+                        #table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
+                        data = OOTable.model.query('img')
+                        html = ''.join(OOTable._html(data=data))
+                        #setting = table.get_data(setting_only=True)
+                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+                    if  ret['data']['me'] == 'chart_table':
+                        data = OOTable.model.query('chart')
+                        #table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
+                        html = ''.join(OOTable._html(data=data))
+                        #setting = OOTable.get_data(setting_only=True)
+                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+                    if ret['data']['me'] == 'test':
+                        data = OOTable.model.query("test")
+                        html = ''.join(OOTable._html(data=data))
+                        #setting = table.get_data(setting_only=True)
+                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+
+            def type_(self):
+                return 'WebPage'
+
+        with Page() as page:
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
                     with c2.add_child(WebInput(value='')) as input:
                         pass
+
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="700px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](value='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         #test.render_func()
                         customer_search = []
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
@@ -2507,6 +2570,7 @@ class OOTable(WebTable):
                         customer_search.append('};\n')
                         test.customer_search(customer_search)
 
+            '''
             with page.add_child(WebRow()) as r3:
                 with r3.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as r3:
                     with r3.add_child(WebBtn(value='render')) as render_btn:
@@ -2528,6 +2592,7 @@ class OOTable(WebTable):
                         with reorder_btn.on_event_w('click'):
                             reorder_btn.alert('"Reorder columns"')
                             test.call_custom_func(fname=test.COLREORDER_FUNC_NAME, fparams={'id':'"{}"'.format(test.id()), 'order':'[6,5,4,3,2,1,0]'})
+            '''
 
             with page.add_child(WebBr()):
                 pass
@@ -2536,8 +2601,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r4:
                 with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c4:
-                    with c4.add_child(OOTable(url=test_img_url,
-                                              value={'model':cls.model,'query':{'test':'img'}},
+                    with c4.add_child(OOTable(value='image_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
                         pass
 
@@ -2548,8 +2612,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r5:
                 with r5.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
-                    with c5.add_child(OOTable(url=test_chart_url,
-                                              value={'model':cls.model,'query':{'test':'chart'}},
+                    with c5.add_child(OOTable(value='chart_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'],
                                               )) as chart_table:
                         pass
@@ -2559,6 +2622,7 @@ class OOTable(WebTable):
             with page.add_child(WebBr()):
                 pass
 
+        '''
         with test.on_event_w('timeout'):
             test.add_script('console.log("ootable on timeout event");\n')
             test.columns_adjust()
@@ -2569,6 +2633,7 @@ class OOTable(WebTable):
 
         with test.on_event_w('click_row'):
             test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
+        '''
 
         html = page.render()
         return render_template_string(html)
@@ -2738,6 +2803,7 @@ class OOList(ListInf, WebComponentBootstrap):
 
     def __repr__(self):
         return self._var_name
+
 
 class OODict(DictInf, WebComponentBootstrap):
 
