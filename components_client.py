@@ -197,8 +197,8 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
 
         :return: jsonify({'status':'success','data': data})
         '''
-        r = json.loads(request.form.get('data'))
-        return {"status": "sucess", 'data': r}
+        data = json.loads(request.form.get('data'))
+        return {"status": "sucess", 'data': data['data'], 'me': data['me']}
 
     @contextmanager
     def each_w(self):
@@ -1500,7 +1500,34 @@ class OOGeneralSelector(WebBtnGroup):
     def test_request(cls, methods=['GET']):
         '''Create a testing page containing the component which is being tested'''
 
-        with WebPage() as page:
+        class Page(WebPage):
+            URL = '/oogselector_test'
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+            @classmethod
+            def on_post(cls):
+                ret = super().on_post()
+                if ret['me'] == 'oogeneralselector':
+                    #ret['data'] = OOGeneralSelector._example_data()
+                    for d in ret['data']:
+                        if not d['options']:
+                            option1 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
+                            option1['name'] = d['name'] + '_option1'
+                            option2 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
+                            option2['name'] = d['name'] + '_option2'
+                            d['options'].append(option1)
+                            d['options'].append(option2)
+                            d['name']='test00'
+                            d['select']='test00'
+                            break
+                    return jsonify(ret)
+                else:
+                    return jsonify({'status':'False'})
+
+        with Page() as page:
             with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
                 pass
                 '''
@@ -1511,12 +1538,14 @@ class OOGeneralSelector(WebBtnGroup):
                     with test.post_w():
                         pass
                 '''
+        '''
         with test.on_event_w('select'):
-            #test.add_script('''"var data = " + test.fix_cmd(test.val())''')
-            with Var(parent=test) as data:
+            #test.add_script('"var data = " + test.fix_cmd(test.val())')
+            with Var(parent=test, var_name='data') as data:
                 test.val()
             with test.post_w():
                 test.val(data)
+        '''
 
         # Test getting general selector value by its button id
         with test.on_event_w('change'):
