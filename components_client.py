@@ -1201,7 +1201,22 @@ class OODatePickerSimple(WebInputGroup):
     @classmethod
     def test_request(cls, methods=['GET']):
          # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
-        with WebPage() as page:
+
+        class Page(WebPage):
+             URL = '/oodatepickersimple_test'
+
+             @classmethod
+             def type_(cls):
+                return 'WebPage'
+
+             @classmethod
+             def on_post(cls):
+                 req = super().on_post()
+                 if req['me'] == 'oodatepicker':
+                     print(req['me'])
+                 return jsonify({'status': 'success', 'data': 'null'})
+
+        with Page() as page:
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
                 test1.set_js(True)
                 test1.disable(btn_only=True, disable=True)
@@ -1275,7 +1290,22 @@ class OODatePickerRange(OODatePickerSimple):
         '''Create a testing page containing the component which is being tested'''
 
         #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
-        with WebPage() as page:
+
+        class Page(WebPage):
+             URL = '/oodatepickerrange_test'
+
+             @classmethod
+             def type_(cls):
+                return 'WebPage'
+
+             @classmethod
+             def on_post(cls):
+                 req = super().on_post()
+                 if req['me'] == 'oodatepicker':
+                     print('{} {}\n'.format(req['me'], req['data']))
+                 return jsonify({'status': 'success', 'data': 'null'})
+
+        with Page() as page:
             with page.add_child(globals()[cls.__name__](test=True)) as test1:
                 pass
             with page.add_child(globals()[cls.__name__](test=True)) as test2:
