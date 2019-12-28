@@ -888,7 +888,9 @@ class WebPage(WebComponentBootstrap,TestPageClient):
 
         try:
             if current_app:
-                self.add_url_rule(current_app, extend=[{'rule': self.URL, 'endpoint': None, 'view_func': self.on_post, 'methods': ['POST']}])
+                self.add_url_rule(current_app, extend=[{'rule': self.URL, 'endpoint': str(self.id())+'.on_post', 'view_func': self.on_post, 'methods': ['POST']}])
+                #print('url_map:{}'.format(pprint.pformat(current_app.url_map)))
+                #print('view_functions:{}'.format(pprint.pformat(current_app.view_functions)))
         except AssertionError:
             print("Add url rule error!")
 
@@ -1587,7 +1589,7 @@ class OOGeneralSelector(WebBtnGroup):
                 else:
                     return jsonify({'status':'False'})
 
-        with Page(test=True) as page:
+        with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                     with c1.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs1:
