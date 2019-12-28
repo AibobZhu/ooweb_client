@@ -76,7 +76,7 @@ class ClientBase(metaclass=abc.ABCMeta):
 TODO: try with eval, just pass the function calling and express in string, then execute with 'eval' on server side
 '''
 
-class Action(CommandInf, ActionInf, Test, ClientBase):
+class Action(CommandInf, ActionInf, TestClient, ClientBase):
 
     @contextmanager
     def if_w(self):
@@ -197,8 +197,11 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
 
         :return: jsonify({'status':'success','data': data})
         '''
-        data = json.loads(request.form.get('data'))
-        return {"status": "sucess", 'data': data['data'], 'me': data['me']}
+        req = json.loads(request.form.get('data'))
+        data = None
+        if 'data' in req:
+            data = req['data']
+        return {"status": "sucess", 'data': data, 'me': req['me']}
 
     @contextmanager
     def each_w(self):
@@ -267,8 +270,11 @@ class Action(CommandInf, ActionInf, Test, ClientBase):
         params = {'event': event}
         self.func_call(params)
 
-    def val(self,value=''):
-        params = {'value': value}
+    def val(self,value=None):
+        if value:
+            params = {'value': value}
+        else:
+            params = {}
         self.func_call(params)
 
     def empty(self):
@@ -472,7 +478,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             'sub_context': sub_context
         }
 
-    def __init__(self, test=False, **kwargs):
+    def __init__(self, test=False, client=True, **kwargs):
+        self._client = client
+        kwargs['client'] = client
         super().__init__(test=test,**kwargs)
         if 'id' in kwargs:
             self._id = kwargs['id']
@@ -513,7 +521,8 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         if hasattr(self, "app") and self.app:
             self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
         else:
-            self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
+            if current_app:
+                self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
     def __enter__(self):
         '''
@@ -860,22 +869,28 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
             self._value = self.__class__.__name__ + 'Test'
 
 
-class WebPage(WebComponentBootstrap,TestPage):
+class WebPage(WebComponentBootstrap,TestPageClient):
 
     URL = '/WebPage'
 
-    def __init__(self,  test=False, **kwargs):
+    def __init__(self,  test=False, app=None, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
         self._url = self.URL
         kwargs['url'] = self.URL
+
+        if app:
+            self.app = app
+        if not hasattr(self, 'app'):
+            self.app = current_app
         super().__init__(test=test, **kwargs)
         self.add_app()
-        if current_app:
-            try:
-                self.add_url_rule(app=current_app, extend=[{'rule': self.URL, 'view_func': self.on_post, 'methods': ['POST']}])
-            except AssertionError:
-                pass
+
+        try:
+            if current_app:
+                self.add_url_rule(current_app, extend=[{'rule': self.URL, 'endpoint': None, 'view_func': self.on_post, 'methods': ['POST']}])
+        except AssertionError:
+            print("Add url rule error!")
 
 
 class WebA(WebComponentBootstrap):
@@ -1264,7 +1279,22 @@ class OODatePickerIcon(WebInputGroup):
 
     @classmethod
     def test_request(cls, methods=['GET']):
-        with WebPage() as page:
+        class Page(WebPage):
+            URL = '/oodatepickericon_test'
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+
+            @classmethod
+            def on_post(cls):
+                req = super().on_post()
+                if req['me'] == 'oodatepicker':
+                    print(req['me'])
+                return jsonify({'status':'success', 'data':'null'})
+
+        with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=["md8"],offset=['mdo2'])) as c1:
                     with page.add_child(WebHead1(value="Test OODatePickerIcon with week view")):
@@ -1292,18 +1322,18 @@ class OODatePickerRange(OODatePickerSimple):
         #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
 
         class Page(WebPage):
-             URL = '/oodatepickerrange_test'
+            URL = '/oodatepickerrange_test'
 
-             @classmethod
-             def type_(cls):
+            @classmethod
+            def type_(cls):
                 return 'WebPage'
 
-             @classmethod
-             def on_post(cls):
-                 req = super().on_post()
-                 if req['me'] == 'oodatepicker':
-                     print('{} {}\n'.format(req['me'], req['data']))
-                 return jsonify({'status': 'success', 'data': 'null'})
+            @classmethod
+            def on_post(cls):
+                req = super().on_post()
+                if req['me'] == 'oodatepicker':
+                    print(req['me'])
+                return jsonify({'status': 'success', 'data': 'null'})
 
         with Page() as page:
             with page.add_child(globals()[cls.__name__](test=True)) as test1:
@@ -1557,9 +1587,17 @@ class OOGeneralSelector(WebBtnGroup):
                 else:
                     return jsonify({'status':'False'})
 
-        with Page() as page:
-            with page.add_child(globals()[cls.__name__](test=True, name="Test")) as test:
+        with Page(test=True) as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs1:
+                        pass
+            with page.add_child(WebBr()) as br:
                 pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs2:
+                        pass
                 '''
                 with test.on_select():
                     test.set_script_indent(-1)
@@ -1578,10 +1616,17 @@ class OOGeneralSelector(WebBtnGroup):
         '''
 
         # Test getting general selector value by its button id
-        with test.on_event_w('change'):
-            with LVar(parent=test, var_name='gs_value') as gs_value:
-                test.call_custom_func(fname=test.VAL_BY_BTN_NAME, fparams={'btn_id': '$(event.target).attr("id")'})
-            test.alert('"The general selector\'s value:"+gs_value')
+        with gs1.on_event_w('change'):
+            with LVar(parent=gs1, var_name='gs1_value') as gs1_value:
+                gs1.val()
+            gs2.val('gs1_value')
+            gs1.alert('"The general selector gs1\'s value:"+gs1_value')
+
+        with gs2.on_event_w('change'):
+            with LVar(parent=gs2, var_name='gs2_value') as gs2_value:
+                gs2.val()
+            gs1.val('gs2_value')
+            gs2.alert('"The general selector gs2\'s value:"+gs2_value')
 
         html = page.render()
         return render_template_string(html)

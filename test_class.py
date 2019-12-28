@@ -1,6 +1,6 @@
 import os, datetime
 from flask_sqlalchemy import SQLAlchemy
-from flask import render_template_string
+from flask import render_template_string, current_app
 
 class MinXin:
 
@@ -30,10 +30,10 @@ class Test(MinXin):
 
         return cls._SUBCLASSES
 
-    def __init__(self, test=False, **kwargs):
+    def __init__(self, test=False, client=False, **kwargs):
         super().__init__(**kwargs)
         self._test = test
-        if self._test and hasattr(self,'test_init'):
+        if self._test and not self._client and hasattr(self,'test_init'):
             self.test_init()
 
     def get_test_js(self):
@@ -70,13 +70,22 @@ class Test(MinXin):
         pass
 
 
+class TestClient(Test):
+
+    def __init__(self, test=False, **kwargs):
+        super().__init__(**kwargs)
+        self._test = test
+        if self._test and self._client and hasattr(self,'test_init'):
+            self.test_init()
+
+
 class TestPage(Test):
 
     _TEST_DB = 'test.db'
 
     def __init__(self, test=False, **kwargs):
         super().__init__(test=test, **kwargs)
-        if test:
+        if test and not self._client:
             TestPage.test_init(self)
 
     def test_init(self):
@@ -127,12 +136,18 @@ class TestPage(Test):
         def week():
             print('week')
 
-
-
         return app
 
     def test_start(self):
         self.app.run(port=5600, threaded=True)
+
+
+class TestPageClient(TestClient, TestPage):
+
+    def __init__(self, test=False, **kwargs):
+        super().__init__(test=test, **kwargs)
+        if test and self._client:
+            TestPage.test_init(self)
 
 
 class ExampleData():
