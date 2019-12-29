@@ -512,7 +512,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             kwargs['test'] = False
 
         if hasattr(self, '_value'):
-            kwargs['_value'] = self._value
+            kwargs['value'] = self._value
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
         #self._mycont = self.add_context(context)
@@ -635,7 +635,6 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             'styles':rdata['styles'],
             'styles_files':rdata['style_files']
         }
-
 
     def context(self):
         if self._parent:
@@ -962,7 +961,12 @@ class WebField(WebComponentBootstrap):
 
 
 class WebImg(WebComponentBootstrap):
-    pass
+
+    def __init__(self, value=None, **kwargs):
+
+        if value:
+            kwargs['value'] = value
+        super().__init__(**kwargs)
 
 
 class WebBtnToggle(WebComponentBootstrap):
@@ -977,9 +981,7 @@ class WebBtnToggle(WebComponentBootstrap):
 
 
 class WebBtnGroup(WebComponentBootstrap):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    pass
 
 
 class WebBtnGroupVertical(WebComponentBootstrap):
@@ -1103,12 +1105,6 @@ class WebBtn(WebComponentBootstrap):
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
-
-    @classmethod
-    def on_post(cls):
-        r = super().on_post()
-        print('WebBtn.test_result, get data:{}'.format(r['data']))
-        return jsonify({'status':'success', 'data':'test post_w function success!'})
 
 
 class WebBtnDropdown(WebBtn):
@@ -2598,6 +2594,7 @@ class OOTable(WebTable):
                 'colReorder': True
             }
 
+    '''
     @classmethod
     def on_post(cls, data=None, methods=['GET','POST']):
 
@@ -2614,6 +2611,7 @@ class OOTable(WebTable):
             return jsonify({'status':'success', 'data': {'html': html, 'setting': data['setting']}})
         else:
             raise NotImplementedError
+    '''
 
     def get_data(self, setting_only=False):
         data = super().get_data()
@@ -2662,19 +2660,19 @@ class OOTable(WebTable):
             def on_post(cls):
                 ret = super().on_post()
                 if request.method == 'POST':
-                    if ret['data']['me'] == 'image_table':
+                    if ret['me'] == 'image_table':
                         #table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
                         data = OOTable.model.query('img')
                         html = ''.join(OOTable._html(data=data))
                         #setting = table.get_data(setting_only=True)
                         return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                    if  ret['data']['me'] == 'chart_table':
+                    if  ret['me'] == 'chart_table':
                         data = OOTable.model.query('chart')
                         #table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
                         html = ''.join(OOTable._html(data=data))
                         #setting = OOTable.get_data(setting_only=True)
                         return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                    if ret['data']['me'] == 'test':
+                    if ret['me'] == 'test':
                         data = OOTable.model.query("test")
                         html = ''.join(OOTable._html(data=data))
                         #setting = table.get_data(setting_only=True)
