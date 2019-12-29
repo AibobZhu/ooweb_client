@@ -8,6 +8,7 @@
 #########################################
 from interfaces import *
 
+import flask
 from flask import current_app, render_template_string, request, jsonify, url_for
 import uuid
 import pprint
@@ -288,6 +289,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
     def _example_data(cls):
         raise NotImplementedError
 
+    @classmethod
     def add_url_rule(cls, app, extend=[]):
         if extend:
             for e in extend:
@@ -873,6 +875,23 @@ class WebPage(WebComponentBootstrap,TestPageClient):
 
     URL = '/WebPage'
 
+    PAGE = None
+
+    '''
+    Create an unique instance of page, which add a rule for on_post, and register current page view in app
+    '''
+    @classmethod
+    def get_page(cls, app):
+        '''
+        if not cls.PAGE:
+            cls.PAGE = Page(default_url='view.index', nav=CustomPage.NAV, value=CustomPage.TITLE, app=view)
+            app.register_blueprint(blueprint=view, url_prefix=url_prefix)
+            print('app.run, app.url_map:{}'.format(pprint.pformat(app.url_map)))
+            print('app.run, app.view_functions:{}'.format(pprint.pformat(app.view_functions)))
+        return cls.PAGE
+        '''
+        raise NotImplemented
+
     def __init__(self,  test=False, app=None, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
@@ -887,7 +906,14 @@ class WebPage(WebComponentBootstrap,TestPageClient):
         self.add_app()
 
         try:
-            if current_app:
+            if isinstance(self.app, flask.blueprints.Blueprint):
+                self.add_url_rule(app=self.app, extend=[
+                    {'rule': '/on_post', 'endpoint': None, 'view_func': self.on_post,
+                     'methods': ['POST']}])
+                '''
+                pass
+                '''
+            elif current_app:
                 self.add_url_rule(current_app, extend=[{'rule': self.URL, 'endpoint': str(self.id())+'.on_post', 'view_func': self.on_post, 'methods': ['POST']}])
                 #print('url_map:{}'.format(pprint.pformat(current_app.url_map)))
                 #print('view_functions:{}'.format(pprint.pformat(current_app.view_functions)))
@@ -2368,7 +2394,7 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
-        super().add_url_rule(cls, app, extend)
+        super().add_url_rule(app, extend)
         if extend:
             for e in extend:
                 if e['view_func'] == cls.on_post:
