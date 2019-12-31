@@ -511,7 +511,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         else:
             kwargs['test'] = False
 
-        if hasattr(self, '_value'):
+        if hasattr(self, '_value') and 'value' not in kwargs:
             kwargs['value'] = self._value
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
@@ -891,7 +891,7 @@ class WebPage(WebComponentBootstrap,TestPageClient):
         '''
         raise NotImplemented
 
-    def __init__(self,  test=False, app=None, **kwargs):
+    def __init__(self, app=None, test=False, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
         self._url = self.URL
@@ -904,18 +904,17 @@ class WebPage(WebComponentBootstrap,TestPageClient):
         super().__init__(test=test, **kwargs)
         self.add_app()
 
+    @classmethod
+    def init_page(cls, app, blueprint=None, url_prefix=None, endpoint=None, on_post=None):
         try:
-            if isinstance(self.app, flask.blueprints.Blueprint):
-                self.add_url_rule(app=self.app, extend=[
-                    {'rule': '/on_post', 'endpoint': None, 'view_func': self.on_post,
-                     'methods': ['POST']}])
-                '''
-                pass
-                '''
-            elif current_app:
-                self.add_url_rule(current_app, extend=[{'rule': self.URL, 'endpoint': str(self.id())+'.on_post', 'view_func': self.on_post, 'methods': ['POST']}])
-                #print('url_map:{}'.format(pprint.pformat(current_app.url_map)))
-                #print('view_functions:{}'.format(pprint.pformat(current_app.view_functions)))
+            if blueprint:
+                cls.add_url_rule(app=blueprint, extend=[
+                        {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post,
+                         'methods': ['POST']}])
+                app.register_blueprint(blueprint=blueprint, url_prefix=url_prefix)
+            else:
+                cls.add_url_rule(app, extend=[{'rule': cls.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+
         except AssertionError:
             print("Add url rule error!")
 
@@ -1255,6 +1254,8 @@ class OODatePickerSimple(WebInputGroup):
                      print(req['me'])
                  return jsonify({'status': 'success', 'data': 'null'})
 
+        Page.init_page(app=current_app, endpoint='oodatepickersimple', on_post=Page.on_post)
+
         with Page() as page:
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
                 test1.set_js(True)
@@ -1310,13 +1311,14 @@ class OODatePickerIcon(WebInputGroup):
             def type_(cls):
                 return 'WebPage'
 
-
             @classmethod
             def on_post(cls):
                 req = super().on_post()
                 if req['me'] == 'oodatepicker':
                     print(req['me'])
                 return jsonify({'status':'success', 'data':'null'})
+
+        Page.init_page(app=current_app, endpoint='oodatepickericon', on_post=Page.on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
@@ -1359,10 +1361,12 @@ class OODatePickerRange(OODatePickerSimple):
                     print(req['me'])
                 return jsonify({'status': 'success', 'data': 'null'})
 
+        #Page.init_page(app=current_app, endpoint='oodatepickerrange', on_post=Page.on_post)
+
         with Page() as page:
-            with page.add_child(globals()[cls.__name__](test=True)) as test1:
+            with page.add_child(globals()[cls.__name__](test=True, value='week')) as test1:
                 pass
-            with page.add_child(globals()[cls.__name__](test=True)) as test2:
+            with page.add_child(globals()[cls.__name__](test=True, value='week')) as test2:
                 pass
 
         #process change event of OODatePicker test1, pops up alerts to show which widget triggered the change event
@@ -1610,6 +1614,8 @@ class OOGeneralSelector(WebBtnGroup):
                     return jsonify(ret)
                 else:
                     return jsonify({'status':'False'})
+
+        Page.init_page(app=current_app, endpoint=cls.__name__, on_post=Page.on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
@@ -2680,6 +2686,8 @@ class OOTable(WebTable):
 
             def type_(self):
                 return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint='ootable', on_post=Page.on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r2:
