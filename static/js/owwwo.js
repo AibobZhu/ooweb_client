@@ -755,7 +755,11 @@ function webpage_render_post(url, data){
     $.post(url, {'data':data_j}, function(response,status){
         let ret_data = response.data;
         ret_data.forEach(function(val, index, arr){
-            data_func[val.me].func(that=data_func[val.me].that, val.data);
+            if(val.trigger_event == null){
+                data_func[val.me].func(that=data_func[val.me].that, val.data);
+            }else{
+                data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=val.trigger_event);
+            }
         })
     });
 }

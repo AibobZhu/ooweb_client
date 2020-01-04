@@ -1645,19 +1645,13 @@ class OOGeneralSelector(WebBtnGroup):
     def test_request(cls, methods=['GET']):
         '''Create a testing page containing the component which is being tested'''
 
-        class Page(WebPage):
-            URL = '/oogselector_test'
-
-            @classmethod
-            def type_(cls):
-                return 'WebPage'
-
-            @classmethod
-            def on_post(cls):
-                ret = super().on_post()
-                if ret['me'] == 'oogeneralselector':
-                    #ret['data'] = OOGeneralSelector._example_data()
-                    for d in ret['data']:
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == 'gs1' or r['me'] == 'gs2':
+                    if 'data' not in r:
+                        r['data'] = OOGeneralSelector._example_data()
+                    for d in r['data']:
                         if not d['options']:
                             option1 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
                             option1['name'] = d['name'] + '_option1'
@@ -1665,25 +1659,31 @@ class OOGeneralSelector(WebBtnGroup):
                             option2['name'] = d['name'] + '_option2'
                             d['options'].append(option1)
                             d['options'].append(option2)
-                            d['name']='test00'
-                            d['select']='test00'
-                            break
-                    return jsonify(ret)
-                else:
-                    return jsonify({'status':'False'})
 
-        Page.init_page(app=current_app, endpoint=cls.__name__, on_post=Page.on_post)
+                            d['name'] = 'test00'
+                            d['select'] = 'test00'
+                            break
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/oogselector_test'
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs1:
+                    with c1.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs1')) as gs1:
                         pass
             with page.add_child(WebBr()) as br:
                 pass
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                    with c2.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs2:
+                    with c2.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs2')) as gs2:
                         pass
 
         # Test getting general selector value by its button id
@@ -1698,6 +1698,9 @@ class OOGeneralSelector(WebBtnGroup):
                 gs2.val()
             gs1.val('gs2_value')
             gs2.alert('"The general selector gs2\'s value:"+gs2_value')
+
+        with page.render_post_w():
+            gs1.render_for_post()
 
         html = page.render()
         return render_template_string(html)
