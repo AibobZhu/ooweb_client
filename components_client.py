@@ -949,7 +949,38 @@ class WebColumn(WebComponentBootstrap):
 
 
 class WebHead1(WebComponentBootstrap):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component tested'''
+
+        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == 'webhead':
+                    r['data'] = 'WebHead Testing'
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/WebHead_test'
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, value="WebHead", name='webhead')) as test:
+                        pass
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class WebHead2(WebHead1):
