@@ -138,10 +138,6 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def render(self):
-        pass
-
-    @abc.abstractmethod
     def render_content(self):
         pass
     
@@ -366,6 +362,18 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def null(self):
+        pass
+
+    @abc.abstractmethod
+    def sync(self, sync=True):
+        pass
+
+    @abc.abstractmethod
+    def render_for_post(self):
+        pass
+
+    @abc.abstractmethod
+    def render_post_w(self):
         pass
 
 

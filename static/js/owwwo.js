@@ -744,3 +744,24 @@ function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, s
 
 }
 
+function webpage_render_post(url, data){
+    let data_post = [];
+    let data_func = {};
+    data.forEach(function(val,index,arr){
+        data_post.push({'data':val.data, 'me':val.me});
+        data_func[val.me] = {'that':val.that, 'func':val.func};
+    })
+    let data_j = JSON.stringify(data_post);
+    $.post(url, {'data':data_j}, function(response,status){
+        let ret_data = response.data;
+        ret_data.forEach(function(val, index, arr){
+            data_func[val.me].func(that=data_func[val.me].that, val.data);
+        })
+    });
+}
+
+function web_img_val(that, data){
+    console.log(that.attr('id'));
+    console.log(data);
+    that.attr('src', data);
+}

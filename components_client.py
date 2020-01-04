@@ -198,11 +198,9 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
 
         :return: jsonify({'status':'success','data': data})
         '''
-        req = json.loads(request.form.get('data'))
-        data = None
-        if 'data' in req:
-            data = req['data']
-        return {"status": "sucess", 'data': data, 'me': req['me']}
+        data = json.loads(request.form.get('data'))
+        return data
+        #return {"status": "sucess", 'data': data, 'me': req['me']}
 
     @contextmanager
     def each_w(self):
@@ -335,6 +333,25 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
     def declare_event(self, event, use_clsname=False, selector=None, filter=''):
         params = {'event':event, 'use_clsname':use_clsname, 'selector':selector, 'filter':filter}
         return self.func_call(params)
+
+    def sync(self, sync=True):
+        params = {'sync':sync}
+        return self.func_call(params)
+
+    @contextmanager
+    def render_post_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            print("Error: exception err:{}".format(err))
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def render_for_post(self):
+        return self.func_call({})
 
 
 class Format(BootstrapInf, FormatInf, ClientBase):
@@ -967,6 +984,42 @@ class WebImg(WebComponentBootstrap):
             kwargs['value'] = value
         super().__init__(**kwargs)
 
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component tested'''
+        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
+        COMPONENT_NAME = 'img_test'
+
+        def on_post():
+            req = WebPage.on_post()
+            data = []
+            for r in req:
+                if r['me'] == COMPONENT_NAME:
+                    data.append({'me': COMPONENT_NAME, 'data': url_for('static', filename='img/demo.jpg')})
+                    return jsonify({'status': 'success', 'data': data})
+                else:
+                    raise NotImplemented
+
+        class Page(WebPage):
+            URL = '/webimg_test'
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=COMPONENT_NAME)) as test:
+                        pass
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
+
 
 class WebBtnToggle(WebComponentBootstrap):
 
@@ -1238,7 +1291,13 @@ class OODatePickerSimple(WebInputGroup):
 
     @classmethod
     def test_request(cls, methods=['GET']):
-         # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        #
+        def on_post():
+            req = WebPage.on_post()
+            if req['me'] == 'oodatepicker':
+                print(req['me'])
+                return jsonify({'status': 'success', 'data': 'null'})
 
         class Page(WebPage):
              URL = '/oodatepickersimple_test'
@@ -1247,14 +1306,8 @@ class OODatePickerSimple(WebInputGroup):
              def type_(cls):
                 return 'WebPage'
 
-             @classmethod
-             def on_post(cls):
-                 req = super().on_post()
-                 if req['me'] == 'oodatepicker':
-                     print(req['me'])
-                 return jsonify({'status': 'success', 'data': 'null'})
 
-        Page.init_page(app=current_app, endpoint='oodatepickersimple', on_post=Page.on_post)
+        Page.init_page(app=current_app, endpoint='oodatepickersimple_test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
@@ -1347,6 +1400,12 @@ class OODatePickerRange(OODatePickerSimple):
 
         #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
 
+        def on_post():
+            req = WebPage.on_post()
+            if req['me'] == 'oodatepicker':
+                print(req['me'])
+            return jsonify({'status': 'success', 'data': 'null'})
+
         class Page(WebPage):
             URL = '/oodatepickerrange_test'
 
@@ -1354,14 +1413,9 @@ class OODatePickerRange(OODatePickerSimple):
             def type_(cls):
                 return 'WebPage'
 
-            @classmethod
-            def on_post(cls):
-                req = super().on_post()
-                if req['me'] == 'oodatepicker':
-                    print(req['me'])
-                return jsonify({'status': 'success', 'data': 'null'})
-
         #Page.init_page(app=current_app, endpoint='oodatepickerrange', on_post=Page.on_post)
+
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(globals()[cls.__name__](test=True, value='week')) as test1:
@@ -1574,6 +1628,9 @@ class OOGeneralSelector(WebBtnGroup):
 
     '''
 
+    RENDER_FUNC_NAME = 'oogselector_render'
+    RENDER_FUNC_ARGS = ['that', 'url']
+
     VAL_BY_BTN_NAME = 'oogeneral_selector_val_by_btn'
     VAL_BY_BTN_PARAMS = ['btn_id']
 
@@ -1628,22 +1685,6 @@ class OOGeneralSelector(WebBtnGroup):
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
                     with c2.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'})) as gs2:
                         pass
-                '''
-                with test.on_select():
-                    test.set_script_indent(-1)
-                    test.add_script('''"alert(btn.name + '.' + event.target.text);"''')
-                    test.set_script_indent(1)
-                    with test.post_w():
-                        pass
-                '''
-        '''
-        with test.on_event_w('select'):
-            #test.add_script('"var data = " + test.fix_cmd(test.val())')
-            with Var(parent=test, var_name='data') as data:
-                test.val()
-            with test.post_w():
-                test.val(data)
-        '''
 
         # Test getting general selector value by its button id
         with gs1.on_event_w('change'):
@@ -2659,35 +2700,33 @@ class OOTable(WebTable):
         cls.add_url_rule(app=current_app, extend=[{'rule': test_chart_url, 'view_func': cls.test_request, 'methods': ['POST']}])
         '''
 
+        def on_post():
+            ret = WebPage.on_post()
+            if request.method == 'POST':
+                if ret['me'] == 'image_table':
+                    # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
+                    data = OOTable.model.query('img')
+                    html = ''.join(OOTable._html(data=data))
+                    # setting = table.get_data(setting_only=True)
+                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+                if ret['me'] == 'chart_table':
+                    data = OOTable.model.query('chart')
+                    # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
+                    html = ''.join(OOTable._html(data=data))
+                    # setting = OOTable.get_data(setting_only=True)
+                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+                if ret['me'] == 'test':
+                    data = OOTable.model.query("test")
+                    html = ''.join(OOTable._html(data=data))
+                    # setting = table.get_data(setting_only=True)
+                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+
         class Page(WebPage):
             URL = test_url
-
-            @classmethod
-            def on_post(cls):
-                ret = super().on_post()
-                if request.method == 'POST':
-                    if ret['me'] == 'image_table':
-                        #table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
-                        data = OOTable.model.query('img')
-                        html = ''.join(OOTable._html(data=data))
-                        #setting = table.get_data(setting_only=True)
-                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                    if  ret['me'] == 'chart_table':
-                        data = OOTable.model.query('chart')
-                        #table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
-                        html = ''.join(OOTable._html(data=data))
-                        #setting = OOTable.get_data(setting_only=True)
-                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                    if ret['me'] == 'test':
-                        data = OOTable.model.query("test")
-                        html = ''.join(OOTable._html(data=data))
-                        #setting = table.get_data(setting_only=True)
-                        return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-
             def type_(self):
                 return 'WebPage'
 
-        Page.init_page(app=current_app, endpoint='ootable', on_post=Page.on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r2:
@@ -2909,6 +2948,7 @@ class OOList(ListInf, WebComponentBootstrap):
         try:
             yield
         except Exception as err:
+            print("Error: exception err:{}".format(err))
             raise Exception(err)
         finally:
             self._pop_current_context()
