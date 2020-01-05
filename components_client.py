@@ -350,7 +350,8 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         finally:
             self._pop_current_context()
 
-    def render_for_post(self):
+    def render_for_post(self, trigger_event=False):
+        params={'trigger_event':trigger_event}
         return self.func_call({})
 
 
@@ -1732,6 +1733,7 @@ class OOGeneralSelector(WebBtnGroup):
 
         with page.render_post_w():
             gs1.render_for_post()
+            gs2.render_for_post()
 
         html = page.render()
         return render_template_string(html)
@@ -2497,20 +2499,25 @@ class OOTable(WebTable):
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
+    VAL_FUNC_NAME = 'ootable_val'
+    VAL_FUNC_ARGS = ['that', 'data', 'trigger_event=false']
+
     RENDER_FUNC_NAME = 'ootable_rander'
-    RENDER_FUNC_ARGS = ['id', 'html', 'setting']
+    #RENDER_FUNC_ARGS = ['id', 'html', 'setting']
+    RENDER_FUNC_ARGS = ['id', 'data']
 
     COLREORDER_FUNC_NAME = 'ootable_colreorder'
     COLREORDER_FUNC_ARGS = ['id', 'order']
 
     GET_ROW_DATA_FUNC_NAME = 'ootable_get_row_data'
-    GET_ROW_DATA_FUNC_ARGS = ['that']
+    GET_ROW_DATA_FUNC_ARGS = ['that', 'data_attr="ootable-details"']
 
     ROW_CHILD_FUNC_NAME = 'ootable_row_child'
     ROW_CHILD_FUNC_ARGS = ['tr','data_attr=ootable-details']
 
     ROW_CHILD_FORMAT_FUNC_NAME = 'ootable_row_child_format'
-    ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
+    #ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
+    ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data=ull']
     ROW_CHILD_FORMAT_FUNC_BODY = (
         '   var $this_tr = $(tr);\n',
         '   var tr_class = $this_tr.attr("class"); if(typeof tr_class == "undefined"){tr_class = ""};\n',
@@ -2553,6 +2560,7 @@ class OOTable(WebTable):
     )
 
     TIMELY_EVENT_QUEUE = "ootable_timely_execute_queue"
+    TIMEOUT_EVENT_QUEUE = 'ootable_timeout_execute_queue'
 
     class OOTableExampleData(ExampleData):
 
@@ -2705,9 +2713,11 @@ class OOTable(WebTable):
     def __enter__(self):
         ret = super().__enter__()
         #self.add_context_list(self._html())
-        self.declare_custom_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS, self.ROW_CHILD_FORMAT_FUNC_BODY)
-        self.declare_custom_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS, self.CELL_RENDER_FUNC_BODY)
-        self.declare_custom_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS, self.CREATED_CELL_RENDER_FUNC_BODY)
+        self.declare_custom_global_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS,
+                                 self.ROW_CHILD_FORMAT_FUNC_BODY)
+        self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS, self.CELL_RENDER_FUNC_BODY)
+        self.declare_custom_global_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS,
+                                 self.CREATED_CELL_RENDER_FUNC_BODY)
         return self
 
     @classmethod
@@ -2736,24 +2746,25 @@ class OOTable(WebTable):
 
         def on_post():
             ret = WebPage.on_post()
-            if request.method == 'POST':
-                if ret['me'] == 'image_table':
+            for r in ret:
+                if r['me'] == 'image_table':
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
                     data = OOTable.model.query('img')
                     html = ''.join(OOTable._html(data=data))
                     # setting = table.get_data(setting_only=True)
-                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                if ret['me'] == 'chart_table':
+                    r['data'] = {'html': html, 'setting': data['setting']}
+                if r['me'] == 'chart_table':
                     data = OOTable.model.query('chart')
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
                     html = ''.join(OOTable._html(data=data))
                     # setting = OOTable.get_data(setting_only=True)
-                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
-                if ret['me'] == 'test':
+                    r['data'] = {'html': html, 'setting': data['setting']}
+                if r['me'] == 'test':
                     data = OOTable.model.query("test")
                     html = ''.join(OOTable._html(data=data))
                     # setting = table.get_data(setting_only=True)
-                    return jsonify({'status': 'success', 'data': {'html': html, 'setting': data['setting']}})
+                    r['data'] = {'html': html, 'setting': data['setting']}
+            return jsonify({'status': 'success', 'data': ret})
 
         class Page(WebPage):
             URL = test_url
@@ -2769,7 +2780,7 @@ class OOTable(WebTable):
                         pass
 
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="700px")) as c1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                     with c1.add_child(globals()[cls.__name__](value='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         #test.render_func()
                         customer_search = []
@@ -2804,9 +2815,6 @@ class OOTable(WebTable):
                             reorder_btn.alert('"Reorder columns"')
                             test.call_custom_func(fname=test.COLREORDER_FUNC_NAME, fparams={'id':'"{}"'.format(test.id()), 'order':'[6,5,4,3,2,1,0]'})
             '''
-
-            with page.add_child(WebBr()):
-                pass
             with page.add_child(WebBr()):
                 pass
 
@@ -2815,9 +2823,6 @@ class OOTable(WebTable):
                     with c4.add_child(OOTable(value='image_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
                         pass
-
-            with page.add_child(WebBr()):
-                pass
             with page.add_child(WebBr()):
                 pass
 
@@ -2827,9 +2832,6 @@ class OOTable(WebTable):
                                               mytype=['striped', 'hover', 'borderless', 'responsive'],
                                               )) as chart_table:
                         pass
-
-            with page.add_child(WebBr()):
-                pass
             with page.add_child(WebBr()):
                 pass
 
@@ -2845,6 +2847,11 @@ class OOTable(WebTable):
         with test.on_event_w('click_row'):
             test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
         '''
+
+        with page.render_post_w():
+            test.render_for_post()
+            image_table.render_for_post()
+            chart_table.render_for_post()
 
         html = page.render()
         return render_template_string(html)

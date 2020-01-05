@@ -749,23 +749,62 @@ function webpage_render_post(url, data){
     let data_func = {};
     data.forEach(function(val,index,arr){
         data_post.push({'data':val.data, 'me':val.me});
-        data_func[val.me] = {'that':val.that, 'func':val.func};
+        data_func[val.me] = {'that':val.that, 'func':val.func, 'trigger_event':val.trigger_event};
     })
     let data_j = JSON.stringify(data_post);
     $.post(url, {'data':data_j}, function(response,status){
         let ret_data = response.data;
         ret_data.forEach(function(val, index, arr){
-            if(val.trigger_event == null){
+            if(data_func[val.me].trigger_event == null){
                 data_func[val.me].func(that=data_func[val.me].that, val.data);
             }else{
-                data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=val.trigger_event);
+                data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=data_func[val.me].trigger_event);
             }
         })
     });
 }
 
-function web_img_val(that, data){
+function web_img_val(that, data, trigger_event=false){
     console.log(that.attr('id'));
     console.log(data);
     that.attr('src', data);
 }
+
+function ootable_cell_render(data,type,row,meta){
+    if(data.indexOf('render_img:')==0){
+        return "<img width='100px' onload=webcomponent_draw_img(this,'60px') src='"+data.substr('render_img:'.length)+"'/>";
+    };
+    return data;
+}
+
+/*
+function ootable_created_cell_render(td,cellData,rowData,row,col, oochart_create){
+    if(cellData.indexOf('render_chart:')==0){
+       let content = cellData.substr('render_chart:'.length);
+       let chart_type = content.split(';')[0];
+       let chart_data = content.split(';')[1];
+       let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));
+       let fn = window[chart_data];
+       $svg.css('width','100px');
+       $svg.css('height','60px');
+       oochart_create($svg[0],chart_type,fn(),td,duration=0,simple=true);
+       oochart_create($svg[0],chart_type,fn(),td,duration=0,simple=true);
+    };
+}
+
+function ootable_val(that, data, cell_render_func=ootable_cell_render, created_cell_render_func=ootable_created_cell_render, trigger_event=false){
+    if(data == null || data === undefined){ return ;};
+    if(that.children().length != 0){
+       that.DataTable().clear();
+       that.DataTable().destroy();
+       that.empty();
+    };
+    that.append(data.html);
+    if('columnDefs' in data.setting){
+       data.setting.columnDefs.push({'targets':'_all','data':undefined, 'render':cell_render_func, 'createdCell':created_cell_render_func});
+    }else{
+       data.setting.columnDefs = [{"targets":"_all","data":undefined,"render":cell_render_func, 'createdCell':created_cell_render_func}];
+    };
+    that.DataTable(data.setting).draw();
+}
+*/
