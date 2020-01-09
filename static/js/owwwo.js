@@ -777,6 +777,11 @@ function ootable_cell_render(data,type,row,meta){
     return data;
 }
 
+function ootable_get_rowinfo(tr){
+    let data = $(tr).closest('table').DataTable().rows(tr).data();
+    return data[0];
+}
+
 /*
 function ootable_created_cell_render(td,cellData,rowData,row,col, oochart_create){
     if(cellData.indexOf('render_chart:')==0){

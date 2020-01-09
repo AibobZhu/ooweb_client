@@ -130,7 +130,7 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def url(self, url=None):
+    def url(self, url=None, js=True):
         pass
 
     @abc.abstractmethod

@@ -607,19 +607,20 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def type_(self):
         return self.__class__.__name__
 
-    def url(self, url=None):
-        '''
-        params = {'url':url}
-        return self.func_call(params)
-        '''
-        if not url:
-            if self._parent:
-                return self._parent.url()
+    def url(self, url=None, js=True):
+
+        if not js:
+            if not url:
+                if self._parent:
+                    return self._parent.url()
+                else:
+                    return self._url
             else:
-                return self._url
+                self._url = url
+                return url
         else:
-            self._url = url
-            return url
+            params = {'url':url, 'js':js}
+            self.func_call(params)
 
     def url_for(self, context):
         pass
@@ -2852,6 +2853,9 @@ class OOTable(WebTable):
             test.render_for_post()
             image_table.render_for_post()
             chart_table.render_for_post()
+
+        with image_table.on_event_w('click_row'):
+            image_table.alert('"Click_row!" + ootable_get_rowinfo(that)')
 
         html = page.render()
         return render_template_string(html)
