@@ -881,6 +881,10 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
         params = {'value': value}
         return self.func_call(params)
 
+    def val(self,value=''):
+        params = {'value':value}
+        return self.func_call(params)
+
     def is_js_kw(self):
         pass
 
@@ -2224,6 +2228,9 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def _body_styles_str(cls):
+        if not hasattr(cls, '_body_styles') or not cls._body_styles:
+            return ''
+
         ret = ''
         if not cls._body_styles:
             return ''
@@ -2238,13 +2245,17 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def _body_classes_str(cls):
-        if cls._body_classes:
+        if hasattr(cls,'_body_classes') and cls._body_classes:
             return ' '.join(cls._body_classes)
+        else:
+            return ''
 
     @classmethod
     def _head_classes_str(cls):
-        if cls._head_classes:
+        if hasattr(cls, '_head_classes') and cls._head_classes:
             return ' '.join(cls._head_classes)
+        else:
+            return ''
 
     @classmethod
     def _example_data(cls, schema_only = False):
@@ -2987,7 +2998,7 @@ class GVar(Var):
 class OOList(ListInf, WebComponentBootstrap):
 
     @contextmanager
-    def append(self):
+    def append_w(self):
         params = {}
         self.with_call(params)
         try:
@@ -3018,7 +3029,7 @@ class OOList(ListInf, WebComponentBootstrap):
         html = page.render()
         return render_template_string(html)
 
-    def __init__(self, parent, var_name, **kwargs):
+    def __init__(self, parent, var_name=None, **kwargs):
         kwargs['parent'] = parent
         kwargs['var_name'] = var_name
         super().__init__(**kwargs)
@@ -3030,7 +3041,7 @@ class OOList(ListInf, WebComponentBootstrap):
 
 class OODict(DictInf, WebComponentBootstrap):
 
-    def __init__(self, parent, var_name, **kwargs):
+    def __init__(self, parent, var_name=None, **kwargs):
         kwargs['parent'] = parent
         kwargs['var_name'] = var_name
         super().__init__(**kwargs)
