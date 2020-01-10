@@ -1316,6 +1316,9 @@ class WebCheckbox(WebSpan):
 
 class OODatePickerSimple(WebInputGroup):
 
+    VAL_FUNC_NAME = 'oodatepicker_val'
+    VAL_FUNC_PARAMS = ['that', 'data=null']
+
     def __init__(self, value='day', views=['day','month','week'], place_holders=('开始', '结束'),**kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
@@ -1328,13 +1331,17 @@ class OODatePickerSimple(WebInputGroup):
 
     @classmethod
     def test_request(cls, methods=['GET']):
+
+        NAME1 = 'test1'
+        NAME2 = 'test2'
+
         # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         #
         def on_post():
             req = WebPage.on_post()
-            if req['me'] == 'oodatepicker':
-                print(req['me'])
-                return jsonify({'status': 'success', 'data': 'null'})
+            if req[0]['me'] == NAME1:
+                print(req[0]['data'])
+                return jsonify({'status': 'success', 'data': []})
 
         class Page(WebPage):
              URL = '/oodatepickersimple_test'
@@ -1347,11 +1354,11 @@ class OODatePickerSimple(WebInputGroup):
         Page.init_page(app=current_app, endpoint='oodatepickersimple_test', on_post=on_post)
 
         with Page() as page:
-            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'],name=NAME1)) as test1:
                 test1.set_js(True)
                 test1.disable(btn_only=True, disable=True)
                 test1.set_js(False)
-            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test2:
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'],name=NAME2)) as test2:
                 test1.set_js(True)
                 test2.disable(btn_only=True, disable=True)
                 test1.set_js(False)
@@ -1367,13 +1374,15 @@ class OODatePickerSimple(WebInputGroup):
         with test1.on_event_w(event='change'):
             with LVar(parent=test1, var_name='date_data') as data:
                 test1.val()
-            test1.alert("' Test1 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            #test1.alert("' Test1 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
             test2.val("date_data")
+            with page.render_post_w():
+                test1.render_for_post()
 
         with test2.on_event_w(event='change'):
             with LVar(parent=test1, var_name='date_data') as data:
                 test2.val()
-            test2.alert("' Test2 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            #test2.alert("' Test2 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
             test1.val("date_data")
 
         with week_btn.on_event_w(event='click'):
@@ -1384,6 +1393,9 @@ class OODatePickerSimple(WebInputGroup):
 
         with day_btn.on_event_w(event='click'):
             test1.val("{'select':'日', 'date': new Date}")
+
+        with page.render_post_w():
+            test1.render_for_post()
 
         html = page.render()
         print(pprint.pformat(html))
