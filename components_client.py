@@ -72,7 +72,6 @@ class ClientBase(metaclass=abc.ABCMeta):
         self._mycont.append(context)
         self._push_current_context(context['sub_context'])
 
-
 '''
 TODO: try with eval, just pass the function calling and express in string, then execute with 'eval' on server side
 '''
@@ -1330,11 +1329,15 @@ class OODatePickerSimple(WebInputGroup):
     def test_request(cls, methods=['GET']):
         # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         #
+        name1 = 'test1'
+        name2 = 'test2'
+
         def on_post():
             req = WebPage.on_post()
-            if req['me'] == 'oodatepicker':
-                print(req['me'])
-                return jsonify({'status': 'success', 'data': 'null'})
+            for r in req:
+                if r['me'] == name1 or r['me'] == name2:
+                    print(r['me'])
+            return jsonify({'status': 'success', 'data': None})
 
         class Page(WebPage):
              URL = '/oodatepickersimple_test'
@@ -1343,15 +1346,14 @@ class OODatePickerSimple(WebInputGroup):
              def type_(cls):
                 return 'WebPage'
 
-
-        Page.init_page(app=current_app, endpoint='oodatepickersimple_test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
 
         with Page() as page:
-            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'],name=name1)) as test1:
                 test1.set_js(True)
                 test1.disable(btn_only=True, disable=True)
                 test1.set_js(False)
-            with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test2:
+            with page.add_child(globals()[cls.__name__](value='week',views=['week'],name=name2)) as test2:
                 test1.set_js(True)
                 test2.disable(btn_only=True, disable=True)
                 test1.set_js(False)
@@ -1378,12 +1380,17 @@ class OODatePickerSimple(WebInputGroup):
 
         with week_btn.on_event_w(event='click'):
             test1.val("{'select':'周', 'date': new Date}")
+            with page.render_post_w():
+                test1.render_for_post()
 
         with month_btn.on_event_w(event='click'):
             test1.val("{'select':'月', 'date': new Date}")
 
         with day_btn.on_event_w(event='click'):
             test1.val("{'select':'日', 'date': new Date}")
+
+        with page.render_post_w():
+            test1.render_for_post()
 
         html = page.render()
         print(pprint.pformat(html))
