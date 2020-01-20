@@ -754,13 +754,15 @@ function webpage_render_post(url, data){
     let data_j = JSON.stringify(data_post);
     $.post(url, {'data':data_j}, function(response,status){
         let ret_data = response.data;
-        ret_data.forEach(function(val, index, arr){
-            if(data_func[val.me].trigger_event == null){
-                data_func[val.me].func(that=data_func[val.me].that, val.data);
-            }else{
-                data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=data_func[val.me].trigger_event);
-            }
-        })
+        if(ret_data != null && ret_data !== 'null' && ret_data !== 'undefined'){
+            ret_data.forEach(function(val, index, arr){
+                if(data_func[val.me].trigger_event == null){
+                    data_func[val.me].func(that=data_func[val.me].that, val.data);
+                }else{
+                    data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=data_func[val.me].trigger_event);
+                }
+            })
+        }
     });
 }
 
