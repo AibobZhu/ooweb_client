@@ -1710,8 +1710,8 @@ class OOGeneralSelector(WebBtnGroup):
                             d['options'].append(option2)
 
                             d['name'] = 'test00'
-                            d['select'] = 'test00'
-                            break
+                            d['select'] = option1['name']
+
             return jsonify({'status': 'success', 'data': req})
 
         class Page(WebPage):
@@ -1740,13 +1740,13 @@ class OOGeneralSelector(WebBtnGroup):
             with LVar(parent=gs1, var_name='gs1_value') as gs1_value:
                 gs1.val()
             gs2.val('gs1_value')
-            gs1.alert('"The general selector gs1\'s value:"+gs1_value')
+            #gs1.alert('"The general selector gs1\'s value:"+gs1_value')
 
         with gs2.on_event_w('change'):
             with LVar(parent=gs2, var_name='gs2_value') as gs2_value:
                 gs2.val()
             gs1.val('gs2_value')
-            gs2.alert('"The general selector gs2\'s value:"+gs2_value')
+            #gs2.alert('"The general selector gs2\'s value:"+gs2_value')
 
         with page.render_post_w():
             gs1.render_for_post()
