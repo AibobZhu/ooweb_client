@@ -1355,8 +1355,7 @@ class OODatePickerSimple(WebInputGroup):
              def type_(cls):
                 return 'WebPage'
 
-
-        Page.init_page(app=current_app, endpoint='oodatepickersimple_test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(globals()[cls.__name__](value='week',views=['week'])) as test1:
@@ -1379,13 +1378,13 @@ class OODatePickerSimple(WebInputGroup):
         with test1.on_event_w(event='change'):
             with LVar(parent=test1, var_name='date_data') as data:
                 test1.val()
-            test1.alert("' Test1 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            #test1.alert("' Test1 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
             test2.val("date_data")
 
         with test2.on_event_w(event='change'):
             with LVar(parent=test1, var_name='date_data') as data:
                 test2.val()
-            test2.alert("' Test2 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
+            #test2.alert("' Test2 changed: select:'+date_data.select+', date:'+date_data.date+', viewDate:'+date_data.viewDate")
             test1.val("date_data")
 
         with week_btn.on_event_w(event='click'):
@@ -1396,6 +1395,10 @@ class OODatePickerSimple(WebInputGroup):
 
         with day_btn.on_event_w(event='click'):
             test1.val("{'select':'日', 'date': new Date}")
+
+        with page.render_post_w():
+            test1.render_for_post()
+            test2.render_for_post()
 
         html = page.render()
         print(pprint.pformat(html))
@@ -1521,6 +1524,10 @@ class OODatePickerRange(OODatePickerSimple):
             test1.disable(btn_only=True,disable=True)
         with enable_test1_btn.on_event_w(event='click'):
             test1.disable(btn_only=True, disable=False)
+
+        with page.render_post_w():
+            test1.render_for_post()
+            test2.render_for_post()
 
         html = page.render()
         print(pprint.pformat(html))
