@@ -354,6 +354,18 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         params={'trigger_event':trigger_event}
         return self.func_call({})
 
+    @contextmanager
+    def timeout_w(self, time=None):
+        params = {'time':time}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            print('Error: exception err:{}'.format(err))
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
 
 class Format(BootstrapInf, FormatInf, ClientBase):
 
@@ -2511,6 +2523,9 @@ class OOTable(WebTable):
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
+    RENDER_IMG_KEY = 'render_img'
+    RENDER_CHART_KEY = 'render_chart'
+
     VAL_FUNC_NAME = 'ootable_val'
     VAL_FUNC_ARGS = ['that', 'data', 'trigger_event=false']
 
@@ -2549,8 +2564,8 @@ class OOTable(WebTable):
     CELL_RENDER_FUNC_NAME = 'ootable_cell_render'
     CELL_RENDER_FUNC_ARGS = ['data','type','row','meta']
     CELL_RENDER_FUNC_BODY = (
-       "if(data.indexOf('render_img:')==0){\n",
-       "    return \"<img width='100px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('render_img:'.length)+\"'/>\";\n",
+       "if(data.indexOf('!@#render_img!@#:')==0){\n".replace('!@#render_img!@#', RENDER_IMG_KEY),
+       "    return \"<img width='100px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('!@#render_img!@#:'.length)+\"'/>\";\n".replace('!@#render_img!@#',RENDER_IMG_KEY),
        "};\n"
        "return data;\n",
     )
@@ -2558,8 +2573,8 @@ class OOTable(WebTable):
     CREATED_CELL_RENDER_FUNC_NAME = 'ootable_created_cell_render'
     CREATED_CELL_RENDER_FUNC_ARGS = ['td','cellData','rowData','row','col']
     CREATED_CELL_RENDER_FUNC_BODY = (
-       "if(cellData.indexOf('render_chart:')==0){\n",
-       "    let content = cellData.substr('render_chart:'.length);\n",
+       "if(cellData.indexOf('!@#render_chart!@#:')==0){\n".replace('!@#render_chart!@#', RENDER_CHART_KEY),
+       "    let content = cellData.substr('!@#render_chart!@#:'.length);\n".replace('!@#render_chart!@#', RENDER_CHART_KEY),
        "    let chart_type = content.split(';')[0];\n",
        "    let chart_data = content.split(';')[1];\n",
        "    let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));\n",
@@ -2585,7 +2600,7 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(6, 10)):
                 records.append((
-                    {'data': "render_img:" + url_for('static', filename='img/demo.jpg')},
+                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#',self.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -2610,7 +2625,7 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(2, 2)):
                 records.append((
-                    {'data': "render_chart:"+"mbar;oochart_multibar_example_data"},
+                    {'data': "!@#render_chart!@#:"+"mbar;oochart_multibar_example_data".replace('!@#render_chart!@#',self.RENDER_CHART_KEY)},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))

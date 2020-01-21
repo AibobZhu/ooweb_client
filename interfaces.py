@@ -87,6 +87,7 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
     def empty(self):
         pass
 
+
 class ComponentInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -376,6 +377,10 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def render_post_w(self):
         pass
 
+    @abc.abstractmethod
+    def timeout_w(self, time):
+        pass
+
 
 class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
 
@@ -594,6 +599,7 @@ class DictInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_w(self, dict):
         pass
+
 
 class VarInf(MinXin, metaclass=abc.ABCMeta):
 
