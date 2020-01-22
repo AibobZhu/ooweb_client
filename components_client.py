@@ -1826,6 +1826,17 @@ class OOBanner(WebDiv):
 
 class OOCalendar(WebDiv):
 
+    LOAD_TEMPLATE_KEY = 'oocalendar_loadtemplate_'
+    TEMLATE_WEEK_KEY = 'oocalendar_template_week'
+    TEMPLATE_WEEK_DAYS_KEY = 'oocalendar_template_week-days'
+    TEMPLATE_DAY_KEY = 'oocalendar_template_day'
+    TEMPLATE_MONTH_KEY = 'oocalendar_template_month'
+    TEMPLATE_MONTH_DAY_KEY = 'oocalendar_template_month-day'
+    TEMPLATE_YEAR_KEY = 'oocalendar_template_year'
+    TEMPLATE_YEAR_MONTH_KEY = 'oocalendar_template_year-month'
+    TEMPLATE_EVENT_LIST_KEY = 'oocalendar_template_events-list'
+    LOAD_EVENTS_KEY = 'oocalendar_load_event'
+
     @classmethod
     def _week(cls):
         week = '''
@@ -2059,9 +2070,7 @@ class OOCalendar(WebDiv):
 
     @classmethod
     def _example_data(cls):
-        return {
-            "status": 'success',
-            "result": [
+        return [
                 {
                     "id": "293",
                     "title": "This is warning class event with very long title to check how it fits to evet in day view",
@@ -2135,7 +2144,6 @@ class OOCalendar(WebDiv):
                     "end": "1364407286400"
                 }
             ]
-        }
 
     @classmethod
     def _event(cls):
@@ -2176,27 +2184,65 @@ class OOCalendar(WebDiv):
         app.add_url_rule('/oocalendar/events', view_func=cls._event)
 
     @classmethod
+    def on_post(cls):
+        req = WebPage.on_post()
+        ret = req
+        for r in req:
+            if r['me'] == cls.LOAD_EVENTS_KEY:
+                ret = cls._example_data()
+            elif r['me'] == cls.TEMLATE_WEEK_KEY:
+                ret = cls._week()
+            elif r['me'] == cls.TEMPLATE_WEEK_DAYS_KEY:
+                ret = cls._week_day()
+            elif r['me'] == cls.TEMPLATE_DAY_KEY:
+                ret = cls._day()
+            elif r['me'] == cls.TEMPLATE_MONTH_KEY:
+                ret = cls._month()
+            elif r['me'] == cls.TEMPLATE_MONTH_DAY_KEY:
+                ret = cls._month_day()
+            elif r['me'] == cls.TEMPLATE_YEAR_KEY:
+                ret = cls._year()
+            elif r['me'] == cls.TEMPLATE_YEAR_MONTH_KEY:
+                ret = cls._year_month()
+            elif r['me'] == cls.TEMPLATE_EVENT_LIST_KEY:
+                ret = cls._event_list()
+        return ret
+
+    @classmethod
     def test_request(cls, methods=['GET']):
         '''Create a testing page containing the component which is being tested'''
 
-        '''
-        TODO: Remove WebPageTest class and use WebPage(test=True)
-        '''
+        NAME = 'calendar'
 
-        cls.add_url_rule(app=current_app)
+        def on_post():
+            req = OOCalendar.on_post()
+            return jsonify({'status':'success','data':req})
 
-        with WebPage() as page:
+        class Page(WebPage):
+            URL = '/OOCalendar.test'
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'],offset=['mdo2'])) as c1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
                     with c1.add_child(OOCalendarBar()) as bar:
                         pass
             with page.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                    with c2.add_child(globals()[cls.__name__](value='example_data')) as calendar:
+                with r2.add_child(WebColumn(width=['md8'],offset=['mdo2'],
+                                            styles={'margin-left':"20px",'margin-right':'20px'})) as c2:
+                    with c2.add_child(globals()[cls.__name__]()) as calendar:
                         pass
 
+        '''
+        with page.render_post_w():
+            calendar.render_for_post()
+        '''
+
         html = page.render()
-        print(pprint.pformat(html))
         return render_template_string(html)
 
 

@@ -948,10 +948,12 @@ if(!String.prototype.formatNum) {
 		switch($.type(source)) {
 			case 'function':
 				loader = function() {
+				    console.log("Warnning: function as load event source, which hasn't been tested!");
 					return source(self.options.position.start, self.options.position.end, browser_timezone);
 				};
 				break;
 			case 'array':
+			    console.log("Warnning: array as load event source, which hasn't been tested!");
 				loader = function() {
 					return [].concat(source);
 				};
@@ -967,6 +969,7 @@ if(!String.prototype.formatNum) {
 						if(browser_timezone.length) {
 							params.browser_timezone = browser_timezone;
 						}
+						/*
 						$.ajax({
 							url: buildEventsUrl(source, params),
 							dataType: 'json',
@@ -981,6 +984,32 @@ if(!String.prototype.formatNum) {
 								events = json.result;
 							}
 						});
+						*/
+						let data = [{'me':'oocalendar_load_event'}];
+                        let data_j = {'data':JSON.stringify(data)};
+                        console.log('oocalendar is posting for loading event...');
+						$.ajax({
+							url: source,
+							dataType: 'json',
+							type: 'POST',
+							async: self.options.tmpl_cache,
+							data: data_j,
+						    success : function(data){
+						        console.log('oocalendar load events success!');
+                                events = data.data;
+                            }
+						});
+						/*
+						let data = [{'me':'oocalendar_load_event'}];
+                        let data_j = JSON.stringify(data);
+                        console.log('oocalendar is posting for loading event...');
+						$.post(source, {'data':data_j}, function(response,status){
+                            if (status == 'success'){
+                                console.log('oocalendar load events success!');
+                                events = response.data;
+                            };
+                        });
+                        */
 						return events;
 					};
 				}
@@ -1010,7 +1039,8 @@ if(!String.prototype.formatNum) {
 			return this.options.tmpl_path(name)
 		}
 		else {
-			return this.options.tmpl_path + name + '.html';
+			//return this.options.tmpl_path + name + '.html';
+			return this.options.tmpl_path
 		}
 	};
 
@@ -1019,7 +1049,30 @@ if(!String.prototype.formatNum) {
 			return;
 		}
 		var self = this;
-		$.ajax({
+
+		let data = [{'me':'oocalendar_template_'+name}];
+        let data_j = {'data':JSON.stringify(data)};
+        console.log('oocalendar is posting for loading a template with name '+name+'...');
+        /*
+        $.post(self._templatePath(name), {'data':data_j}, function(response,status){
+            if (status == 'success'){
+                console.log('oocalendar load template success!');
+                self.options.templates[name]=_.template(response.data);
+            };
+        });
+        */
+        $.ajax({
+			url: self._templatePath(name),
+			dataType: 'json',
+			type: 'POST',
+			async: false,
+			cache: this.options.tmpl_cache,
+			data:data_j,
+		    success: function(data) {
+			    self.options.templates[name] = _.template(data.data);
+			}
+		});
+		/*$.ajax({
 			url: self._templatePath(name),
 			dataType: 'html',
 			type: 'GET',
@@ -1027,7 +1080,8 @@ if(!String.prototype.formatNum) {
 			cache: this.options.tmpl_cache
 		}).done(function(html) {
 			self.options.templates[name] = _.template(html);
-		});
+		});*/
+
 	};
 
 	Calendar.prototype._update = function() {
