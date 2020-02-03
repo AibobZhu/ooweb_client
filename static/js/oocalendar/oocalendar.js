@@ -1033,6 +1033,7 @@ if(!String.prototype.formatNum) {
 			}
 			self.options.onAfterEventsLoad.call(self, self.options.events);
 		});
+		this.context.change()
 	};
 
 	Calendar.prototype._templatePath = function(name) {

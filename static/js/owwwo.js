@@ -47,9 +47,9 @@ function oocalendar_start(options=null){
             }
         }
     }
-
-	var calendar_ = $('#'+opts.id).calendar(opts);
-	var calendar = $('#'+opts.id).data('calendar');
+    var that = $('#'+opts.id);
+	var calendar_ = that.calendar(opts);
+	var calendar = that.data('calendar');
     calendar.setOptions({first_day: 0});
     calendar.setLanguage(opts.language);
     calendar.view();
@@ -70,6 +70,7 @@ function oocalendar_start(options=null){
             var $this = $(this);
             $this.click(function() {
                 calendar.navigate($this.data('calendar-nav'));
+                that.change();
             });
 	    });
 
@@ -77,6 +78,7 @@ function oocalendar_start(options=null){
         var $this = $(this);
         $this.click(function() {
             calendar.view($this.data('calendar-view'));
+            that.change();
         });
     });
 

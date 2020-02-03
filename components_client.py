@@ -2250,9 +2250,6 @@ class OOCalendar(WebDiv):
         html = page.render()
         return render_template_string(html)
 
-    def render_for_post(self, trigger_event=False):
-        raise NotImplemented
-
 
 class OOCalendarBar(WebDiv):
     pass
