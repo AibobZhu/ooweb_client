@@ -399,6 +399,7 @@ if(!String.prototype.formatNum) {
 		context.css('width', this.options.width).addClass('cal-context');
 
 		this.view();
+		context.data('calendar',this);
 		return this;
 	}
 
@@ -985,7 +986,7 @@ if(!String.prototype.formatNum) {
 							}
 						});
 						*/
-						let data = [{'me':'oocalendar_load_event'}];
+						let data = [{'me':'oocalendar_buildin_load_event'}];
                         let data_j = {'data':JSON.stringify(data)};
                         console.log('oocalendar is posting for loading event...');
 						$.ajax({
@@ -1050,7 +1051,7 @@ if(!String.prototype.formatNum) {
 		}
 		var self = this;
 
-		let data = [{'me':'oocalendar_template_'+name}];
+		let data = [{'me':'oocalendar_buildin_template_'+name}];
         let data_j = {'data':JSON.stringify(data)};
         console.log('oocalendar is posting for loading a template with name '+name+'...');
         /*

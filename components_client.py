@@ -1826,16 +1826,20 @@ class OOBanner(WebDiv):
 
 class OOCalendar(WebDiv):
 
-    LOAD_TEMPLATE_KEY = 'oocalendar_loadtemplate_'
-    TEMLATE_WEEK_KEY = 'oocalendar_template_week'
-    TEMPLATE_WEEK_DAYS_KEY = 'oocalendar_template_week-days'
-    TEMPLATE_DAY_KEY = 'oocalendar_template_day'
-    TEMPLATE_MONTH_KEY = 'oocalendar_template_month'
-    TEMPLATE_MONTH_DAY_KEY = 'oocalendar_template_month-day'
-    TEMPLATE_YEAR_KEY = 'oocalendar_template_year'
-    TEMPLATE_YEAR_MONTH_KEY = 'oocalendar_template_year-month'
-    TEMPLATE_EVENT_LIST_KEY = 'oocalendar_template_events-list'
-    LOAD_EVENTS_KEY = 'oocalendar_load_event'
+    ME_PRE = 'oocalendar_buildin'
+    LOAD_TEMPLATE_KEY = ME_PRE + '_loadtemplate_'
+    TEMLATE_WEEK_KEY = ME_PRE + '_template_week'
+    TEMPLATE_WEEK_DAYS_KEY = ME_PRE + '_template_week-days'
+    TEMPLATE_DAY_KEY = ME_PRE + '_template_day'
+    TEMPLATE_MONTH_KEY = ME_PRE + '_template_month'
+    TEMPLATE_MONTH_DAY_KEY = ME_PRE + '_template_month-day'
+    TEMPLATE_YEAR_KEY = ME_PRE + '_template_year'
+    TEMPLATE_YEAR_MONTH_KEY = ME_PRE + '_template_year-month'
+    TEMPLATE_EVENT_LIST_KEY = ME_PRE + '_template_events-list'
+    LOAD_EVENTS_KEY = ME_PRE + '_load_event'
+
+    VAL_FUNC_NAME = 'oocalendar_val'
+    VAL_FUNC_ARGS = ['that', 'trigger_event=false']
 
     @classmethod
     def _week(cls):
@@ -2184,8 +2188,8 @@ class OOCalendar(WebDiv):
         app.add_url_rule('/oocalendar/events', view_func=cls._event)
 
     @classmethod
-    def on_post(cls):
-        req = WebPage.on_post()
+    def on_post(cls,req):
+
         ret = req
         for r in req:
             if r['me'] == cls.LOAD_EVENTS_KEY:
@@ -2215,11 +2219,12 @@ class OOCalendar(WebDiv):
         NAME = 'calendar'
 
         def on_post():
-            req = OOCalendar.on_post()
-            return jsonify({'status':'success','data':req})
+            req = WebPage.on_post()
+            ret = OOCalendar.on_post(req)
+            return jsonify({'status':'success','data':ret})
 
         class Page(WebPage):
-            URL = '/OOCalendar.test'
+            URL = '/OOCalendar_test'
 
             def type_(self):
                 return 'WebPage'
@@ -2244,6 +2249,9 @@ class OOCalendar(WebDiv):
 
         html = page.render()
         return render_template_string(html)
+
+    def render_for_post(self, trigger_event=False):
+        raise NotImplemented
 
 
 class OOCalendarBar(WebDiv):

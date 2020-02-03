@@ -4,10 +4,7 @@ var ootable_timeout_execute_queue = []
 "use strict";
 
 function oocalendar_start(options=null){
-
-    var opts= options
-    if((options == null)||(options === 'undefined')){
-        opts = {
+    var opts_default = {
             id: 'oocalendar',
             events_source: '/OOCalendar.test',
             view: 'month',
@@ -39,9 +36,20 @@ function oocalendar_start(options=null){
             },
             language: 'zh-TW'
         };
+
+    var opts= opts_default
+    if((options != null) && (options !== 'undefined')){
+        for(var key in opts){
+            if(opts.hasOwnProperty(key)){
+                if(options.hasOwnProperty(key)){
+                    opts[key] = options[key]
+                }
+            }
+        }
     }
 
-	var calendar = $('#'+opts.id).calendar(opts);
+	var calendar_ = $('#'+opts.id).calendar(opts);
+	var calendar = $('#'+opts.id).data('calendar');
     calendar.setOptions({first_day: 0});
     calendar.setLanguage(opts.language);
     calendar.view();
