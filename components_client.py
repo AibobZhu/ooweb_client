@@ -1404,7 +1404,7 @@ class OODatePickerBase:
 
 class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
-    def __init__(self, language='zh', value={'view':'week','date':datetime.datetime.today().strftime('%Y %m %d')}, views=['day','week','month'], place_holders=('开始', '结束'), **kwargs):
+    def __init__(self, language='zh', value={'view':'week','start_date':datetime.datetime.today().strftime('%Y %m %d')}, views=['day','week','month'], place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
         kwargs['language'] = language
@@ -1522,6 +1522,13 @@ class OODatePickerIcon(OODatePickerSimple):
 
 
 class OODatePickerRange(OODatePickerSimple):
+
+    def __init__(self, language='zh', value={'view':'week','start_date':datetime.datetime.today().strftime('%Y %m %d'),'end_date':datetime.datetime.today().strftime('%Y %m %d')}, views=['day','week','month'], place_holders=('开始', '结束'), **kwargs):
+        kwargs['value'] = value
+        kwargs['views'] = views
+        kwargs['language'] = language
+        kwargs['place_holders'] = place_holders
+        super().__init__(**kwargs)
 
     @classmethod
     def test_request(cls, methods=['GET']):
