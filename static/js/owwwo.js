@@ -868,7 +868,7 @@ function webpage_render_post(url, data){
         let ret_data = response.data;
         if(ret_data != null && ret_data !== 'null' && ret_data !== 'undefined'){
             ret_data.forEach(function(val, index, arr){
-                if(data_func[val.me].trigger_event == null){
+                if(data_func[val.me].trigger_event == null || data_func[val.me].trigger_event === undefined){
                     data_func[val.me].func(that=data_func[val.me].that, val.data);
                 }else{
                     data_func[val.me].func(that=data_func[val.me].that, val.data, trigger_event=data_func[val.me].trigger_event);

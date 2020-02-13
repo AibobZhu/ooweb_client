@@ -260,8 +260,8 @@ function JsSimpleDateFormat(sPattern,param,isNetCompat) {
 	}
 	JsSimpleDateFormat._Number = Number;
 	Number.__extends__(Ltr, {
-		getNumber: function() {
-			return this.getValue();
+		getNumber: function(first) {
+			return this.getValue(first);
 		},
 		isNumber: function() {
 			return true;
@@ -289,8 +289,8 @@ function JsSimpleDateFormat(sPattern,param,isNetCompat) {
 			if (this.isValidVal(iVal)) this._parseVal = iVal; else return -1;
 			return sVal.length;
 		},
-		toStr: function() {
-			var sVal = this.getNumber()+"", s = "";
+		toStr: function(first=0) {
+			var sVal = this.getNumber(first)+"", s = "";
 			if (sVal.charAt(0) == '-') { sVal = sVal.substr(1); s = "-"; }
 			while (sVal.length < this._count) sVal = "0" + sVal;
 			return s+sVal;
@@ -579,16 +579,26 @@ function JsSimpleDateFormat(sPattern,param,isNetCompat) {
 		getParseValue: function() {
 			return this.getValue();
 		},
-		getValue: function() {
-			return this.getWeek();
+		getValue: function(first) {
+			return this.getWeek(first);
 		},
-		getWeek: function() {
+		getWeek: function(first) {
 			/*** It's my magic formula for getting the week number. Hope no bug at all. ***/
+			/*BUG: when first day is Monday*/
 			var iDay = this.getDay();
 			var iWeek = Math.ceil(iDay/7);
 			iDay = iDay % 7;
-			iDay = (iDay ? iDay : 7) - 1;
-			return ((this.dt.getDay() < iDay) ? (iWeek+1) : iWeek);
+			iDay = iDay ? iDay : 7  //if week starts at Monday, iday is 1~7
+			if(first == 0){
+			    //if week starts at Sunday, iday is 0~6
+			    iDay = iDay - 1;
+			};
+			var calendarDay = this.dt.getDay();
+			if(first == 1){
+			    // if week starts at Monday, calendarDay is 1~7
+			    calendarDay = calendarDay ? calendarDay : 7;
+			}
+			return ((calendarDay < iDay) ? (iWeek+1) : iWeek);
 		},
 		isValidVal: function(iVal) {
 			return iVal >= 1 && iVal <= 54;
@@ -987,12 +997,12 @@ applyPattern: function(sPattern) {
 	if (s.toStr() != "") this._arPtn.push(s);
 	this._ptn = sPattern;
 },
-format: function(oDate) {
+format: function(oDate,first=1) {
 	JsSimpleDateFormat._Ltr.prototype.isNetCompat = this.isNetCompat;
 	JsSimpleDateFormat._Ltr.prototype.fmtSb = this._fmtSb;
 	JsSimpleDateFormat._Ltr.prototype.dt = oDate;
 	var s = "", arPtn = this._arPtn;
-	for (var i=0; i<arPtn.length; i++) s += arPtn[i].toStr();
+	for (var i=0; i<arPtn.length; i++) s += arPtn[i].toStr(first);
 	return s;
 },
 get2DigitYearStart: function() {

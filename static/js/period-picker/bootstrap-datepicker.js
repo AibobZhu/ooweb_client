@@ -387,7 +387,7 @@
 			var defaultWeekPicker = {
 				separator: ' - ',
 				formatWeek: function(startWeekDate, options, $datepicker) {
-					return DPGlobal.formatDate(startWeekDate, options.format, options.language)
+					return DPGlobal.formatDate(startWeekDate, options.format, options.language, options.weekStart)
 					/*var endWeekDate = new Date(startWeekDate.getTime() + 6 * 864e5);
 					var start = DPGlobal.formatDate(startWeekDate, options.format, options.language);
 					var end   = DPGlobal.formatDate(endWeekDate, options.format, options.language)
@@ -773,6 +773,9 @@
 			}
 		},
 		setDates: function(){
+            /*
+            Arguments: [date, trigger_event] or [start_date, end_date, trigger_event]
+            */
 
             /*
 		    let viewDate = null;
@@ -783,7 +786,21 @@
 		            viewDate = this.viewDate;
 		        }
 		    }*/
-			var args = $.isArray(arguments[0]) ? arguments[0] : arguments;
+			var args = null;
+			if($.isArray(arguments[0])){
+			    args = arguments[0]
+			    if(args.length > 1){
+			        if(typeof(args[args.length - 1]) !== 'boolean'){
+                        args.push(true)
+			        }
+			    }else{
+			        if(typeof(args[0]) !== 'boolean'){
+			            args.push(true)
+			        }
+			    }
+			}else{
+			    args = [arguments,true]
+			}
 			this.update.apply(this, args);
 			this._trigger('changeDate');
 			this.setValue();
@@ -830,7 +847,16 @@
                 if(this.dates == null || this.dates == ""){
                     return "";
                 }
+                //TODO: find where this.viewDate is changed to be a string
+                //Convert this.viewDate to Date object if it's string
+                if(typeof(this.viewDate) == 'string'){
+                    let view_date = this.viewDate.split('T')[0];
+                    view_date = view_date.replace(/-/g,"/");
+                    this.viewDate = new Date(view_date)
+                    this.viewDate.setHours(this.viewDate.getHours() + 8);
+                }
                 let week_str = this.o.weekPicker.formatWeek(this.viewDate, this.o, this.element);
+                /*
                 if(this.o.weekPicker && week_str != "" && week_str != null){
                     if(this.viewDate.getDay() == 0){
                         //fix the issue about jsSimpleFormat threat sunday of the first day of a week, it causes the weeknumber greater 1 then the real
@@ -841,7 +867,7 @@
                             week_str = week1[0] + "第" + week.toString() + "周"
                         }
                     }
-                }
+                }*/
 				return week_str;
 			} else {
 				if (format === undefined)
@@ -996,11 +1022,16 @@
 			var oldDates = this.dates.copy(),
 				dates = [],
 				fromArgs = false;
+			trigger_event = true;
 			if (arguments.length){
-				$.each(arguments, $.proxy(function(i, date){
-					if (date instanceof Date)
-						date = this._local_to_utc(date);
-					dates.push(date);
+				$.each(arguments, $.proxy(function(i, value){
+					if (value instanceof Date){
+						date = this._local_to_utc(value);
+					    dates.push(date);
+					}else if(typeof(value) === 'boolean'){
+					    trigger_event = value;
+					}
+
 				}, this));
 				fromArgs = true;
 			}
@@ -1024,9 +1055,28 @@
 
 			    //Fix issue about first day of week, if set to monday, should return monday.
 			    let _date = null;
-			    if(this.o.weekPicker && this.viewDate && dates != "" && dates != null){
+			    //if(this.o.weekPicker && this.viewDate && date != "" && date != null){
+			    if(this.o.weekPicker && this.viewDate && (date == "" || date == null)){
+
+                //TODO: find where this.viewDate is changed to be a string
+                //Convert this.viewDate to Date object if it's string
+                if(this.viewDate instanceof String){
+                    let view_date = this.viewDate.split('T')[0];
+                    view_date = view_date.replace(/-/g,"/");
+                    this.viewDate = new Date(view_date);
+                    this.viewDate.setHours(this.viewDate.getHours() + 8);
+                }
 			        _date = this.viewDate;
 			    }else{
+
+			    //TODO: find where this.viewDate is changed to be a string
+                //Convert this.viewDate to Date object if it's string
+                if(this.viewDate instanceof String){
+                    let view_date = this.viewDate.split('T')[0];
+                    view_date = view_date.replace(/-/g,"/");
+                    this.viewDate = new Date(view_date);
+                    this.viewDate.setHours(this.viewDate.getHours() + 8);
+                }
 				    _date = DPGlobal.parseDate(date, this.o.format, this.o.language, this.o.assumeNearbyYear);
 				}
 				if (!_date) return null;
@@ -1076,7 +1126,9 @@
 				this._trigger('clearDate');
 
 			this.fill();
-			this.element.change();
+			if(trigger_event){
+			    this.element.change();
+			};
 			return this;
 		},
 
@@ -1755,7 +1807,7 @@
 		},
 
 		_setDate: function(date, which){
-      //console.log("##_setDate:",date)
+            //console.log("##_setDate:",date)
 			if (!which || which === 'date' || which == 'time')
 				this._toggle_multidate(date && new Date(date), which);
 			if (!which || which === 'view')
@@ -2021,8 +2073,14 @@
 		this.pickers = $.map(this.inputs, function(i){
 			return $(i).data('datepicker');
 		});
-		this.pickers[0].__isRangeStart__ = true;
-		this.pickers[this.pickers.length-1].__isRangeEnd__ = true;
+
+		if(this.pickers.length > 1){
+		    this.pickers[0].__isRangeStart__ = true;
+		    this.pickers[this.pickers.length-1].__isRangeEnd__ = true;
+		}else{
+		    this.pickers[0].__isRangeStart__ = false;
+		    this.pickers[0].__isRangeEnd__ = false;
+		}
 		this.updateDates();
 	};
 
@@ -2612,7 +2670,7 @@
 			DPGlobal.setFormatSymbols(format, language);
 			return Datepicker.prototype._local_to_utc(format.parse(date));
 		};
-		DPGlobal.formatDate = function(date, format, language) {
+		DPGlobal.formatDate = function(date, format, language, first=1) {
 			if (!date) return '';
 			if (typeof format == 'string') {
 				format = new JsSimpleDateFormat(format, language, true);
@@ -2620,7 +2678,7 @@
 				format.isNetCompat = true;
 			}
 			DPGlobal.setFormatSymbols(format, language);
-			return format.format(Datepicker.prototype._utc_to_local(date));
+			return format.format(Datepicker.prototype._utc_to_local(date),first);
 		};
 	}else{
 	    console.log('  JsSimpleDateFormat:', JsSimpleDateFormat);

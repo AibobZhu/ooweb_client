@@ -1329,11 +1329,11 @@ class WebCheckbox(WebSpan):
 class OODatePickerBase:
     
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日 ")
-    WEEK_FORMAT_ZH = ("yyyy'年' M'月' '第'W'周'", "")
+    WEEK_FORMAT_ZH = ("yyyy'年' M'月' '本年第'w'周'", "")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
 
     DAY_FORMAT_EN = ("yyyy M d", "%Y %m %d")
-    WEEK_FORMAT_EN = ("yyyy M 'week':W", "")
+    WEEK_FORMAT_EN = ("yyyy M 'Week of year':w", "")
     MONTH_FORMAT_EN = ("yyyy M", "%Y %m")
 
     @classmethod
@@ -1346,12 +1346,17 @@ class OODatePickerBase:
         return dt.strftime(format)
 
     @classmethod
-    def DAY_STR_STAMP(cls, lang, str):
+    def DAY_STR_DT(cls, lang, str):
         dt = None
         if lang == 'zh':
-            dt = datetime.strptime(str, DAY_FORMAT_ZH[1])
+            dt = datetime.datetime.strptime(str, cls.DAY_FORMAT_ZH[1])
         else:
-            dt = datetime.strptime(str, DAY_FORMAT_EN[1])
+            dt = datetime.datetime.strptime(str, cls.DAY_FORMAT_EN[1])
+        return dt
+
+    @classmethod
+    def DAY_STR_STAMP(cls, lang, str):
+        dt = cls.DAY_STR_DT(lang=lang, str=str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
@@ -1362,12 +1367,17 @@ class OODatePickerBase:
             return "{} {} week:{}".format(dt.year, dt.month, day_2_week_number(dt))
 
     @classmethod
-    def WEEK_STR_STAMP(cls, lang, str):
+    def WEEK_STR_DT(cls, lang, str):
         dt = None
         if lang == 'zh':
-            dt = datetime.strptime(str, cls.DAY_FORMAT_ZH[1])
+            dt = datetime.datetime.strptime(str, cls.WEEK_FORMAT_ZH[1])
         else:
-            dt = datetime.strptime(str, cls.DAY_FORMAT_EN[1])
+            dt = datetime.datetime.strptime(str, cls.WEEK_FORMAT_EN[1])
+        return dt
+
+    @classmethod
+    def WEEK_STR_STAMP(cls, lang, str):
+        dt = cls.WEEK_STR_DT(lang=lang, str=str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
@@ -1380,12 +1390,17 @@ class OODatePickerBase:
         return dt.strftime(format)
 
     @classmethod
-    def MONTH_STR_STAMP(cls, lang, str):
+    def MONTH_STR_DT(cls, lang, str):
         dt = None
         if lang == 'zh':
-            dt = datetime.strptime(str, cls.MONTH_FORMAT_ZH[1])
+            dt = datetime.datetime.strptime(str, cls.MONTH_FORMAT_ZH[1])
         else:
-            dt = datetime.strptime(str, cls.MONTH_FORMAT_EN[1])
+            dt = datetime.datetime.strptime(str, cls.MONTH_FORMAT_EN[1])
+        return dt
+
+    @classmethod
+    def MONTH_STR_STAMP(cls, lang, str):
+        dt = cls.MONTH_STR_DT(lang=lang, str=str)
         return int(dt.timestamp()) * 1000
 
     FORMATS = {
