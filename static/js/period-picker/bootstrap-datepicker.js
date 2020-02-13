@@ -757,6 +757,7 @@
 			var element;
 			if (this.isInput) {
 				element = this.element;
+				this.viewDate = null
 			} else if (this.component) {
 				element = this.element.find('input');
 			}

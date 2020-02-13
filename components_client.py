@@ -1328,7 +1328,7 @@ class WebCheckbox(WebSpan):
 
 class OODatePickerBase:
     
-    DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日 ")
+    DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
     WEEK_FORMAT_ZH = ("yyyy'年' M'月' '本年第'w'周'", "")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
 
