@@ -244,7 +244,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         return self.func_call(params)
 
     @contextmanager
-    def on_event_w(self,event,filter=''):
+    def on_event_w(self,event,filter='',propagation=True):
         '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {'event':event,'filter':filter}})
@@ -252,7 +252,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         self.add_context(context)
         self._push_current_context(context['sub_context'])
         '''
-        params = {'event':event,'filter':filter}
+        params = {'event':event,'filter':filter, 'propagation':propagation}
         self.with_call(params)
         try:
             yield
@@ -1329,11 +1329,11 @@ class WebCheckbox(WebSpan):
 class OODatePickerBase:
     
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
-    WEEK_FORMAT_ZH = ("yyyy'年' M'月' '本年第'w'周'", "")
+    WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年第%W周")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
 
     DAY_FORMAT_EN = ("yyyy M d", "%Y %m %d")
-    WEEK_FORMAT_EN = ("yyyy M 'Week of year':w", "")
+    WEEK_FORMAT_EN = ("'Week of 'yyyy:w", "Week of %Y:%W")
     MONTH_FORMAT_EN = ("yyyy M", "%Y %m")
 
     @classmethod
@@ -1405,14 +1405,14 @@ class OODatePickerBase:
 
     FORMATS = {
         'zh': {
-            'day': {'format': DAY_FORMAT_ZH[0], 'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
-            'week': {'format': WEEK_FORMAT_ZH[0], 'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
-            'month': {'format': MONTH_FORMAT_ZH[0], 'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
+            'day': {'to_format': DAY_FORMAT_ZH[0], 'from_format':DAY_FORMAT_ZH[1],'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
+            'week': {'to_format': WEEK_FORMAT_ZH[0], 'from_format': WEEK_FORMAT_ZH[1],'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
+            'month': {'to_format': MONTH_FORMAT_ZH[0], 'from_format': MONTH_FORMAT_ZH[1],'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         },
         'en': {
-            'day': {'format': DAY_FORMAT_EN[0], 'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
-            'week': {'format': WEEK_FORMAT_EN[0], 'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
-            'month': {'format': MONTH_FORMAT_EN[0], 'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
+            'day': {'to_format': DAY_FORMAT_EN[0], 'from_format': DAY_FORMAT_EN[1],'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
+            'week': {'to_format': WEEK_FORMAT_EN[0], 'from_format': WEEK_FORMAT_EN[1], 'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
+            'month': {'to_format': MONTH_FORMAT_EN[0], 'from_format': MONTH_FORMAT_EN[1], 'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         }
     }
     

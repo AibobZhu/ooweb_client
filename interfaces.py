@@ -291,7 +291,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def on_event_w(self,event,filter=''):
+    def on_event_w(self,event,filter='',propagation=True):
         '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
         pass
 
