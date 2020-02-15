@@ -1561,117 +1561,6 @@ class OODatePickerRange(OODatePickerSimple):
 
         #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
 
-        '''
-        NAME1 = 'test1'
-        NAME2 = 'test2'
-
-        def on_post():
-            req = WebPage.on_post()
-            dt = None
-            for r in req:
-                if r['me'] == NAME1:
-                    lang = r['data']['lang']
-                    format = None
-                    if r['data']['select'] == '周':
-                        start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
-                        if start:
-                            # USE cls FORMATS here
-                            format = cls.FORMATS[lang]['week']['format']
-                            dt = datetime.datetime.strptime(start, '%Y-%m-%d')
-                    elif r['data']['select'] == '日':
-                        start = None if not r['data']['start_date'] else r['data']['start_date']
-                        if start:
-                            if lang == 'zh':
-                                format = cls.DAY_FORMAT_ZH[1]
-                            else:
-                                format = cls.DAY_FORMAT_EN[1]
-                            dt = datetime.datetime.strptime(start, format)
-                    else:
-                        start = None if not r['data']['start_date'] else r['data']['start_date']
-                        if start:
-                            if lang == 'zh':
-                                format = cls.MONTH_FORMAT_ZH[1]
-                            else:
-                                format = cls.MONTH_FORMAT_EN[1]
-                            dt = datetime.datetime.strptime(start, format)
-
-            return jsonify({'status': 'success', 'data': []})
-
-        class Page(WebPage):
-            URL = '/oodatepickerrange_test'
-
-            @classmethod
-            def type_(cls):
-                return 'WebPage'
-
-        #Page.init_page(app=current_app, endpoint='oodatepickerrange', on_post=Page.on_post)
-
-        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
-
-        with Page() as page:
-            with page.add_child(globals()[cls.__name__](test=True, name=NAME1)) as test1:
-                pass
-            with page.add_child(globals()[cls.__name__](test=True, name=NAME2)) as test2:
-                pass
-
-        #process change event of OODatePicker test1, pops up alerts to show which widget triggered the change event
-        # keep OODatePicker test2 the same
-
-        with test1.on_event_w(event='change'):
-            with LVar(parent=test1, var_name="test1_data") as test1_data:
-                test1.val()
-            test2.val(value='test1_data')
-
-        with test2.on_event_w(event='change'):
-            with LVar(parent=test2, var_name='test2_data') as test2_data:
-                test2.val()
-            test1.val(value='test2_data')
-
-        #trigger change event by programming, expect an alert of change event poping up
-        #test1.trigger_event(event='change')
-
-        # Add the buttons to set values into datepicker 1 and expect poping up an alert of change event
-        with page.add_child(WebBtn(value='测试:周清除')) as test_btn_week:
-            pass
-        with page.add_child(WebBtn(value="测试:月清除")) as test_btn_month:
-            pass
-        with page.add_child(WebBtn(value='测试:日清除')) as test_btn_day:
-            pass
-        with page.add_child(WebBtn(value='Disable Test1')) as disable_test1:
-            pass
-        with page.add_child(WebBtn(value='Enable Test1')) as enable_test1:
-            pass
-        with page.add_child(WebBtn(value='Disable test1 btn')) as disable_test1_btn:
-            pass
-        with page.add_child(WebBtn(value='Enable Test1 btn')) as enable_test1_btn:
-            pass
-
-        # set value into test1
-        with test_btn_week.on_event_w(event="click"):
-            test1.val("{'select':'周', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'end_viewDate': new Date}")
-        with test_btn_month.on_event_w(event="click"):
-            test1.val("{'select':'月', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
-        with test_btn_day.on_event_w(event="click"):
-            test1.val("{'select':'日', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
-
-        #disable/enable datepicker test1
-        with disable_test1.on_event_w(event='click'):
-            test1.disable(disable=True)
-        with enable_test1.on_event_w('click'):
-            test1.disable(disable=False)
-        with disable_test1_btn.on_event_w(event='click'):
-            test1.disable(btn_only=True,disable=True)
-        with enable_test1_btn.on_event_w(event='click'):
-            test1.disable(btn_only=True, disable=False)
-
-        with page.render_post_w():
-            test1.render_for_post()
-            test2.render_for_post()
-
-        html = page.render()
-        print(pprint.pformat(html))
-        return render_template_string(html)
-        '''
         NAME1 = 'test1'
         NAME2 = 'test2'
 
@@ -1692,20 +1581,22 @@ class OODatePickerRange(OODatePickerSimple):
 
                     start = None if not r['data']['start_date'] else r['data']['start_date']
                     if not start:
-                        start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
-                        start = datetime.datetime.strptime(start, '%Y-%m-%d')
+                        #start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
+                        start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
                     else:
                         start = datetime.datetime.strptime(start, format)
 
                     end = None if not r['data']['end_date'] else r['data']['end_date']
                     if not end:
                         end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
-                        end = datetime.datetime.strptime(end, '%Y-%m-%d')
+                        end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
                     else:
                         end = datetime.datetime.strptime(end, format)
 
                     r['data']['start_date'] = int(start.timestamp())
+                    r['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
                     r['data']['end_date'] = int(end.timestamp())
+                    r['data']['end_viewDate'] = end.strftime("%Y-%m-%dT")
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -1721,66 +1612,6 @@ class OODatePickerRange(OODatePickerSimple):
         with Page() as page:
             with page.add_child(globals()[cls.__name__](test=True, name=NAME1)) as test1:
                 pass
-
-        '''
-            with page.add_child(globals()[cls.__name__](test=True, name=NAME2)) as test2:
-                pass
-
-        func_name_tuple2 = test2._event_func_name(event='change')
-        func_name_tuple1 = test1._event_func_name(event='change')
-
-        #process change event of OODatePicker test1, pops up alerts to show which widget triggered the change event
-        # keep OODatePicker test2 the same
-
-        with test1.on_event_w(event='change'):
-            with LVar(parent=test1, var_name="test1_data") as test1_data:
-                test1.val()
-            test2.val(value='test1_data')
-            with page.render_post_w():
-                test1.render_for_post()
-
-        with test2.on_event_w(event='change'):
-            with LVar(parent=test2, var_name='test2_data') as test2_data:
-                test2.val()
-            test1.val(value='test2_data')
-
-        #trigger change event by programming, expect an alert of change event poping up
-        #test1.trigger_event(event='change')
-
-        # Add the buttons to set values into datepicker 1 and expect poping up an alert of change event
-        with page.add_child(WebBtn(value='测试:周清除')) as test_btn_week:
-            pass
-        with page.add_child(WebBtn(value="测试:月清除")) as test_btn_month:
-            pass
-        with page.add_child(WebBtn(value='测试:日清除')) as test_btn_day:
-            pass
-        with page.add_child(WebBtn(value='Disable Test1')) as disable_test1:
-            pass
-        with page.add_child(WebBtn(value='Enable Test1')) as enable_test1:
-            pass
-        with page.add_child(WebBtn(value='Disable test1 btn')) as disable_test1_btn:
-            pass
-        with page.add_child(WebBtn(value='Enable Test1 btn')) as enable_test1_btn:
-            pass
-
-        # set value into test1
-        with test_btn_week.on_event_w(event="click"):
-            test1.val("{'select':'周', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'end_viewDate': new Date}")
-        with test_btn_month.on_event_w(event="click"):
-            test1.val("{'select':'月', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
-        with test_btn_day.on_event_w(event="click"):
-            test1.val("{'select':'日', 'start_date': new Date, 'start_viewDate': new Date, 'end_date': new Date, 'start_viewDate': new Date}")
-
-        #disable/enable datepicker test1
-        with disable_test1.on_event_w(event='click'):
-            test1.disable(disable=True)
-        with enable_test1.on_event_w('click'):
-            test1.disable(disable=False)
-        with disable_test1_btn.on_event_w(event='click'):
-            test1.disable(btn_only=True,disable=True)
-        with enable_test1_btn.on_event_w(event='click'):
-            test1.disable(btn_only=True, disable=False)
-        '''
 
         with test1.on_event_w('change'):
             with page.render_post_w():
