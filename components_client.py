@@ -15,7 +15,7 @@ import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
-from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange
+from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
 import sys, os
 import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -23,6 +23,7 @@ import json
 from test_class import *
 import copy
 import random
+import calendar
 
 sys.setrecursionlimit(2000)
 
@@ -366,6 +367,9 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         finally:
             self._pop_current_context()
 
+    def height(self, height=None):
+        params = {'height':height}
+        return self.func_call(params)
 
 class Format(BootstrapInf, FormatInf, ClientBase):
 
@@ -1022,7 +1026,25 @@ class WebHead6(WebHead1):
 
 
 class WebField(WebComponentBootstrap):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component tested'''
+        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
+
+        with WebPage() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, value='TestField')) as test:
+                        test.set_js(True)
+                        test.height(299.6)
+                        with LVar(parent=page, var_name='height_var') as h:
+                            test.height()
+                        test.alert("'height:'+height_var")
+                        test.set_js(False)
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class WebImg(WebComponentBootstrap):
@@ -1327,9 +1349,9 @@ class WebCheckbox(WebSpan):
 
 
 class OODatePickerBase:
-    
+    VIEW = {'日':'day','周':'week','月':'month'}
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
-    WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年第%W周")
+    WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年 第%W周")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
 
     DAY_FORMAT_EN = ("yyyy M d", "%Y %m %d")
@@ -1368,12 +1390,14 @@ class OODatePickerBase:
 
     @classmethod
     def WEEK_STR_DT(cls, lang, str):
-        dt = None
+        mon = None
+        sat = None
+        format = cls.WEEK_FORMAT_EN[1]
         if lang == 'zh':
-            dt = datetime.datetime.strptime(str, cls.WEEK_FORMAT_ZH[1])
-        else:
-            dt = datetime.datetime.strptime(str, cls.WEEK_FORMAT_EN[1])
-        return dt
+            format = cls.WEEK_FORMAT_ZH[1]
+        mon = datetime.datetime.strptime(str + '-1', format + '-%w') #week starts at monday
+        sun = datetime.datetime.strptime(str + '-6', format + '-%w') + datetime.timedelta(days=1) #week end at sunday
+        return [mon + datetime.timedelta(days=-7), sun + datetime.timedelta(days=-7)]
 
     @classmethod
     def WEEK_STR_STAMP(cls, lang, str):
@@ -1382,21 +1406,29 @@ class OODatePickerBase:
 
     @classmethod
     def MONTH_DATETIME_STR(cls, lang, dt):
-        format = None
+        format = cls.MONTH_FORMAT_EN[1]
         if lang == 'zh':
             format = cls.MONTH_FORMAT_ZH[1]
-        else:
-            format = cls.MONTH_FORMAT_EN[1]
-        return dt.strftime(format)
+        year = dt.year
+        month = dt.month
+        last_day = calendar.monthrange(year,month)[1]
+        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year,month),'%Y-%m-%d')
+        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year,month,last_day), '%Y-%m-%d')
+        return [first_dt.strftime(format+'-1'),last_dt.strftime(format+'-'+last_day)]
 
     @classmethod
     def MONTH_STR_DT(cls, lang, str):
-        dt = None
+        format = cls.MONTH_FORMAT_EN[1]
         if lang == 'zh':
-            dt = datetime.datetime.strptime(str, cls.MONTH_FORMAT_ZH[1])
-        else:
-            dt = datetime.datetime.strptime(str, cls.MONTH_FORMAT_EN[1])
-        return dt
+            format = cls.MONTH_FORMAT_ZH[1]
+
+        dt = datetime.datetime.strptime(str, format)
+        year = dt.year
+        month = dt.month
+        last_day = calendar.monthrange(year, month)[1]
+        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
+        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
+        return [first_dt, last_dt]
 
     @classmethod
     def MONTH_STR_STAMP(cls, lang, str):
@@ -1588,7 +1620,7 @@ class OODatePickerRange(OODatePickerSimple):
 
                     end = None if not r['data']['end_date'] else r['data']['end_date']
                     if not end:
-                        end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
+                        #end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
                         end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
                     else:
                         end = datetime.datetime.strptime(end, format)

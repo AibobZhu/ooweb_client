@@ -381,6 +381,9 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     def timeout_w(self, time):
         pass
 
+    @abc.abstractmethod
+    def height(self, height=None):
+        pass
 
 class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
 
