@@ -3149,6 +3149,9 @@ class OOTagGroup(WebTable):
             data['records'].append(td)
         return data
 
+    def val(self, val={}):
+        params = {'value':val}
+        return self.func_call(params=params)
     '''
     @classmethod
     def on_post(cls):
@@ -3186,7 +3189,7 @@ class OOTagGroup(WebTable):
                 if r['me'] == 'test':
                     data = cls._example_data()
                     html = ''.join(cls._html(data=data))
-                    r['data'] = {'html': html}
+                    r['data'] = {'html': "'{}'".format(html)}
             return jsonify({'status': 'success', 'data': ret})
 
         class Page(WebPage):
@@ -3204,6 +3207,11 @@ class OOTagGroup(WebTable):
 
         with page.render_post_w():
             test.render_for_post()
+
+        with test.on_event_w('click'):
+            with LVar(parent=test, var_name='val') as val:
+                test.val(val={'checked':'"checked"'})
+            test.alert(str(val))
 
         html = page.render()
         return render_template_string(html)
