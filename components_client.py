@@ -1414,7 +1414,7 @@ class OODatePickerBase:
         last_day = calendar.monthrange(year,month)[1]
         first_dt = datetime.datetime.strptime('{}-{}-1'.format(year,month),'%Y-%m-%d')
         last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year,month,last_day), '%Y-%m-%d')
-        return [first_dt.strftime(format+'-1'),last_dt.strftime(format+'-'+last_day)]
+        return [first_dt.strftime(format+'-1'),last_dt.strftime(format+'-'+str(last_day))]
 
     @classmethod
     def MONTH_STR_DT(cls, lang, str):
@@ -2395,6 +2395,9 @@ class WebTable(WebComponentBootstrap):
     TODO: Change the members of model and query from class to object
     '''
 
+    VAL_FUNC_NAME = 'webtable_val'
+    VAL_FUNC_ARGS = ['that', 'data=null', 'trigger_event=false']
+
     def __init__(self, value=None, head_classes=[],
                  body_classes=[], head_styles=None, body_styles=None, url=None, **kwargs):
         self._value = value
@@ -2518,7 +2521,7 @@ class WebTable(WebComponentBootstrap):
     def _html(cls, data=None, head_class=None, head_style=None):
 
         if not data:
-            _data = self.get_data()
+            _data = cls.get_data()
         else:
             _data = data
 
@@ -2674,7 +2677,7 @@ class WebTable(WebComponentBootstrap):
             table = globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])
             _data['html'] = table._html() #TODO: add current user get data into _html(data=current_user.get_data())
         return jsonify({'status':'success','data':_data})
-    '''
+    
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
@@ -2684,16 +2687,37 @@ class WebTable(WebComponentBootstrap):
                 if e['view_func'] == cls.on_post:
                     return
         app.add_url_rule(rule=cls.HTML_URL, endpoint='{}_on_post'.format(cls.__name__), view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
+    '''
 
     @classmethod
     def test_request(cls, methods=['GET']):
+        test_url = '/webtable_test'
 
-        #cls.add_url_rule(current_app)
-        with WebPage() as page:
+        def on_post():
+            ret = WebPage.on_post()
+            for r in ret:
+                if r['me'] == 'test':
+                    data = OOTable.model.query("test")
+                    html = ''.join(cls._html(data=data))
+                    r['data'] = {'html': html}
+            return jsonify({'status': 'success', 'data': ret})
+
+        class Page(WebPage):
+            URL = test_url
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+
+        with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test',
+                            mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
+
+        with page.render_post_w():
+            test.render_for_post(trigger_event=False)
 
         html = page.render()
         return render_template_string(html)
@@ -2781,7 +2805,7 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(6, 10)):
                 records.append((
-                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#',self.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
+                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#',OOTable.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -2806,7 +2830,7 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(2, 2)):
                 records.append((
-                    {'data': "!@#render_chart!@#:"+"mbar;oochart_multibar_example_data".replace('!@#render_chart!@#',self.RENDER_CHART_KEY)},
+                    {'data': ("!@#render_chart!@#:"+"mbar;oochart_multibar_example_data").replace('!@#render_chart!@#',OOTable.RENDER_CHART_KEY)},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -3139,6 +3163,7 @@ class OOTagGroup(WebTable):
 
     @classmethod
     def test_request(cls, methods=['GET']):
+        '''
         cls.add_url_rule(app=current_app)
         with WebPage() as page:
             with page.add_child(WebRow()) as r1:
@@ -3150,6 +3175,35 @@ class OOTagGroup(WebTable):
             with LVar(parent=test, var_name='checked_var') as data:
                 test.val()
             test.alert('checked_var')
+
+        html = page.render()
+        return render_template_string(html)
+        '''
+        test_url = '/ootaggroup_test'
+        def on_post():
+            ret = WebPage.on_post()
+            for r in ret:
+                if r['me'] == 'test':
+                    data = cls._example_data()
+                    html = ''.join(cls._html(data=data))
+                    r['data'] = {'html': html}
+            return jsonify({'status': 'success', 'data': ret})
+
+        class Page(WebPage):
+            URL = test_url
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                        pass
+
+        with page.render_post_w():
+            test.render_for_post()
 
         html = page.render()
         return render_template_string(html)
