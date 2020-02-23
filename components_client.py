@@ -371,6 +371,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         params = {'height':height}
         return self.func_call(params)
 
+
 class Format(BootstrapInf, FormatInf, ClientBase):
 
     def pad(self, pad=None):
@@ -2744,6 +2745,9 @@ class OOTable(WebTable):
     GET_ROW_DATA_FUNC_NAME = 'ootable_get_row_data'
     GET_ROW_DATA_FUNC_ARGS = ['that', 'data_attr="ootable-details"']
 
+    ROW_INFO_FUNC_NAME = 'ootable_row_info'
+    ROW_INFO_FUNC_ARGS = ['those','data=null']
+
     ROW_CHILD_FUNC_NAME = 'ootable_row_child'
     ROW_CHILD_FUNC_ARGS = ['tr','data_attr=ootable-details']
 
@@ -2942,6 +2946,14 @@ class OOTable(WebTable):
             return data['setting']
         return {'schema': data['schema'], 'records': data['records']}
 
+    def render_for_post(self, trigger_event=False):
+        params={'trigger_event':trigger_event}
+        return self.func_call({})
+
+    def row_render_for_post(self, trigger_event=False):
+        params={'trigger_event':trigger_event}
+        return self.func_call(params)
+
     def __enter__(self):
         ret = super().__enter__()
         #self.add_context_list(self._html())
@@ -3013,7 +3025,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](value='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         #test.render_func()
                         customer_search = []
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
@@ -3052,7 +3064,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r4:
                 with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c4:
-                    with c4.add_child(OOTable(value='image_table',
+                    with c4.add_child(OOTable(name='image_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
                         pass
             with page.add_child(WebBr()):
@@ -3060,7 +3072,7 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r5:
                 with r5.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
-                    with c5.add_child(OOTable(value='chart_table',
+                    with c5.add_child(OOTable(name='chart_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'],
                                               )) as chart_table:
                         pass
@@ -3087,6 +3099,8 @@ class OOTable(WebTable):
 
         with image_table.on_event_w('click_row'):
             image_table.alert('"Click_row!" + ootable_get_rowinfo(that)')
+            with page.render_post_w():
+                image_table.row_render_for_post(trigger_event=False)
 
         html = page.render()
         return render_template_string(html)
