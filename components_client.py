@@ -1346,7 +1346,54 @@ class WebDiv(WebComponentBootstrap):
 
 
 class WebCheckbox(WebSpan):
-    pass
+
+    def check(self, checked=True):
+        params = {'checked':checked}
+        self.func_call(params)
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''
+        Create a testing page containing the component which is being tested
+        '''
+
+        NAME = 'test'
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == NAME:
+                    pass
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/webcheckbox_test'
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(globals()[cls.__name__](name=NAME, value='测试')) as test:
+                        pass
+
+        test.check(True)
+
+        with test.on_event_w('change'):
+            with Var(parent=test, var_name="data") as data:
+                test.val()
+            test.alert(' data + " clicked !"')
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
 
 
 class OODatePickerBase:
@@ -3178,6 +3225,10 @@ class OOTagGroup(WebTable):
         return jsonify({'status': 'success', 'data': _data})
     '''
 
+    def check(self, check=True):
+        params = {'check':check}
+        return self.func_call(params)
+        
     @classmethod
     def test_request(cls, methods=['GET']):
         '''
@@ -3197,13 +3248,21 @@ class OOTagGroup(WebTable):
         return render_template_string(html)
         '''
         test_url = '/ootaggroup_test'
+
         def on_post():
             ret = WebPage.on_post()
+            html = None
+            checked = True
             for r in ret:
                 if r['me'] == 'test':
-                    data = cls._example_data()
-                    html = ''.join(cls._html(data=data))
-                    r['data'] = {'html': "'{}'".format(html)}
+                    if not r['data']:
+                        data = cls._example_data()
+                        html = "'{}'".format(''.join(cls._html(data=data)))
+                    else:
+                        checked = r['data'].split(' ')
+                        checked = [t for t in checked if t ]
+                        checked.pop()
+                    r['data'] = {'html': html, 'checked':checked}
             return jsonify({'status': 'success', 'data': ret})
 
         class Page(WebPage):
@@ -3218,6 +3277,10 @@ class OOTagGroup(WebTable):
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                     with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(WebBtn(value='Check all')) as check_btn:
+                        pass
 
         with page.render_post_w():
             test.render_for_post()
@@ -3226,6 +3289,11 @@ class OOTagGroup(WebTable):
             with LVar(parent=test, var_name='val') as val:
                 test.val(val={'checked':'"checked"'})
             test.alert(str(val))
+            with page.render_post_w():
+                test.render_for_post(trigger_event=False)
+
+        with check_btn.on_event_w('click'):
+            test.check(True)
 
         html = page.render()
         return render_template_string(html)
