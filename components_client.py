@@ -39,7 +39,7 @@ class ClientBase(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def _get_objcall_context(self,func,caller_id,params):
+    def _get_objcall_context(self, func, caller_id, params):
         pass
 
     def context_call(self, params):
@@ -78,6 +78,7 @@ class ClientBase(metaclass=abc.ABCMeta):
 TODO: try with eval, just pass the function calling and express in string, then execute with 'eval' on server side
 '''
 
+
 class Action(CommandInf, ActionInf, TestClient, ClientBase):
 
     @contextmanager
@@ -113,12 +114,12 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         finally:
             self._pop_current_context()
 
-    def equal(self,right, left=None, force_condition=False):
-        params = {'right': right, 'left':left, 'force_condition':force_condition}
+    def equal(self, right, left=None, force_condition=False):
+        params = {'right': right, 'left': left, 'force_condition': force_condition}
         self.func_call(params=params)
 
     def is_(self, element_name):
-        params = {'element_name':element_name}
+        params = {'element_name': element_name}
         self.func_call(params=params)
 
     @contextmanager
@@ -139,7 +140,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         raise NotImplementedError
 
     def set_js(self, js_):
-        params = {'js_':js_}
+        params = {'js_': js_}
         self.func_call(params=params)
 
     def is_condition(self):
@@ -176,14 +177,14 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         raise NotImplementedError
 
     def add_class(self, class_):
-        params={'class_':class_}
+        params = {'class_': class_}
         return self.func_call(params)
 
     def remove_class(self, class_):
-        params={'class_':class_}
+        params = {'class_': class_}
         return self.func_call(params)
 
-    def add_attrs(self,attrs):
+    def add_attrs(self, attrs):
         params = {'attrs': attrs}
         return self.func_call(params)
 
@@ -201,7 +202,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         '''
         data = json.loads(request.form.get('data'))
         return data
-        #return {"status": "sucess", 'data': data, 'me': req['me']}
+        # return {"status": "sucess", 'data': data, 'me': req['me']}
 
     @contextmanager
     def each_w(self):
@@ -227,7 +228,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         url_ = url
         if not isinstance(url, str):
             url_ = '"{}"'.format(str(url))
-        params = {'url':str(url), 'data':data_, 'success':success}
+        params = {'url': str(url), 'data': data_, 'success': success}
         self.with_call(params)
         try:
             yield
@@ -239,13 +240,13 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
     def alert(self, message=''):
         params = {'message': message}
         return self.func_call(params)
-        
+
     def execute_list_name(self, action_name):
         params = {'action_name': action_name}
         return self.func_call(params)
 
     @contextmanager
-    def on_event_w(self,event,filter='',propagation=True):
+    def on_event_w(self, event, filter='', propagation=True):
         '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {'event':event,'filter':filter}})
@@ -253,7 +254,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         self.add_context(context)
         self._push_current_context(context['sub_context'])
         '''
-        params = {'event':event,'filter':filter, 'propagation':propagation}
+        params = {'event': event, 'filter': filter, 'propagation': propagation}
         self.with_call(params)
         try:
             yield
@@ -262,15 +263,15 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         finally:
             self._pop_current_context()
 
-    def stop_event(self,event,filter='',stop=False):
-        params = {'event': event, 'filter':filter, 'stop': stop}
+    def stop_event(self, event, filter='', stop=False):
+        params = {'event': event, 'filter': filter, 'stop': stop}
         self.func_call(params)
 
-    def trigger_event(self,event):
+    def trigger_event(self, event):
         params = {'event': event}
         self.func_call(params)
 
-    def val(self,value=None):
+    def val(self, value=None):
         if value:
             params = {'value': value}
         else:
@@ -284,7 +285,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
     def disable(self, disable):
         params = {'disable': disable}
         self.func_call(params)
-    
+
     def _example_data(cls):
         raise NotImplementedError
 
@@ -293,7 +294,8 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         if extend:
             for e in extend:
                 if 'endpoint' in e and e['endpoint'] and 'methods' in e and e['methods']:
-                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'], methods=e['methods'])
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'],
+                                     methods=e['methods'])
                 elif 'endpoint' in e and e['endpoint']:
                     app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
                 elif 'methods' in e and e['methods']:
@@ -305,20 +307,20 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
                     app.add_url_rule(rule=url, view_func=e['view_func'])
 
     def declare_custom_func(self, fname='', fparams=[], fbody=[]):
-        params={'fname':fname,'fparams':fparams,'fbody':fbody}
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
         return self.func_call(params)
 
     def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
-        params={'fname':fname, 'fparams':fparams,'fbody':fbody}
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
         return self.func_call(params)
 
     def call_custom_func(self, fname='', fparams={}):
-        params={'fname':fname,'fparams':fparams}
+        params = {'fname': fname, 'fparams': fparams}
         return self.func_call(params)
 
     @property
     def true(self):
-        params={}
+        params = {}
         return self.func_call(params)
 
     @property
@@ -332,11 +334,11 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         return self.func_call(params)
 
     def declare_event(self, event, use_clsname=False, selector=None, filter=''):
-        params = {'event':event, 'use_clsname':use_clsname, 'selector':selector, 'filter':filter}
+        params = {'event': event, 'use_clsname': use_clsname, 'selector': selector, 'filter': filter}
         return self.func_call(params)
 
     def sync(self, sync=True):
-        params = {'sync':sync}
+        params = {'sync': sync}
         return self.func_call(params)
 
     @contextmanager
@@ -352,12 +354,12 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
             self._pop_current_context()
 
     def render_for_post(self, trigger_event=False):
-        params={'trigger_event':trigger_event}
+        params = {'trigger_event': trigger_event}
         return self.func_call({})
 
     @contextmanager
     def timeout_w(self, time=None):
-        params = {'time':time}
+        params = {'time': time}
         self.with_call(params)
         try:
             yield
@@ -368,7 +370,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
             self._pop_current_context()
 
     def height(self, height=None):
-        params = {'height':height}
+        params = {'height': height}
         return self.func_call(params)
 
 
@@ -418,11 +420,11 @@ class Format(BootstrapInf, FormatInf, ClientBase):
         raise NotImplementedError
 
     def add_class(self, class_):
-        params = {'class_':class_}
+        params = {'class_': class_}
         return self.func_call(params=params)
 
     def remove_class(self, class_):
-        params = {'class_':class_}
+        params = {'class_': class_}
         return self.func_call(params=params)
 
     def check_col_name(self, col):
@@ -473,24 +475,24 @@ class Format(BootstrapInf, FormatInf, ClientBase):
 
 
 class WebComponent(ComponentInf, ClientInf, ClientBase):
-
     _context = None
     _cur_context_stack = []
 
     @classmethod
     def _set_context(cls, context):
         WebComponent._context = context
-        WebComponent._cur_context_stack=[WebComponent._context]
+        WebComponent._cur_context_stack = [WebComponent._context]
 
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         def convert_param_obj(params):
             if isinstance(params, str):
                 print("error: params is instance of str")
-            for k,v in params.items():
+            for k, v in params.items():
                 if k == 'params':
                     convert_param_obj(v)
                 if isinstance(v, WebComponent):
-                    params[k] = {'obj_id':v.id()}
+                    params[k] = {'obj_id': v.id()}
+
         convert_param_obj(params)
         return {
             'function': func,
@@ -503,14 +505,15 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         def convert_param_obj(params):
             if isinstance(params, str):
                 print("error: params is instance of str")
-            for k,v in params.items():
+            for k, v in params.items():
                 if k == 'params':
                     convert_param_obj(v)
                 if isinstance(v, WebComponent):
-                    params[k] = {'obj_id':v.id()}
+                    params[k] = {'obj_id': v.id()}
+
         convert_param_obj(params)
         return {
-            'function': 'classmethod:'+cls+'.'+func,
+            'function': 'classmethod:' + cls + '.' + func,
             'params': params,
             'sub_context': sub_context
         }
@@ -518,7 +521,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def __init__(self, test=False, client=True, **kwargs):
         self._client = client
         kwargs['client'] = client
-        super().__init__(test=test,**kwargs)
+        super().__init__(test=test, **kwargs)
         if 'id' in kwargs:
             self._id = kwargs['id']
         else:
@@ -539,7 +542,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
         kwargs['name'] = self.name()
         kwargs['id'] = self.id()
-        if hasattr(self,'_nav_items'):
+        if hasattr(self, '_nav_items'):
             kwargs['nav'] = self._nav_items
         if self.__class__.__name__.find("WebPage") != 0:
             kwargs['test'] = test
@@ -550,7 +553,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             kwargs['value'] = self._value
 
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
-        #self._mycont = self.add_context(context)
+        # self._mycont = self.add_context(context)
         self._mycont = [context]
         self.add_context(context)
 
@@ -600,16 +603,16 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             self._children = children
 
     def add_child(self, child=None, child_id=None, objs=None):
-        assert(child)
-        assert(not child_id)
+        assert (child)
+        assert (not child_id)
         assert (not objs)
         self._children.add(child)
         child._parent = self
         params = {'child_id': child.id()}
         self.func_call(params)
-        return  child
+        return child
 
-    def remove_child(self,child=None, child_id=None,objs=None):
+    def remove_child(self, child=None, child_id=None, objs=None):
         pass
 
     def empty_children(self):
@@ -636,7 +639,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
                 self._url = url
                 return url
         else:
-            params = {'url':url, 'js':js}
+            params = {'url': url, 'js': js}
             self.func_call(params)
 
     def url_for(self, context):
@@ -647,9 +650,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         render and return a complete page information in html
         :return:
         '''
-        #components = components_factory(self.context())
+        # components = components_factory(self.context())
         payload = create_payload(self.context())
-        #print('WebPage::render api:{}'.format(self._ap_i))
+        # print('WebPage::render api:{}'.format(self._ap_i))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
         return render_template_string(html)
@@ -666,10 +669,10 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         rdata = json.loads(rjson)
         return {
             'content': render_template_string(rdata['content']),
-            'scripts':rdata['scripts'],
-            'script_files':rdata['script_files'],
-            'styles':rdata['styles'],
-            'styles_files':rdata['style_files']
+            'scripts': rdata['scripts'],
+            'script_files': rdata['script_files'],
+            'styles': rdata['styles'],
+            'styles_files': rdata['style_files']
         }
 
     def context(self):
@@ -686,7 +689,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         for i,v in enumerate(context_list[1:]):
             context_list[i+1] = self.get_context_indent()*'    ' + context_list[i+1]
         '''
-        self.context_call(params={'context':''.join(context_list)})
+        self.context_call(params={'context': ''.join(context_list)})
 
     '''
     def add_script_list(self, script_list):
@@ -701,7 +704,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         if not cont:
             del cls._cur_context_stack[-1]
         else:
-            for i,v in enumerate(cls._cur_context_stack):
+            for i, v in enumerate(cls._cur_context_stack):
                 if v == cont:
                     del cls._cur_context_stack[i]
 
@@ -726,7 +729,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
         self.add_context(context)
         '''
-        params = {'scripts': scripts,'indent':indent, "place":place}
+        params = {'scripts': scripts, 'indent': indent, "place": place}
         return self.func_call(params)
 
     def add_script_list(self, script_list, indent=True, place=None):
@@ -735,7 +738,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         :param ls: scripts in list
         :return: self.func_call(params)
         '''
-        params = {'script_list':script_list,'indent':indent, 'place':place}
+        params = {'script_list': script_list, 'indent': indent, 'place': place}
         return self.func_call(params)
 
     def set_script_indent(self, indent):
@@ -755,7 +758,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def add_styles(self, styles):
         raise NotImplementedError
 
-    def add_style(self,styles):
+    def add_style(self, styles):
         raise NotImplementedError
 
     @contextmanager
@@ -781,7 +784,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         raise NotImplementedError
 
     def add_script_files(self, files):
-        params={'files':files}
+        params = {'files': files}
         return self.func_call(params)
 
     def add_style_files(self, files):
@@ -822,7 +825,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         self.add_context(context)
         self._push_current_context(context['sub_context'])
         '''
-        params = {'name':name}
+        params = {'name': name}
         self.with_call(params)
         try:
             yield
@@ -840,7 +843,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def get_data(self):
 
         _model = None
-        if hasattr(self,'_value') and 'model' in self._value:
+        if hasattr(self, '_value') and 'model' in self._value:
             _model = self._value['model']
 
         _query = None
@@ -886,7 +889,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
         context['sub_context'] = []
         self.add_context(context)
         '''
-        params={'width': width}
+        params = {'width': width}
         return self.func_call(params)
 
     def value(self, value):
@@ -898,8 +901,8 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
         params = {'value': value}
         return self.func_call(params)
 
-    def val(self,value=''):
-        params = {'value':value}
+    def val(self, value=''):
+        params = {'value': value}
         return self.func_call(params)
 
     def is_js_kw(self):
@@ -910,8 +913,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
             self._value = self.__class__.__name__ + 'Test'
 
 
-class WebPage(WebComponentBootstrap,TestPageClient):
-
+class WebPage(WebComponentBootstrap, TestPageClient):
     URL = '/WebPage'
 
     PAGE = None
@@ -919,6 +921,7 @@ class WebPage(WebComponentBootstrap,TestPageClient):
     '''
     Create an unique instance of page, which add a rule for on_post, and register current page view in app
     '''
+
     @classmethod
     def get_page(cls, app):
         '''
@@ -949,11 +952,12 @@ class WebPage(WebComponentBootstrap,TestPageClient):
         try:
             if blueprint:
                 cls.add_url_rule(app=blueprint, extend=[
-                        {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post,
-                         'methods': ['POST']}])
+                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post,
+                     'methods': ['POST']}])
                 app.register_blueprint(blueprint=blueprint, url_prefix=url_prefix)
             else:
-                cls.add_url_rule(app, extend=[{'rule': cls.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+                cls.add_url_rule(app, extend=[
+                    {'rule': cls.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
 
         except AssertionError:
             print("Add url rule error!")
@@ -1141,7 +1145,7 @@ class WebBtn(WebComponentBootstrap):
     def on_post(cls):
         r = super().on_post()
         print('WebBtn.test_result, got request:{}'.format(r['data']))
-        return jsonify({'status':'success', 'data':'test post_w success!'})
+        return jsonify({'status': 'success', 'data': 'test post_w success!'})
 
     @classmethod
     def test_result(cls):
@@ -1233,8 +1237,8 @@ class WebBtn(WebComponentBootstrap):
 
 class WebBtnDropdown(WebBtn):
 
-    def set_options(self,options=None):
-        params={'options':options}
+    def set_options(self, options=None):
+        params = {'options': options}
         self.func_call(params)
 
     @classmethod
@@ -1261,7 +1265,8 @@ class WebBtnDropdown(WebBtn):
         with WebPage(test=True) as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'}, {'name': '测试2', 'href': '#'}])) as btn:
+                    with c1.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'},
+                                                                                 {'name': '测试2', 'href': '#'}])) as btn:
                         pass  # btn.clear(call=True)
                     with c1.add_child(WebBtnDropdown(value='测试2', select_options=[{'name': '测试3', 'href': '#'},
                                                                                   {'name': '测试4',
@@ -1348,7 +1353,7 @@ class WebDiv(WebComponentBootstrap):
 class WebCheckbox(WebSpan):
 
     def check(self, checked=True):
-        params = {'checked':checked}
+        params = {'checked': checked}
         self.func_call(params)
 
     @classmethod
@@ -1397,7 +1402,7 @@ class WebCheckbox(WebSpan):
 
 
 class OODatePickerBase:
-    VIEW = {'日':'day','周':'week','月':'month'}
+    VIEW = {'日': 'day', '周': 'week', '月': 'month'}
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
     WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年 第%W周")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
@@ -1443,8 +1448,8 @@ class OODatePickerBase:
         format = cls.WEEK_FORMAT_EN[1]
         if lang == 'zh':
             format = cls.WEEK_FORMAT_ZH[1]
-        mon = datetime.datetime.strptime(str + '-1', format + '-%w') #week starts at monday
-        sun = datetime.datetime.strptime(str + '-6', format + '-%w') + datetime.timedelta(days=1) #week end at sunday
+        mon = datetime.datetime.strptime(str + '-1', format + '-%w')  # week starts at monday
+        sun = datetime.datetime.strptime(str + '-6', format + '-%w') + datetime.timedelta(days=1)  # week end at sunday
         return [mon + datetime.timedelta(days=-7), sun + datetime.timedelta(days=-7)]
 
     @classmethod
@@ -1459,10 +1464,10 @@ class OODatePickerBase:
             format = cls.MONTH_FORMAT_ZH[1]
         year = dt.year
         month = dt.month
-        last_day = calendar.monthrange(year,month)[1]
-        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year,month),'%Y-%m-%d')
-        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year,month,last_day), '%Y-%m-%d')
-        return [first_dt.strftime(format+'-1'),last_dt.strftime(format+'-'+str(last_day))]
+        last_day = calendar.monthrange(year, month)[1]
+        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
+        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
+        return [first_dt.strftime(format + '-1'), last_dt.strftime(format + '-' + str(last_day))]
 
     @classmethod
     def MONTH_STR_DT(cls, lang, str):
@@ -1485,23 +1490,29 @@ class OODatePickerBase:
 
     FORMATS = {
         'zh': {
-            'day': {'to_format': DAY_FORMAT_ZH[0], 'from_format':DAY_FORMAT_ZH[1],'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
-            'week': {'to_format': WEEK_FORMAT_ZH[0], 'from_format': WEEK_FORMAT_ZH[1],'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
-            'month': {'to_format': MONTH_FORMAT_ZH[0], 'from_format': MONTH_FORMAT_ZH[1],'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
+            'day': {'to_format': DAY_FORMAT_ZH[0], 'from_format': DAY_FORMAT_ZH[1], 'str_func': 'DAY_DATETIME_STR',
+                    'stamp_func': 'DAY_STR_STAMP'},
+            'week': {'to_format': WEEK_FORMAT_ZH[0], 'from_format': WEEK_FORMAT_ZH[1], 'str_func': 'WEEK_DATETIME_STR',
+                     'stamp_func': 'WEEK_STR_STAMP'},
+            'month': {'to_format': MONTH_FORMAT_ZH[0], 'from_format': MONTH_FORMAT_ZH[1],
+                      'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         },
         'en': {
-            'day': {'to_format': DAY_FORMAT_EN[0], 'from_format': DAY_FORMAT_EN[1],'str_func': 'DAY_DATETIME_STR', 'stamp_func': 'DAY_STR_STAMP'},
-            'week': {'to_format': WEEK_FORMAT_EN[0], 'from_format': WEEK_FORMAT_EN[1], 'str_func': 'WEEK_DATETIME_STR', 'stamp_func': 'WEEK_STR_STAMP'},
-            'month': {'to_format': MONTH_FORMAT_EN[0], 'from_format': MONTH_FORMAT_EN[1], 'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
+            'day': {'to_format': DAY_FORMAT_EN[0], 'from_format': DAY_FORMAT_EN[1], 'str_func': 'DAY_DATETIME_STR',
+                    'stamp_func': 'DAY_STR_STAMP'},
+            'week': {'to_format': WEEK_FORMAT_EN[0], 'from_format': WEEK_FORMAT_EN[1], 'str_func': 'WEEK_DATETIME_STR',
+                     'stamp_func': 'WEEK_STR_STAMP'},
+            'month': {'to_format': MONTH_FORMAT_EN[0], 'from_format': MONTH_FORMAT_EN[1],
+                      'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         }
     }
-    
+
 
 class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
-    def __init__(self, language='zh', value={'view':'week',
-            'start_date':datetime.datetime.today().strftime('%Y %m %d')},
-            views=['day','week','month'], place_holders=('开始', '结束'), **kwargs):
+    def __init__(self, language='zh', value={'view': 'week',
+                                             'start_date': datetime.datetime.today().strftime('%Y %m %d')},
+                 views=['day', 'week', 'month'], place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
         kwargs['language'] = language
@@ -1509,7 +1520,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
         super().__init__(**kwargs)
 
     def disable(self, disable, btn_only=False):
-        params={'btn_only':btn_only, 'disable':disable}
+        params = {'btn_only': btn_only, 'disable': disable}
         self.func_call(params)
 
     @classmethod
@@ -1603,13 +1614,13 @@ class OODatePickerIcon(OODatePickerSimple):
                 req = super().on_post()
                 if req['me'] == 'oodatepicker':
                     print(req['me'])
-                return jsonify({'status':'success', 'data':'null'})
+                return jsonify({'status': 'success', 'data': 'null'})
 
         Page.init_page(app=current_app, endpoint='oodatepickericon', on_post=Page.on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=["md8"],offset=['mdo2'])) as c1:
+                with r1.add_child(WebColumn(width=["md8"], offset=['mdo2'])) as c1:
                     with page.add_child(WebHead1(value="Test OODatePickerIcon with week view")):
                         pass
             with page.add_child(WebBr()) as br1:
@@ -1628,7 +1639,10 @@ class OODatePickerIcon(OODatePickerSimple):
 
 class OODatePickerRange(OODatePickerSimple):
 
-    def __init__(self, language='zh', value={'view':'week','start_date':datetime.datetime.today().strftime('%Y %m %d'),'end_date':datetime.datetime.today().strftime('%Y %m %d')}, views=['day','week','month'], place_holders=('开始', '结束'), **kwargs):
+    def __init__(self, language='zh',
+                 value={'view': 'week', 'start_date': datetime.datetime.today().strftime('%Y %m %d'),
+                        'end_date': datetime.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
+                 place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
         kwargs['language'] = language
@@ -1639,7 +1653,7 @@ class OODatePickerRange(OODatePickerSimple):
     def test_request(cls, methods=['GET']):
         '''Create a testing page containing the component which is being tested'''
 
-        #border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
 
         NAME1 = 'test1'
         NAME2 = 'test2'
@@ -1661,14 +1675,14 @@ class OODatePickerRange(OODatePickerSimple):
 
                     start = None if not r['data']['start_date'] else r['data']['start_date']
                     if not start:
-                        #start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
+                        # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
                         start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
                     else:
                         start = datetime.datetime.strptime(start, format)
 
                     end = None if not r['data']['end_date'] else r['data']['end_date']
                     if not end:
-                        #end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
+                        # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
                         end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
                     else:
                         end = datetime.datetime.strptime(end, format)
@@ -1717,14 +1731,14 @@ class WebSvg(WebComponentBootstrap):
 
 
 class OOChartNVD3(WebSvg):
-
     OOCHART_CLASSES = {}
     OOCHART_CREATE_FUNC_NAME = 'oochart_create'
 
     @classmethod
-    def CALL_CREATE_FUNC(cls,  svg, chart_type, chart_data, aobj, parent='null', duration=0, simple=False):
-        params={'svg':svg, 'chart_type':chart_type, 'chart_data':chart_data, 'aobj_id': aobj.id(), 'parent':parent,
-                'duration':duration, 'simple':simple}
+    def CALL_CREATE_FUNC(cls, svg, chart_type, chart_data, aobj, parent='null', duration=0, simple=False):
+        params = {'svg': svg, 'chart_type': chart_type, 'chart_data': chart_data, 'aobj_id': aobj.id(),
+                  'parent': parent,
+                  'duration': duration, 'simple': simple}
         return aobj.class_func_call(cls=cls.__name__, params=params)
 
     @classmethod
@@ -1744,13 +1758,13 @@ class OOChartNVD3(WebSvg):
             Test creating charts by global methods of class instead of object
             '''
             with page.add_child(WebRow()) as row2:
-                with row2.add_child(WebColumn(width=['md8'],offset=['mdo2'])) as col2:
+                with row2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as col2:
                     with col2.add_child(WebDiv(styles={'width': '200px', 'height': '150px'})) as div1:
                         with div1.add_child(WebDiv(styles={'width': '100px', 'height': '100px'})) as div2:
                             with LVar(parent=col2, var_name='$test_chart') as test_chart:
                                 test_chart.add_script('$(document.createElementNS(d3.ns.prefix.svg, "svg")); \n',
                                                       indent=False)
-                            #test_chart.add_script('$test_chart[0].setAttribute("viewBox","100,100,10000,10000");\n')
+                            # test_chart.add_script('$test_chart[0].setAttribute("viewBox","100,100,10000,10000");\n')
                             class_type = None
                             for k, v in OOChartNVD3.OOCHART_CLASSES.items():
                                 if v == cls.__name__:
@@ -1772,62 +1786,50 @@ class OOChartNVD3(WebSvg):
 
 
 class OOChartLineFinder(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['linefinder'] = __qualname__
 
 
 class OOChartPie(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['pie'] = __qualname__
 
 
 class OOChartComulativeLine(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['cline'] = __qualname__
 
 
 class OOChartLinePlusBar(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['lpbar'] = __qualname__
 
 
 class OOChartHorizontalGroupedStackedBar(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['hgsbar'] = __qualname__
 
 
 class OOChartDescreteBar(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['dbar'] = __qualname__
 
 
 class OOChartStackedArea(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['stackedarea'] = __qualname__
 
 
 class OOChartLine(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['line'] = __qualname__
 
 
 class OOChartScatterBubble(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['sbubble'] = __qualname__
 
 
 class OOChartMultiBar(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['mbar'] = __qualname__
 
 
 class OOChartBullet(OOChartNVD3):
-
     OOChartNVD3.OOCHART_CLASSES['bullet'] = __qualname__
 
 
 class OOGeneralSelector(WebBtnGroup):
-
     '''
     Create a general selector, contains several toggle drop down buttons in a line
 
@@ -1864,7 +1866,7 @@ class OOGeneralSelector(WebBtnGroup):
     @staticmethod
     def data_format():
         return {
-            'button': {'name': '', 'select':'', 'options': []},
+            'button': {'name': '', 'select': '', 'options': []},
             'option': {'name': '', 'href': '#'}
         }
 
@@ -1899,18 +1901,20 @@ class OOGeneralSelector(WebBtnGroup):
             def type_(cls):
                 return 'WebPage'
 
-        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs1')) as gs1:
+                    with c1.add_child(
+                            globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs1')) as gs1:
                         pass
             with page.add_child(WebBr()) as br:
                 pass
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                    with c2.add_child(globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs2')) as gs2:
+                    with c2.add_child(
+                            globals()[cls.__name__](test=True, styles={'display': 'flex'}, name='gs2')) as gs2:
                         pass
 
         # Test getting general selector value by its button id
@@ -1918,13 +1922,13 @@ class OOGeneralSelector(WebBtnGroup):
             with LVar(parent=gs1, var_name='gs1_value') as gs1_value:
                 gs1.val()
             gs2.val('gs1_value')
-            #gs1.alert('"The general selector gs1\'s value:"+gs1_value')
+            # gs1.alert('"The general selector gs1\'s value:"+gs1_value')
 
         with gs2.on_event_w('change'):
             with LVar(parent=gs2, var_name='gs2_value') as gs2_value:
                 gs2.val()
             gs1.val('gs2_value')
-            #gs2.alert('"The general selector gs2\'s value:"+gs2_value')
+            # gs2.alert('"The general selector gs2\'s value:"+gs2_value')
 
         with page.render_post_w():
             gs1.render_for_post()
@@ -1996,7 +2000,6 @@ class OOBanner(WebDiv):
 
 
 class OOCalendar(WebDiv):
-
     ME_PRE = 'oocalendar_buildin'
     LOAD_TEMPLATE_KEY = ME_PRE + '_loadtemplate_'
     TEMLATE_WEEK_KEY = ME_PRE + '_template_week'
@@ -2246,79 +2249,79 @@ class OOCalendar(WebDiv):
     @classmethod
     def _example_data(cls):
         return [
-                {
-                    "id": "293",
-                    "title": "This is warning class event with very long title to check how it fits to evet in day view",
-                    "url": "http://www.example.com/",
-                    "class": "event-warning",
-                    "start": "1362938400000",
-                    "end": "1363197686300"
-                },
-                {
-                    "id": "256",
-                    "title": "Event that ends on timeline",
-                    "url": "http://www.example.com/",
-                    "class": "event-warning",
-                    "start": "1363155300000",
-                    "end": "1363227600000"
-                },
-                {
-                    "id": "276",
-                    "title": "Short day event",
-                    "url": "http://www.example.com/",
-                    "class": "event-success",
-                    "start": "1363245600000",
-                    "end": "1363252200000"
-                },
-                {
-                    "id": "294",
-                    "title": "This is information class ",
-                    "url": "http://www.example.com/",
-                    "class": "event-info",
-                    "start": "1363111200000",
-                    "end": "1363284086400"
-                },
-                {
-                    "id": "297",
-                    "title": "This is success event",
-                    "url": "http://www.example.com/",
-                    "class": "event-success",
-                    "start": "1363234500000",
-                    "end": "1363284062400"
-                },
-                {
-                    "id": "54",
-                    "title": "This is simple event",
-                    "url": "http://www.example.com/",
-                    "class": "",
-                    "start": "1363712400000",
-                    "end": "1363716086400"
-                },
-                {
-                    "id": "532",
-                    "title": "This is inverse event",
-                    "url": "http://www.example.com/",
-                    "class": "event-inverse",
-                    "start": "1364407200000",
-                    "end": "1364493686400"
-                },
-                {
-                    "id": "548",
-                    "title": "This is special event",
-                    "url": "http://www.example.com/",
-                    "class": "event-special",
-                    "start": "1363197600000",
-                    "end": "1363629686400"
-                },
-                {
-                    "id": "295",
-                    "title": "Event 3",
-                    "url": "http://www.example.com/",
-                    "class": "event-important",
-                    "start": "1364320800000",
-                    "end": "1364407286400"
-                }
-            ]
+            {
+                "id": "293",
+                "title": "This is warning class event with very long title to check how it fits to evet in day view",
+                "url": "http://www.example.com/",
+                "class": "event-warning",
+                "start": "1362938400000",
+                "end": "1363197686300"
+            },
+            {
+                "id": "256",
+                "title": "Event that ends on timeline",
+                "url": "http://www.example.com/",
+                "class": "event-warning",
+                "start": "1363155300000",
+                "end": "1363227600000"
+            },
+            {
+                "id": "276",
+                "title": "Short day event",
+                "url": "http://www.example.com/",
+                "class": "event-success",
+                "start": "1363245600000",
+                "end": "1363252200000"
+            },
+            {
+                "id": "294",
+                "title": "This is information class ",
+                "url": "http://www.example.com/",
+                "class": "event-info",
+                "start": "1363111200000",
+                "end": "1363284086400"
+            },
+            {
+                "id": "297",
+                "title": "This is success event",
+                "url": "http://www.example.com/",
+                "class": "event-success",
+                "start": "1363234500000",
+                "end": "1363284062400"
+            },
+            {
+                "id": "54",
+                "title": "This is simple event",
+                "url": "http://www.example.com/",
+                "class": "",
+                "start": "1363712400000",
+                "end": "1363716086400"
+            },
+            {
+                "id": "532",
+                "title": "This is inverse event",
+                "url": "http://www.example.com/",
+                "class": "event-inverse",
+                "start": "1364407200000",
+                "end": "1364493686400"
+            },
+            {
+                "id": "548",
+                "title": "This is special event",
+                "url": "http://www.example.com/",
+                "class": "event-special",
+                "start": "1363197600000",
+                "end": "1363629686400"
+            },
+            {
+                "id": "295",
+                "title": "Event 3",
+                "url": "http://www.example.com/",
+                "class": "event-important",
+                "start": "1364320800000",
+                "end": "1364407286400"
+            }
+        ]
 
     @classmethod
     def _event(cls):
@@ -2347,7 +2350,7 @@ class OOCalendar(WebDiv):
 
     @classmethod
     def add_url_rule(cls, app, extend=[]):
-        super().add_url_rule(app,extend)
+        super().add_url_rule(app, extend)
         app.add_url_rule('/oocalendar/year.html', view_func=cls._year)
         app.add_url_rule('/oocalendar/year-month.html', view_func=cls._year_month)
         app.add_url_rule('/oocalendar/month.html', view_func=cls._month)
@@ -2359,7 +2362,7 @@ class OOCalendar(WebDiv):
         app.add_url_rule('/oocalendar/events', view_func=cls._event)
 
     @classmethod
-    def on_post(cls,req):
+    def on_post(cls, req):
 
         ret = req
         for r in req:
@@ -2392,7 +2395,7 @@ class OOCalendar(WebDiv):
         def on_post():
             req = WebPage.on_post()
             ret = OOCalendar.on_post(req)
-            return jsonify({'status':'success','data':ret})
+            return jsonify({'status': 'success', 'data': ret})
 
         class Page(WebPage):
             URL = '/OOCalendar_test'
@@ -2408,8 +2411,8 @@ class OOCalendar(WebDiv):
                     with c1.add_child(OOCalendarBar()) as bar:
                         pass
             with page.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=['md8'],offset=['mdo2'],
-                                            styles={'margin-left':"20px",'margin-right':'20px'})) as c2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'],
+                                            styles={'margin-left': "20px", 'margin-right': '20px'})) as c2:
                     with c2.add_child(globals()[cls.__name__]()) as calendar:
                         pass
 
@@ -2427,7 +2430,6 @@ class OOCalendarBar(WebDiv):
 
 
 class WebTable(WebComponentBootstrap):
-
     '''
     WebTable generates a html table from a data including schema and records.
     schema leads to table heads and records lead to table body.
@@ -2489,7 +2491,7 @@ class WebTable(WebComponentBootstrap):
 
     @classmethod
     def _body_classes_str(cls):
-        if hasattr(cls,'_body_classes') and cls._body_classes:
+        if hasattr(cls, '_body_classes') and cls._body_classes:
             return ' '.join(cls._body_classes)
         else:
             return ''
@@ -2502,7 +2504,7 @@ class WebTable(WebComponentBootstrap):
             return ''
 
     @classmethod
-    def _example_data(cls, schema_only = False):
+    def _example_data(cls, schema_only=False):
         '''
         return {
             'schema':[
@@ -2530,14 +2532,14 @@ class WebTable(WebComponentBootstrap):
         '''
 
         schema = [
-                {'name': '事件', 'style': 'width:30%', 'attr': ''},
-                {'name': '审批', 'style': 'width:20%', 'attr': '', 'type':'checkbox'},
-                {'name': '完成', 'style': '', 'attr': '', 'type':'checkbox'},
-                {'name': '审核', 'style': '', 'attr': '', 'type':'checkbox'},
-                {'name': '开始', 'style': '', 'attr': ''},
-                {'name': '结束', 'style': '', 'attr': ''},
-                {'name': '备份', 'style': '', 'attr': ''},
-            ]
+            {'name': '事件', 'style': 'width:30%', 'attr': ''},
+            {'name': '审批', 'style': 'width:20%', 'attr': '', 'type': 'checkbox'},
+            {'name': '完成', 'style': '', 'attr': '', 'type': 'checkbox'},
+            {'name': '审核', 'style': '', 'attr': '', 'type': 'checkbox'},
+            {'name': '开始', 'style': '', 'attr': ''},
+            {'name': '结束', 'style': '', 'attr': ''},
+            {'name': '备份', 'style': '', 'attr': ''},
+        ]
         if schema_only:
             return schema
 
@@ -2553,13 +2555,13 @@ class WebTable(WebComponentBootstrap):
             start, end = randDatetimeRange()
             data['records'].append(
                 (
-                    {'data': _getStr(random.randint(3,6)), 'attr':'nowrap data-ootable-details="This is event name"'},
+                    {'data': _getStr(random.randint(3, 6)), 'attr': 'nowrap data-ootable-details="This is event name"'},
                     {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
                     {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                    {'data': start, 'attr':'data-ootable-details="This is start date time"'},
-                    {'data': end, 'attr':'data-ootable-details="This is end date time"'},
-                    {'data': _getStr(random.randint(10,128)), 'attr':'data-ootable-details="This is details"'}
+                    {'data': start, 'attr': 'data-ootable-details="This is start date time"'},
+                    {'data': end, 'attr': 'data-ootable-details="This is end date time"'},
+                    {'data': _getStr(random.randint(10, 128)), 'attr': 'data-ootable-details="This is details"'}
                 )
             )
 
@@ -2593,7 +2595,7 @@ class WebTable(WebComponentBootstrap):
                     head['attr'] = ''
                 head['attr'] = head['attr'] + ' colspan="{}" '.format(str(colspan))
 
-            return colspan, sub_max_levels+1
+            return colspan, sub_max_levels + 1
 
         def _head_rowspan(head, max_levels):
 
@@ -2604,9 +2606,9 @@ class WebTable(WebComponentBootstrap):
                     head['attr'] = head['attr'] + ' rowspan="{}" '.format(max_levels)
                 return
             else:
-                assert(max_levels>1)
+                assert (max_levels > 1)
                 for sh in head['subhead']:
-                    _head_rowspan(sh, max_levels-1)
+                    _head_rowspan(sh, max_levels - 1)
 
         def _head_matrix(head, matrix, index):
             attr = head['attr'] if 'attr' in head else ''
@@ -2614,25 +2616,26 @@ class WebTable(WebComponentBootstrap):
             type = head['type'] if 'type' in head else ''
             classes = head['class'] if 'class' in head else ''
             if len(matrix) <= index:
-                for i in range(len(matrix), index+1):
+                for i in range(len(matrix), index + 1):
                     matrix.append([])
             if matrix[index]:
-                matrix[index].append({'name': head['name'], 'class': classes, 'attr': attr, 'style':style, 'type':type})
+                matrix[index].append(
+                    {'name': head['name'], 'class': classes, 'attr': attr, 'style': style, 'type': type})
             else:
-                matrix[index] = [{'name': head['name'], 'class': classes, 'attr': attr, 'style':style, 'type':type}]
+                matrix[index] = [{'name': head['name'], 'class': classes, 'attr': attr, 'style': style, 'type': type}]
             if 'subhead' in head and head['subhead']:
                 if len(matrix) <= index + 1:
                     matrix.append([])
                 for sh in head['subhead']:
-                    _head_matrix(sh, matrix, index+1)
+                    _head_matrix(sh, matrix, index + 1)
 
         def _columns(matrix, matrix_index, columns, max_cs):
             columns_count = 0
             for th in matrix[matrix_index]:
-                if th['attr'].find('colspan') >=0:
+                if th['attr'].find('colspan') >= 0:
                     th_attr = th['attr'].split(' ')
                     for attr in th_attr:
-                        if attr.find('colspan') >=0:
+                        if attr.find('colspan') >= 0:
                             colspan = int(attr.split('=')[1].split('"')[1])
                             sub_matrix_index = matrix_index
                             while True:
@@ -2665,18 +2668,20 @@ class WebTable(WebComponentBootstrap):
                     max_level = ml
 
             for h in schema:
-                _head_rowspan(h,max_level)
+                _head_rowspan(h, max_level)
 
             matrix = []
             for h in schema:
-                _head_matrix(h, matrix,0)
+                _head_matrix(h, matrix, 0)
 
             for tr in matrix:
-                #html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
+                # html.append('    <tr class="{}" style="{}">\n'.format(self._head_classes_str(), self._head_styles_str()))
                 html.append(
                     '    <tr class="{}" style="{}">\n'.format(head_class, head_style))
                 for th in tr:
-                    html.append('        <th class="{}" style="{}" {}><div>{}</div></th>\n'.format(th['class'], th['style'], th['attr'], th['name']))
+                    html.append(
+                        '        <th class="{}" style="{}" {}><div>{}</div></th>\n'.format(th['class'], th['style'],
+                                                                                           th['attr'], th['name']))
                 html.append('    </tr>\n')
 
             columns = []
@@ -2699,16 +2704,18 @@ class WebTable(WebComponentBootstrap):
                 classes = d['class'] if 'class' in d else ''
                 style = d['style'] if 'style' in d else ''
                 attr = d['attr'] if 'attr' in d else ''
+                data_ = d['data'] if 'data' in d and d['data'] else ''
                 if columns and 'type' in columns[i] and columns[i]['type']:
                     if columns[i]['type'].find('checkbox') == 0:
-                        if d['data']:
-                            td = '        <input type="checkbox" checked="checked" class="{}" style="{}" {}>'.format(classes, style, attr)
+                        if data_:
+                            td = '        <input type="checkbox" checked="checked" class="{}" style="{}" {}>'.format(
+                                classes, style, attr)
                         else:
                             td = '        <input type="checkbox" class="{}" style="{}" {}>'.format(classes, style, attr)
                     else:
                         raise NotImplementedError
                 else:
-                    td = d['data']
+                    td = data_
                 html.append('<td class="{}" style="{}" {} >{}</td>'.format(classes, style, attr, td))
             html.append('    </tr>\n')
         html.append('</tbody>\n')
@@ -2752,16 +2759,18 @@ class WebTable(WebComponentBootstrap):
 
         class Page(WebPage):
             URL = test_url
+
             def type_(self):
                 return 'WebPage'
 
-        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'],height="400px")) as c1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="400px")) as c1:
                     with c1.add_child(globals()[cls.__name__](name='test',
-                            mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                                                              mytype=['striped', 'hover', 'borderless',
+                                                                      'responsive'])) as test:
                         pass
 
         with page.render_post_w():
@@ -2772,7 +2781,6 @@ class WebTable(WebComponentBootstrap):
 
 
 class OOTable(WebTable):
-
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
@@ -2783,7 +2791,7 @@ class OOTable(WebTable):
     VAL_FUNC_ARGS = ['that', 'data', 'trigger_event=false']
 
     RENDER_FUNC_NAME = 'ootable_rander'
-    #RENDER_FUNC_ARGS = ['id', 'html', 'setting']
+    # RENDER_FUNC_ARGS = ['id', 'html', 'setting']
     RENDER_FUNC_ARGS = ['id', 'data']
 
     COLREORDER_FUNC_NAME = 'ootable_colreorder'
@@ -2793,13 +2801,13 @@ class OOTable(WebTable):
     GET_ROW_DATA_FUNC_ARGS = ['that', 'data_attr="ootable-details"']
 
     ROW_INFO_FUNC_NAME = 'ootable_row_info'
-    ROW_INFO_FUNC_ARGS = ['those','data=null']
+    ROW_INFO_FUNC_ARGS = ['those', 'data=null']
 
     ROW_CHILD_FUNC_NAME = 'ootable_row_child'
-    ROW_CHILD_FUNC_ARGS = ['tr','data_attr=ootable-details']
+    ROW_CHILD_FUNC_ARGS = ['tr', 'data_attr=ootable-details']
 
     ROW_CHILD_FORMAT_FUNC_NAME = 'ootable_row_child_format'
-    #ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
+    # ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
     ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data=ull']
     ROW_CHILD_FORMAT_FUNC_BODY = (
         '   var $this_tr = $(tr);\n',
@@ -2818,28 +2826,30 @@ class OOTable(WebTable):
     )
 
     CELL_RENDER_FUNC_NAME = 'ootable_cell_render'
-    CELL_RENDER_FUNC_ARGS = ['data','type','row','meta']
+    CELL_RENDER_FUNC_ARGS = ['data', 'type', 'row', 'meta']
     CELL_RENDER_FUNC_BODY = (
-       "if(data.indexOf('!@#render_img!@#:')==0){\n".replace('!@#render_img!@#', RENDER_IMG_KEY),
-       "    return \"<img width='100px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('!@#render_img!@#:'.length)+\"'/>\";\n".replace('!@#render_img!@#',RENDER_IMG_KEY),
-       "};\n"
-       "return data;\n",
+        "if(data.indexOf('!@#render_img!@#:')==0){\n".replace('!@#render_img!@#', RENDER_IMG_KEY),
+        "    return \"<img width='100px' onload=webcomponent_draw_img(this,'60px') src='\"+data.substr('!@#render_img!@#:'.length)+\"'/>\";\n".replace(
+            '!@#render_img!@#', RENDER_IMG_KEY),
+        "};\n"
+        "return data;\n",
     )
 
     CREATED_CELL_RENDER_FUNC_NAME = 'ootable_created_cell_render'
-    CREATED_CELL_RENDER_FUNC_ARGS = ['td','cellData','rowData','row','col']
+    CREATED_CELL_RENDER_FUNC_ARGS = ['td', 'cellData', 'rowData', 'row', 'col']
     CREATED_CELL_RENDER_FUNC_BODY = (
-       "if(cellData.indexOf('!@#render_chart!@#:')==0){\n".replace('!@#render_chart!@#', RENDER_CHART_KEY),
-       "    let content = cellData.substr('!@#render_chart!@#:'.length);\n".replace('!@#render_chart!@#', RENDER_CHART_KEY),
-       "    let chart_type = content.split(';')[0];\n",
-       "    let chart_data = content.split(';')[1];\n",
-       "    let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));\n",
-       "    let fn = window[chart_data];\n",
-       "    $svg.css('width','100px');\n",
-       "    $svg.css('height','60px');\n",
-       "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
-       "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
-       "};\n",
+        "if(cellData.indexOf('!@#render_chart!@#:')==0){\n".replace('!@#render_chart!@#', RENDER_CHART_KEY),
+        "    let content = cellData.substr('!@#render_chart!@#:'.length);\n".replace('!@#render_chart!@#',
+                                                                                     RENDER_CHART_KEY),
+        "    let chart_type = content.split(';')[0];\n",
+        "    let chart_data = content.split(';')[1];\n",
+        "    let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));\n",
+        "    let fn = window[chart_data];\n",
+        "    $svg.css('width','100px');\n",
+        "    $svg.css('height','60px');\n",
+        "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
+        "    {}($svg[0],chart_type,fn(),td,duration=0,simple=true);\n".format(OOChartNVD3.OOCHART_CREATE_FUNC_NAME),
+        "};\n",
     )
 
     TIMELY_EVENT_QUEUE = "ootable_timely_execute_queue"
@@ -2856,7 +2866,8 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(6, 10)):
                 records.append((
-                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#',OOTable.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
+                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#', OOTable.RENDER_IMG_KEY) + url_for('static',
+                                                                                                               filename='img/demo.jpg')},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -2881,7 +2892,8 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(2, 2)):
                 records.append((
-                    {'data': ("!@#render_chart!@#:"+"mbar;oochart_multibar_example_data").replace('!@#render_chart!@#',OOTable.RENDER_CHART_KEY)},
+                    {'data': ("!@#render_chart!@#:" + "mbar;oochart_multibar_example_data").replace(
+                        '!@#render_chart!@#', OOTable.RENDER_CHART_KEY)},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -2903,7 +2915,7 @@ class OOTable(WebTable):
             elif test == "chart":
                 return self.example_data_chart()
             else:
-                data =  WebTable._example_data()
+                data = WebTable._example_data()
                 data['setting'] = {
                     'scrollY': '200px',
                     'scrollX': True,
@@ -2927,10 +2939,10 @@ class OOTable(WebTable):
             OOTable.SETTING = self._example_setting()
 
         super().__init__(**kwargs)
-        #self._html_url = html_url
+        # self._html_url = html_url
 
     def col_reorder(self, order):
-        params  = {'order': order}
+        params = {'order': order}
         return self.func_call(params)
 
     def search(self, pattern):
@@ -2957,14 +2969,14 @@ class OOTable(WebTable):
     @classmethod
     def _example_setting(cls):
         return {
-                'scrollY': '500px',
-                'scrollX': True,
-                'scrollCollapse': True,
-                'paging': True,
-                'searching': True,
-                'destroy':True,
-                'colReorder': True
-            }
+            'scrollY': '500px',
+            'scrollX': True,
+            'scrollCollapse': True,
+            'paging': True,
+            'searching': True,
+            'destroy': True,
+            'colReorder': True
+        }
 
     '''
     @classmethod
@@ -2994,21 +3006,22 @@ class OOTable(WebTable):
         return {'schema': data['schema'], 'records': data['records']}
 
     def render_for_post(self, trigger_event=False):
-        params={'trigger_event':trigger_event}
+        params = {'trigger_event': trigger_event}
         return self.func_call({})
 
     def row_render_for_post(self, trigger_event=False):
-        params={'trigger_event':trigger_event}
+        params = {'trigger_event': trigger_event}
         return self.func_call(params)
 
     def __enter__(self):
         ret = super().__enter__()
-        #self.add_context_list(self._html())
+        # self.add_context_list(self._html())
         self.declare_custom_global_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS,
-                                 self.ROW_CHILD_FORMAT_FUNC_BODY)
-        self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS, self.CELL_RENDER_FUNC_BODY)
+                                        self.ROW_CHILD_FORMAT_FUNC_BODY)
+        self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS,
+                                        self.CELL_RENDER_FUNC_BODY)
         self.declare_custom_global_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS,
-                                 self.CREATED_CELL_RENDER_FUNC_BODY)
+                                        self.CREATED_CELL_RENDER_FUNC_BODY)
         return self
 
     @classmethod
@@ -3059,10 +3072,11 @@ class OOTable(WebTable):
 
         class Page(WebPage):
             URL = test_url
+
             def type_(self):
                 return 'WebPage'
 
-        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r2:
@@ -3072,8 +3086,9 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
-                        #test.render_func()
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless',
+                                                                                   'responsive'])) as test:
+                        # test.render_func()
                         customer_search = []
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
                         customer_search.append('if (! filter || data[0] === filter){\n')
@@ -3154,7 +3169,6 @@ class OOTable(WebTable):
 
 
 class OOTagGroup(WebTable):
-
     SETTING = {
         'paging': False,
         'scrollY': '500px',
@@ -3167,7 +3181,7 @@ class OOTagGroup(WebTable):
 
     HTML_URL = '/ootaggroup/ootaggroup_html'
 
-    def __init__(self, value=[], col_num = 0, **kwargs):
+    def __init__(self, value=[], col_num=0, **kwargs):
         super().__init__(**kwargs)
         self._value = value
         if col_num:
@@ -3176,22 +3190,22 @@ class OOTagGroup(WebTable):
     @classmethod
     def _example_setting(cls):
         return {
-        'paging': False,
-        'scrollY': '500px',
-        'scrollX': True,
-        'searching': True,
-        'scrollCollapse': True,
-    }
+            'paging': False,
+            'scrollY': '500px',
+            'scrollX': True,
+            'searching': True,
+            'scrollCollapse': True,
+        }
 
     @classmethod
-    def _example_data(cls, schema_only = False):
+    def _example_data(cls, schema_only=False):
         data = {
             'schema': [],
             'records': []
         }
 
         for j in range(cls.COL_NUM):
-            data['schema'].append({'name':''})
+            data['schema'].append({'name': ''})
 
         for i in range(2):
             approve = True if random.randint(0, 1) else False
@@ -3201,18 +3215,19 @@ class OOTagGroup(WebTable):
             start, end = randDatetimeRange()
             td = []
             for i in range(len(data['schema'])):
-                with WebCheckbox(value=_getStr(random.randint(2,5))) as locals()['wc'+str(i)]:
+                with WebCheckbox(value=_getStr(random.randint(2, 5))) as locals()['wc' + str(i)]:
                     pass
-                locals()['wc'+str(i)].add_app()
-                wc_content = locals()['wc'+str(i)].render_content()
+                locals()['wc' + str(i)].add_app()
+                wc_content = locals()['wc' + str(i)].render_content()
                 td.append({'data': wc_content['content'], 'attr': 'nowrap'})
-                del locals()['wc'+str(i)]
+                del locals()['wc' + str(i)]
             data['records'].append(td)
         return data
 
     def val(self, val={}):
-        params = {'value':val}
+        params = {'value': val}
         return self.func_call(params=params)
+
     '''
     @classmethod
     def on_post(cls):
@@ -3226,9 +3241,9 @@ class OOTagGroup(WebTable):
     '''
 
     def check(self, check=True):
-        params = {'check':check}
+        params = {'check': check}
         return self.func_call(params)
-        
+
     @classmethod
     def test_request(cls, methods=['GET']):
         '''
@@ -3260,22 +3275,24 @@ class OOTagGroup(WebTable):
                         html = "'{}'".format(''.join(cls._html(data=data)))
                     else:
                         checked = r['data'].split(' ')
-                        checked = [t for t in checked if t ]
+                        checked = [t for t in checked if t]
                         checked.pop()
-                    r['data'] = {'html': html, 'checked':checked}
+                    r['data'] = {'html': html, 'checked': checked}
             return jsonify({'status': 'success', 'data': ret})
 
         class Page(WebPage):
             URL = test_url
+
             def type_(self):
                 return 'WebPage'
 
-        Page.init_page(app=current_app, endpoint=cls.__name__+'.test', on_post=on_post)
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless',
+                                                                                   'responsive'])) as test:
                         pass
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
@@ -3287,7 +3304,7 @@ class OOTagGroup(WebTable):
 
         with test.on_event_w('click'):
             with LVar(parent=test, var_name='val') as val:
-                test.val(val={'checked':'"checked"'})
+                test.val(val={'checked': '"checked"'})
             test.alert(str(val))
             with page.render_post_w():
                 test.render_for_post(trigger_event=False)
@@ -3392,7 +3409,7 @@ class OODict(DictInf, WebComponentBootstrap):
 
     @contextmanager
     def update_w(self, key):
-        params={'key':key}
+        params = {'key': key}
         self.with_call(params)
         try:
             yield
@@ -3420,7 +3437,6 @@ class OODict(DictInf, WebComponentBootstrap):
             with dict_update.update_w(key='key2'):
                 dict_update.add_script('"val_updated"', indent=False)
             btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
-
 
         html = page.render()
         print(pprint.pformat(html))
