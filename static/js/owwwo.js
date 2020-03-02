@@ -170,6 +170,19 @@ function stream_index(d, i) {
   return {x: i, y: Math.max(0, d)};
 }
 
+function oochart_create(svg_id, svg=null){
+    let svg_d3 = null;
+    if(svg_id == null && svg != null){
+        svg_d3 = d3.select(svg);
+    }else if(svg_id != null && svg == null){
+        $('#'+svg_id).empty();
+        svg_d3 = d3.select('#'+svg_id);
+    }else{
+        console.assert(false, 'Both svg_id and svg are null, only one of them should be valid.');
+    }
+    return svg_d3
+}
+
 function oochart_linefinder_example_data(){
     return stream_layers(3,10+Math.random()*200,.1).map(function(data, i) {
         return {
@@ -179,11 +192,8 @@ function oochart_linefinder_example_data(){
     });
 };
 function oochart_linefinder_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
+  var svg_d3 = oochart_create(svg_id,svg);
 
-  var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
   nv.addGraph(function() {
       var chart = nv.models.lineWithFocusChart();
         if(simple){
@@ -197,6 +207,10 @@ function oochart_linefinder_create(svg_id,data,svg=null,parent=null, duration=0,
 
       chart.y2Axis
         .tickFormat(d3.format(',.2f'));
+
+      if((typeof data) == 'string'){
+        data = oochart_example_datas[data]();
+      };
 
       svg_d3.datum(data)
         .transition().duration(duration)
@@ -220,10 +234,7 @@ function oochart_bullet_example_data(){
     }
 }
 function oochart_bullet_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.bulletChart();
         svg_d3.datum(data)
@@ -280,11 +291,7 @@ function oochart_pie_example_data(){
 
 }
 function oochart_pie_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-
-  var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+  var svg_d3 = oochart_create(svg_id,svg);
   nv.addGraph(function() {
       var chart = nv.models.pieChart()
           .x(function(d) { return d.label })
@@ -332,10 +339,7 @@ function oochart_cumulativeline_example_data(){
     ]
 }
 function oochart_comulativeline_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.cumulativeLineChart()
         .x(function(d) { return d[0] })
@@ -384,13 +388,9 @@ function oochart_line_plus_bar_example_data(){
         "values" : [ [ 1136005200000 , 71.89] , [ 1138683600000 , 75.51] , [ 1141102800000 , 68.49] , [ 1143781200000 , 62.72] , [ 1146369600000 , 70.39] , [ 1149048000000 , 59.77] , [ 1151640000000 , 57.27] , [ 1154318400000 , 67.96] , [ 1156996800000 , 67.85] , [ 1159588800000 , 76.98] , [ 1162270800000 , 81.08] , [ 1164862800000 , 91.66] , [ 1167541200000 , 84.84] , [ 1170219600000 , 85.73] , [ 1172638800000 , 84.61] , [ 1175313600000 , 92.91] , [ 1177905600000 , 99.8] , [ 1180584000000 , 121.191] , [ 1183176000000 , 122.04] , [ 1185854400000 , 131.76] , [ 1188532800000 , 138.48] , [ 1191124800000 , 153.47] , [ 1193803200000 , 189.95] , [ 1196398800000 , 182.22] , [ 1199077200000 , 198.08] , [ 1201755600000 , 135.36] , [ 1204261200000 , 125.02] , [ 1206936000000 , 143.5] , [ 1209528000000 , 173.95] , [ 1212206400000 , 188.75] , [ 1214798400000 , 167.44] , [ 1217476800000 , 158.95] , [ 1220155200000 , 169.53] , [ 1222747200000 , 113.66] , [ 1225425600000 , 107.59] , [ 1228021200000 , 92.67] , [ 1230699600000 , 85.35] , [ 1233378000000 , 90.13] , [ 1235797200000 , 89.31] , [ 1238472000000 , 105.12] , [ 1241064000000 , 125.83] , [ 1243742400000 , 135.81] , [ 1246334400000 , 142.43] , [ 1249012800000 , 163.39] , [ 1251691200000 , 168.21] , [ 1254283200000 , 185.35] , [ 1256961600000 , 188.5] , [ 1259557200000 , 199.91] , [ 1262235600000 , 210.732] , [ 1264914000000 , 192.063] , [ 1267333200000 , 204.62] , [ 1270008000000 , 235.0] , [ 1272600000000 , 261.09] , [ 1275278400000 , 256.88] , [ 1277870400000 , 251.53] , [ 1280548800000 , 257.25] , [ 1283227200000 , 243.1] , [ 1285819200000 , 283.75] , [ 1288497600000 , 300.98] , [ 1291093200000 , 311.15] , [ 1293771600000 , 322.56] , [ 1296450000000 , 339.32] , [ 1298869200000 , 353.21] , [ 1301544000000 , 348.5075] , [ 1304136000000 , 350.13] , [ 1306814400000 , 347.83] , [ 1309406400000 , 335.67] , [ 1312084800000 , 390.48] , [ 1314763200000 , 384.83] , [ 1317355200000 , 381.32] , [ 1320033600000 , 404.78] , [ 1322629200000 , 382.2] , [ 1325307600000 , 405.0] , [ 1327986000000 , 456.48] , [ 1330491600000 , 542.44] , [ 1333166400000 , 599.55] , [ 1335758400000 , 583.98]]
       }
     ]
-
 }
 function oochart_lineplusbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.linePlusBarChart()
           .margin({top: 30, right: 60, bottom: 50, left: 70})
@@ -521,10 +521,7 @@ function oochart_hgsbar_example_data(){
     ]
 }
 function oochart_hgsbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.multiBarHorizontalChart()
           .x(function(d) { return d.label })
@@ -546,7 +543,6 @@ function oochart_hgsbar_create(svg_id,data,svg=null,parent=null, duration=0,simp
 
       return chart;
     });
-
 }
 
 function ootable_descrete_bar_example_data(){
@@ -591,28 +587,25 @@ function ootable_descrete_bar_example_data(){
     ]
 }
 function oochart_discretebar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-  var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
-  nv.addGraph(function() {
-      var chart = nv.models.discreteBarChart()
-        .x(function(d) { return d.label })
-        .y(function(d) { return d.value })
-        .staggerLabels(true)
-        .showValues(true)
-      if(simple){
-            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
-        };
-      svg_d3.datum(data)
-        .transition().duration(duration)
-        .call(chart)
-        ;
+      var svg_d3 = oochart_create(svg_id,svg);
+      nv.addGraph(function() {
+          var chart = nv.models.discreteBarChart()
+            .x(function(d) { return d.label })
+            .y(function(d) { return d.value })
+            .staggerLabels(true)
+            .showValues(true)
+          if(simple){
+                chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+            };
+          svg_d3.datum(data)
+            .transition().duration(duration)
+            .call(chart)
+            ;
 
-      nv.utils.windowResize(chart.update);
+          nv.utils.windowResize(chart.update);
 
-      return chart;
-    });
+          return chart;
+        });
 }
 
 function oochart_stackedarea_example_data(){
@@ -652,39 +645,35 @@ function oochart_stackedarea_example_data(){
       "values" : [ [ 1025409600000 , 1.3503144674343] , [ 1028088000000 , 1.2232741112434] , [ 1030766400000 , 1.3930470790784] , [ 1033358400000 , 1.2631275030593] , [ 1036040400000 , 1.5842699103708] , [ 1038632400000 , 1.9546996043116] , [ 1041310800000 , 0.8504048300986] , [ 1043989200000 , 0.85340686311353] , [ 1046408400000 , 0.843061357391] , [ 1049086800000 , 2.119846992476] , [ 1051675200000 , 2.5285382124858] , [ 1054353600000 , 2.5056570712835] , [ 1056945600000 , 2.5212789901005] , [ 1059624000000 , 2.6192011642534] , [ 1062302400000 , 2.5382187823805] , [ 1064894400000 , 2.3393223047168] , [ 1067576400000 , 2.491219888698] , [ 1070168400000 , 2.497555874906] , [ 1072846800000 , 1.734018115546] , [ 1075525200000 , 1.9307268299646] , [ 1078030800000 , 2.2261679836799] , [ 1080709200000 , 1.7608893704206] , [ 1083297600000 , 1.6242690616808] , [ 1085976000000 , 1.7161663801295] , [ 1088568000000 , 1.7183554537038] , [ 1091246400000 , 1.7179780759145] , [ 1093924800000 , 1.7314274801784] , [ 1096516800000 , 1.2596883356752] , [ 1099195200000 , 1.381177053009] , [ 1101790800000 , 1.4408819615814] , [ 1104469200000 , 3.4743581836444] , [ 1107147600000 , 3.3603749903192] , [ 1109566800000 , 3.5350883257893] , [ 1112245200000 , 3.0949644237828] , [ 1114833600000 , 3.0796455899995] , [ 1117512000000 , 3.3441247640644] , [ 1120104000000 , 4.0947643978168] , [ 1122782400000 , 4.4072631274052] , [ 1125460800000 , 4.4870979780825] , [ 1128052800000 , 4.8404549457934] , [ 1130734800000 , 4.8293016233697] , [ 1133326800000 , 5.2238093263952] , [ 1136005200000 , 3.382306337815] , [ 1138683600000 , 3.7056975170243] , [ 1141102800000 , 3.7561118692318] , [ 1143781200000 , 2.861913700854] , [ 1146369600000 , 2.9933744103381] , [ 1149048000000 , 2.7127537218463] , [ 1151640000000 , 3.1195497076283] , [ 1154318400000 , 3.4066964004508] , [ 1156996800000 , 3.3754571113569] , [ 1159588800000 , 2.2965579982924] , [ 1162270800000 , 2.4486818633018] , [ 1164862800000 , 2.4002308848517] , [ 1167541200000 , 1.9649579750349] , [ 1170219600000 , 1.9385263638056] , [ 1172638800000 , 1.9128975336387] , [ 1175313600000 , 2.3412869836298] , [ 1177905600000 , 2.4337870351445] , [ 1180584000000 , 2.62179703171] , [ 1183176000000 , 3.2642864957929] , [ 1185854400000 , 3.3200396223709] , [ 1188532800000 , 3.3934212707572] , [ 1191124800000 , 4.2822327088179] , [ 1193803200000 , 4.1474964228541] , [ 1196398800000 , 4.1477082879801] , [ 1199077200000 , 5.2947122916128] , [ 1201755600000 , 5.2919843508028] , [ 1204261200000 , 5.198978305031] , [ 1206936000000 , 3.5603057673513] , [ 1209528000000 , 3.3009087690692] , [ 1212206400000 , 3.1784852603792] , [ 1214798400000 , 4.5889503538868] , [ 1217476800000 , 4.401779617494] , [ 1220155200000 , 4.2208301828278] , [ 1222747200000 , 3.89396671475] , [ 1225425600000 , 3.0423832241354] , [ 1228021200000 , 3.135520611578] , [ 1230699600000 , 1.9631418164089] , [ 1233378000000 , 1.8963543874958] , [ 1235797200000 , 1.8266636017025] , [ 1238472000000 , 0.93136635895188] , [ 1241064000000 , 0.92737801918888] , [ 1243742400000 , 0.97591889805002] , [ 1246334400000 , 2.6841193805515] , [ 1249012800000 , 2.5664341140531] , [ 1251691200000 , 2.3887523699873] , [ 1254283200000 , 1.1737801663681] , [ 1256961600000 , 1.0953582317281] , [ 1259557200000 , 1.2495674976653] , [ 1262235600000 , 0.36607452464754] , [ 1264914000000 , 0.3548719047291] , [ 1267333200000 , 0.36769242398939] , [ 1270008000000 , 0] , [ 1272600000000 , 0] , [ 1275278400000 , 0] , [ 1277870400000 , 0] , [ 1280548800000 , 0] , [ 1283227200000 , 0] , [ 1285819200000 , 0.85450741275337] , [ 1288497600000 , 0.91360317921637] , [ 1291093200000 , 0.89647678692269] , [ 1293771600000 , 0.87800687192639] , [ 1296450000000 , 0] , [ 1298869200000 , 0] , [ 1301544000000 , 0.43668720882994] , [ 1304136000000 , 0.4756523602692] , [ 1306814400000 , 0.46947368328469] , [ 1309406400000 , 0.45138896152316] , [ 1312084800000 , 0.43828726648117] , [ 1314763200000 , 2.0820861395316] , [ 1317355200000 , 0.9364411075395] , [ 1320033600000 , 0.60583907839773] , [ 1322629200000 , 0.61096950747437] , [ 1325307600000 , 0] , [ 1327986000000 , 0] , [ 1330491600000 , 0] , [ 1333166400000 , 0] , [ 1335758400000 , 0]]
     }
 
-]
-
+    ]
 }
 function oochart_stackedarea_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-  var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
-  nv.addGraph(function() {
-      var chart = nv.models.stackedAreaChart()
-                    .x(function(d) { return d[0] })
-                    .y(function(d) { return d[1] })
-                    .clipEdge(true)
-                    .useInteractiveGuideline(true)
-                    ;
-      if(simple){
-            chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
-        };
-      chart.xAxis
-          .showMaxMin(false)
-          .tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
+      var svg_d3 = oochart_create(svg_id,svg);
+      nv.addGraph(function() {
+          var chart = nv.models.stackedAreaChart()
+                        .x(function(d) { return d[0] })
+                        .y(function(d) { return d[1] })
+                        .clipEdge(true)
+                        .useInteractiveGuideline(true)
+                        ;
+          if(simple){
+                chart.showLegend(false).showControls(false).showXAxis(false).showYAxis(false);
+            };
+          chart.xAxis
+              .showMaxMin(false)
+              .tickFormat(function(d) { return d3.time.format('%x')(new Date(d)) });
 
-      chart.yAxis
-          .tickFormat(d3.format(',.2f'));
+          chart.yAxis
+              .tickFormat(d3.format(',.2f'));
 
-      svg_d3.datum(data)
-          .transition().duration(duration)
-          .call(chart);
+          svg_d3.datum(data)
+              .transition().duration(duration)
+              .call(chart);
 
-      nv.utils.windowResize(chart.update);
+          nv.utils.windowResize(chart.update);
 
-      return chart;
-  });
+          return chart;
+      });
 }
 
 function oochart_line_example_data(){
@@ -719,10 +708,7 @@ function oochart_line_example_data(){
   ];
 }
 function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.lineChart()
         .useInteractiveGuideline(true)
@@ -740,7 +726,11 @@ function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple
         .tickFormat(d3.format('.02f'))
         ;
 
-      svg_d3.datum(data)
+        if((typeof data) == 'string'){
+            data = oochart_example_datas[data]();
+        };
+
+        svg_d3.datum(data)
         .transition().duration(duration)
         .call(chart)
         ;
@@ -775,10 +765,7 @@ function oochart_scatterbubble_example_data(groups=4, points=40){
       return data;
 };
 function oochart_scatterbubble_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.scatterChart()
                     .showDistX(true)
@@ -810,10 +797,7 @@ function oochart_multibar_example_data(){
     });
 }
 function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, simple=false){
-    var svg_d3 = d3.select('#'+svg_id);
-    if(svg_id == null){
-        svg_d3 = d3.select(svg);
-    }
+    var svg_d3 = oochart_create(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.multiBarChart();
         if(simple){
@@ -826,6 +810,10 @@ function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, s
 
         chart.yAxis
             .tickFormat(d3.format(',.1f'));
+
+        if((typeof data) == 'string'){
+            data = oochart_example_datas[data]();
+        };
 
         svg_d3.datum(data)
             .transition().duration(duration)
@@ -854,6 +842,12 @@ function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, s
         };
     });
 
+}
+
+var oochart_example_datas = {
+    'linefinder': oochart_linefinder_example_data,
+    'line': oochart_line_example_data,
+    'multibar': oochart_multibar_example_data
 }
 
 function webpage_render_post(url, data){
@@ -895,35 +889,3 @@ function ootable_get_rowinfo(tr){
     let data = $(tr).closest('table').DataTable().rows(tr).data();
     return data[0];
 }
-
-/*
-function ootable_created_cell_render(td,cellData,rowData,row,col, oochart_create){
-    if(cellData.indexOf('render_chart:')==0){
-       let content = cellData.substr('render_chart:'.length);
-       let chart_type = content.split(';')[0];
-       let chart_data = content.split(';')[1];
-       let $svg = $(document.createElementNS(d3.ns.prefix.svg, 'svg'));
-       let fn = window[chart_data];
-       $svg.css('width','100px');
-       $svg.css('height','60px');
-       oochart_create($svg[0],chart_type,fn(),td,duration=0,simple=true);
-       oochart_create($svg[0],chart_type,fn(),td,duration=0,simple=true);
-    };
-}
-
-function ootable_val(that, data, cell_render_func=ootable_cell_render, created_cell_render_func=ootable_created_cell_render, trigger_event=false){
-    if(data == null || data === undefined){ return ;};
-    if(that.children().length != 0){
-       that.DataTable().clear();
-       that.DataTable().destroy();
-       that.empty();
-    };
-    that.append(data.html);
-    if('columnDefs' in data.setting){
-       data.setting.columnDefs.push({'targets':'_all','data':undefined, 'render':cell_render_func, 'createdCell':created_cell_render_func});
-    }else{
-       data.setting.columnDefs = [{"targets":"_all","data":undefined,"render":cell_render_func, 'createdCell':created_cell_render_func}];
-    };
-    that.DataTable(data.setting).draw();
-}
-*/
