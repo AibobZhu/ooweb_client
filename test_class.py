@@ -140,7 +140,7 @@ class TestPage(Test):
         return app
 
     def test_start(self):
-        self.app.run(port=5600, threaded=True)
+        self.app.run(host='0.0.0.0', port=5600, threaded=True)
 
 
 class TestPageClient(TestClient, TestPage):

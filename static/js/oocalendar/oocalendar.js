@@ -7,6 +7,8 @@
  */
 "use strict";
 
+var oocalendar_chane_event_trigger = true;
+
 Date.prototype.getWeek = function(iso8601) {
 	if (iso8601) {
 		var target = new Date(this.valueOf());
@@ -996,7 +998,7 @@ if(!String.prototype.formatNum) {
 							async: self.options.tmpl_cache,
 							data: data_j,
 						    success : function(data){
-						        console.log('oocalendar load events success!');
+                                console.log('oocalendar load events success! events: ', data.data);
                                 events = data.data;
                             }
 						});
@@ -1162,7 +1164,7 @@ if(!String.prototype.formatNum) {
 							case "ajax":
 								$.ajax({
 									url: url, dataType: "html", async: false, success: function(data) {
-										modal_body.html(data);
+										modal_body.html(data.data);
 									}
 								});
 								break;

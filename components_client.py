@@ -248,7 +248,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         return self.func_call(params)
 
     @contextmanager
-    def on_event_w(self, event, filter='', propagation=True):
+    def on_event_w(self, event, filter='', propagation=None):
         '''
         context = self._get_objcall_context(func='with', caller_id=self.id(),
                                             params={'function': inspect.stack()[0][3], 'params': {'event':event,'filter':filter}})
@@ -3012,7 +3012,7 @@ class OOCalendar(WebDiv):
     LOAD_EVENTS_KEY = ME_PRE + '_load_event'
 
     VAL_FUNC_NAME = 'oocalendar_val'
-    VAL_FUNC_ARGS = ['that', 'trigger_event=false']
+    VAL_FUNC_ARGS = ['that', 'data=null','trigger_event=false']
 
     @classmethod
     def _week(cls):
@@ -3361,28 +3361,32 @@ class OOCalendar(WebDiv):
         app.add_url_rule('/oocalendar/events', view_func=cls._event)
 
     @classmethod
-    def on_post(cls, req):
+    def load_events(cls):
+        return cls._example_data()
 
-        ret = req
-        for r in req:
-            if r['me'] == cls.LOAD_EVENTS_KEY:
-                ret = cls._example_data()
-            elif r['me'] == cls.TEMLATE_WEEK_KEY:
-                ret = cls._week()
-            elif r['me'] == cls.TEMPLATE_WEEK_DAYS_KEY:
-                ret = cls._week_day()
-            elif r['me'] == cls.TEMPLATE_DAY_KEY:
-                ret = cls._day()
-            elif r['me'] == cls.TEMPLATE_MONTH_KEY:
-                ret = cls._month()
-            elif r['me'] == cls.TEMPLATE_MONTH_DAY_KEY:
-                ret = cls._month_day()
-            elif r['me'] == cls.TEMPLATE_YEAR_KEY:
-                ret = cls._year()
-            elif r['me'] == cls.TEMPLATE_YEAR_MONTH_KEY:
-                ret = cls._year_month()
-            elif r['me'] == cls.TEMPLATE_EVENT_LIST_KEY:
-                ret = cls._event_list()
+    @classmethod
+    def on_post(cls, r):
+
+        ret = None
+        if r['me'] == cls.LOAD_EVENTS_KEY:
+            ret = cls.load_events()
+        elif r['me'] == cls.TEMLATE_WEEK_KEY:
+            ret = cls._week()
+        elif r['me'] == cls.TEMPLATE_WEEK_DAYS_KEY:
+            ret = cls._week_day()
+        elif r['me'] == cls.TEMPLATE_DAY_KEY:
+            ret = cls._day()
+        elif r['me'] == cls.TEMPLATE_MONTH_KEY:
+            ret = cls._month()
+        elif r['me'] == cls.TEMPLATE_MONTH_DAY_KEY:
+            ret = cls._month_day()
+        elif r['me'] == cls.TEMPLATE_YEAR_KEY:
+            ret = cls._year()
+        elif r['me'] == cls.TEMPLATE_YEAR_MONTH_KEY:
+            ret = cls._year_month()
+        elif r['me'] == cls.TEMPLATE_EVENT_LIST_KEY:
+            ret = cls._event_list()
+
         return ret
 
     @classmethod
@@ -3390,14 +3394,35 @@ class OOCalendar(WebDiv):
         '''Create a testing page containing the component which is being tested'''
 
         NAME = 'calendar'
+        TITLE = 'title'
 
         def on_post():
-            req = WebPage.on_post()
-            ret = OOCalendar.on_post(req)
-            return jsonify({'status': 'success', 'data': ret})
+            req_ = WebPage.on_post()
+            title_ = '时间标题'
+            for r in req_:
+                if r['me'] == NAME:
+
+                    start_ = datetime.datetime.fromtimestamp(int(r['data']['start_date']) / 1000)
+                    end_ = datetime.datetime.fromtimestamp(int(r['data']['end_date']) / 1000)
+                    title_ = r['data']['title']
+                    view_ = r['data']['view']
+
+                elif r['me'] == TITLE:
+
+                    r['data'] = title_
+
+                elif r['me'].find(OOCalendar.ME_PRE) == 0:
+
+                    # Return data directly, for the OOCalendar buildin requests,
+                    #   needn't {'me':xxx, 'data':xxx} anymore
+
+                    req_ = OOCalendar.on_post(r)
+                    break
+
+            return jsonify({'status': 'success', 'data': req_})
 
         class Page(WebPage):
-            URL = '/OOCalendar_test'
+            URL = '/OOCalendar_test_post'
 
             def type_(self):
                 return 'WebPage'
@@ -3405,6 +3430,10 @@ class OOCalendar(WebDiv):
         Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
+            with page.add_child(WebRow()) as r0:
+                with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c0:
+                    with c0.add_child(WebHead2(name=TITLE)) as title:
+                        pass
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
                     with c1.add_child(OOCalendarBar()) as bar:
@@ -3412,13 +3441,23 @@ class OOCalendar(WebDiv):
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'],
                                             styles={'margin-left': "20px", 'margin-right': '20px'})) as c2:
-                    with c2.add_child(globals()[cls.__name__]()) as calendar:
+                    with c2.add_child(globals()[cls.__name__](name=NAME)) as calendar:
                         pass
 
         '''
         with page.render_post_w():
             calendar.render_for_post()
         '''
+
+        with page.render_post_w():
+            calendar.render_for_post()
+            title.render_for_post()
+
+        with calendar.on_event_w('change'):
+            calendar.alert('"Calendar changed!"')
+            with page.render_post_w():
+                calendar.render_for_post()
+                title.render_for_post()
 
         html = page.render()
         return render_template_string(html)
