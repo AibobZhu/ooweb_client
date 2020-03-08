@@ -50,7 +50,7 @@ function oocalendar_start(options=null){
     var that = $('#'+opts.id);
 	var calendar_ = that.calendar(opts);
 	var calendar = that.data('calendar');
-    calendar.setOptions({first_day: 0});
+    calendar.setOptions({first_day: 1});
     calendar.setLanguage(opts.language);
     calendar.view();
 

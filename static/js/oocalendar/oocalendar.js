@@ -25,10 +25,12 @@ Date.prototype.getWeek = function(iso8601) {
 		return Math.ceil((((this.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
 	}
 };
+
 Date.prototype.getMonthFormatted = function() {
 	var month = this.getMonth() + 1;
 	return month < 10 ? '0' + month : month;
 };
+
 Date.prototype.getDateFormatted = function() {
 	var date = this.getDate();
 	return date < 10 ? '0' + date : date;
@@ -42,6 +44,7 @@ if(!String.prototype.format) {
 		});
 	};
 }
+
 if(!String.prototype.formatNum) {
 	String.prototype.formatNum = function(decimal) {
 		var r = "" + this;
@@ -169,7 +172,7 @@ if(!String.prototype.formatNum) {
 	};
 
 	var defaults_extended = {
-		first_day: 2,
+		first_day: 1,
 		week_numbers_iso_8601: false,
 		holidays: {
 			// January 1
@@ -780,6 +783,11 @@ if(!String.prototype.formatNum) {
 		return classes.join(" ");
 	};
 
+    Calendar.prototype.update_events = function (extra_data='test'){
+        this._loadEvents(extra_data=extra_data);
+        this._render();
+    };
+
 	Calendar.prototype.view = function(view) {
 		if(view) {
 			if(!this.options.views[view].enable) {
@@ -937,7 +945,7 @@ if(!String.prototype.formatNum) {
 		return this.options.position.end;
 	}
 
-	Calendar.prototype._loadEvents = function() {
+	Calendar.prototype._loadEvents = function(extra_data=null) {
 		var self = this;
 		var source = null;
 		if('events_source' in this.options && this.options.events_source !== '') {
@@ -988,8 +996,9 @@ if(!String.prototype.formatNum) {
 							}
 						});
 						*/
-						let data = [{'me':'oocalendar_buildin_load_event'}];
-                        let data_j = {'data':JSON.stringify(data)};
+						let view = self.options.view;
+						let data_post = [{'me':'oocalendar_buildin_load_event', 'data':{'date':params, 'view':view, 'extra':extra_data}}];
+                        let data_j = {'data':JSON.stringify(data_post)};
                         console.log('oocalendar is posting for loading event...');
 						$.ajax({
 							url: source,
@@ -997,9 +1006,9 @@ if(!String.prototype.formatNum) {
 							type: 'POST',
 							async: self.options.tmpl_cache,
 							data: data_j,
-						    success : function(data){
-                                console.log('oocalendar load events success! events: ', data.data);
-                                events = data.data;
+						    success : function(return_data){
+                                console.log('oocalendar load events success! events: ', return_data.data);
+                                events = return_data.data;
                             }
 						});
 						/*
@@ -1361,4 +1370,5 @@ if(!String.prototype.formatNum) {
 	$.fn.calendar = function(params) {
 		return new Calendar(params, this);
 	}
+
 }(jQuery));

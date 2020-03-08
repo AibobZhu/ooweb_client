@@ -2999,6 +2999,7 @@ class OOBanner(WebDiv):
 
 
 class OOCalendar(WebDiv):
+
     ME_PRE = 'oocalendar_buildin'
     LOAD_TEMPLATE_KEY = ME_PRE + '_loadtemplate_'
     TEMLATE_WEEK_KEY = ME_PRE + '_template_week'
@@ -3369,22 +3370,46 @@ class OOCalendar(WebDiv):
 
         ret = None
         if r['me'] == cls.LOAD_EVENTS_KEY:
+            """
+            The extra info like hierarchy, set by page.on_post.CALENDAR_NAME, like 
+            r['data']['hierarchy'] = hierarchy, and get the extra data info here, by
+            hierarchy = '' if not r['data']['extra'] else r['data']['extra']
+            """
+            test = '' if not r['data']['extra'] else r['data']['extra']
+            print('OOCalendar.on_post.LOAD_EVENTS, test:' + test)
+
             ret = cls.load_events()
+
         elif r['me'] == cls.TEMLATE_WEEK_KEY:
+
             ret = cls._week()
+
         elif r['me'] == cls.TEMPLATE_WEEK_DAYS_KEY:
+
             ret = cls._week_day()
+
         elif r['me'] == cls.TEMPLATE_DAY_KEY:
+
             ret = cls._day()
+
         elif r['me'] == cls.TEMPLATE_MONTH_KEY:
+
             ret = cls._month()
+
         elif r['me'] == cls.TEMPLATE_MONTH_DAY_KEY:
+
             ret = cls._month_day()
+
         elif r['me'] == cls.TEMPLATE_YEAR_KEY:
+
             ret = cls._year()
+
         elif r['me'] == cls.TEMPLATE_YEAR_MONTH_KEY:
+
             ret = cls._year_month()
+
         elif r['me'] == cls.TEMPLATE_EVENT_LIST_KEY:
+
             ret = cls._event_list()
 
         return ret
@@ -3406,6 +3431,7 @@ class OOCalendar(WebDiv):
                     end_ = datetime.datetime.fromtimestamp(int(r['data']['end_date']) / 1000)
                     title_ = r['data']['title']
                     view_ = r['data']['view']
+                    r['data']['hierarchy'] = "test_hierarchy"
 
                 elif r['me'] == TITLE:
 
