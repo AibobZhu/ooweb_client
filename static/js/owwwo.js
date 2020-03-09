@@ -170,7 +170,7 @@ function stream_index(d, i) {
   return {x: i, y: Math.max(0, d)};
 }
 
-function oochart_create(svg_id, svg=null){
+function oochart_create_svg(svg_id, svg=null){
     let svg_d3 = null;
     if(svg_id == null && svg != null){
         svg_d3 = d3.select(svg);
@@ -192,7 +192,7 @@ function oochart_linefinder_example_data(){
     });
 };
 function oochart_linefinder_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-  var svg_d3 = oochart_create(svg_id,svg);
+  var svg_d3 = oochart_create_svg(svg_id,svg);
 
   nv.addGraph(function() {
       var chart = nv.models.lineWithFocusChart();
@@ -234,7 +234,7 @@ function oochart_bullet_example_data(){
     }
 }
 function oochart_bullet_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.bulletChart();
         svg_d3.datum(data)
@@ -291,7 +291,7 @@ function oochart_pie_example_data(){
 
 }
 function oochart_pie_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-  var svg_d3 = oochart_create(svg_id,svg);
+  var svg_d3 = oochart_create_svg(svg_id,svg);
   nv.addGraph(function() {
       var chart = nv.models.pieChart()
           .x(function(d) { return d.label })
@@ -339,7 +339,7 @@ function oochart_cumulativeline_example_data(){
     ]
 }
 function oochart_comulativeline_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.cumulativeLineChart()
         .x(function(d) { return d[0] })
@@ -390,7 +390,7 @@ function oochart_line_plus_bar_example_data(){
     ]
 }
 function oochart_lineplusbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.linePlusBarChart()
           .margin({top: 30, right: 60, bottom: 50, left: 70})
@@ -521,7 +521,7 @@ function oochart_hgsbar_example_data(){
     ]
 }
 function oochart_hgsbar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.multiBarHorizontalChart()
           .x(function(d) { return d.label })
@@ -587,7 +587,7 @@ function ootable_descrete_bar_example_data(){
     ]
 }
 function oochart_discretebar_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-      var svg_d3 = oochart_create(svg_id,svg);
+      var svg_d3 = oochart_create_svg(svg_id,svg);
       nv.addGraph(function() {
           var chart = nv.models.discreteBarChart()
             .x(function(d) { return d.label })
@@ -648,7 +648,7 @@ function oochart_stackedarea_example_data(){
     ]
 }
 function oochart_stackedarea_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-      var svg_d3 = oochart_create(svg_id,svg);
+      var svg_d3 = oochart_create_svg(svg_id,svg);
       nv.addGraph(function() {
           var chart = nv.models.stackedAreaChart()
                         .x(function(d) { return d[0] })
@@ -708,7 +708,7 @@ function oochart_line_example_data(){
   ];
 }
 function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.lineChart()
         .useInteractiveGuideline(true)
@@ -765,7 +765,7 @@ function oochart_scatterbubble_example_data(groups=4, points=40){
       return data;
 };
 function oochart_scatterbubble_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
       var chart = nv.models.scatterChart()
                     .showDistX(true)
@@ -797,7 +797,7 @@ function oochart_multibar_example_data(){
     });
 }
 function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, simple=false){
-    var svg_d3 = oochart_create(svg_id,svg);
+    var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
         var chart = nv.models.multiBarChart();
         if(simple){

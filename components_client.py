@@ -1554,7 +1554,7 @@ class OODatePickerBase:
 class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
     def __init__(self, language='zh', value={'view': 'week',
-                                             'start_date': datetime.datetime.today().strftime('%Y %m %d')},
+                                             'start': datetime.datetime.today().strftime('%Y %m %d')},
                  views=['day', 'week', 'month'], place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
@@ -1683,8 +1683,8 @@ class OODatePickerIcon(OODatePickerSimple):
 class OODatePickerRange(OODatePickerSimple):
 
     def __init__(self, language='zh',
-                 value={'view': 'week', 'start_date': datetime.datetime.today().strftime('%Y %m %d'),
-                        'end_date': datetime.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
+                 value={'view': 'week', 'start': datetime.datetime.today().strftime('%Y %m %d'),
+                        'end': datetime.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
                  place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
@@ -1716,23 +1716,23 @@ class OODatePickerRange(OODatePickerSimple):
                     else:
                         format = cls.FORMATS[lang]['month']['from_format']
 
-                    start = None if not r['data']['start_date'] else r['data']['start_date']
+                    start = None if not r['data']['start'] else r['data']['start']
                     if not start:
                         # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
                         start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
                     else:
                         start = datetime.datetime.strptime(start, format)
 
-                    end = None if not r['data']['end_date'] else r['data']['end_date']
+                    end = None if not r['data']['end'] else r['data']['end']
                     if not end:
                         # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
                         end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
                     else:
                         end = datetime.datetime.strptime(end, format)
 
-                    r['data']['start_date'] = int(start.timestamp())
+                    r['data']['start'] = int(start.timestamp())
                     r['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
-                    r['data']['end_date'] = int(end.timestamp())
+                    r['data']['end'] = int(end.timestamp())
                     r['data']['end_viewDate'] = end.strftime("%Y-%m-%dT")
 
             return jsonify({'status': 'success', 'data': req})
@@ -3427,8 +3427,8 @@ class OOCalendar(WebDiv):
             for r in req_:
                 if r['me'] == NAME:
 
-                    start_ = datetime.datetime.fromtimestamp(int(r['data']['start_date']) / 1000)
-                    end_ = datetime.datetime.fromtimestamp(int(r['data']['end_date']) / 1000)
+                    start_ = datetime.datetime.fromtimestamp(int(r['data']['start']) / 1000)
+                    end_ = datetime.datetime.fromtimestamp(int(r['data']['end']) / 1000)
                     title_ = r['data']['title']
                     view_ = r['data']['view']
                     r['data']['hierarchy'] = "test_hierarchy"
