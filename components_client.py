@@ -712,7 +712,10 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
     @classmethod
     def _add_context(cls, cont):
+        if len(cls._cur_context_stack) == 0:
+            cls._cur_context_stack.append([])
         cls._cur_context_stack[-1].append(cont)
+
         return cls._cur_context_stack[-1]
 
     @classmethod
@@ -3632,15 +3635,12 @@ class WebTable(WebComponentBootstrap):
         return data
 
     @classmethod
-    def _html(cls, data=None, head_class=None, head_style=None):
+    def html(cls, data=None, head_class=None, head_style=None):
 
         if not data:
-            _data = cls.get_data()
+            return None
         else:
             _data = data
-
-        if not _data:
-            return None
 
         def _head_colspan(head):
             colspan = 0
@@ -3786,28 +3786,6 @@ class WebTable(WebComponentBootstrap):
 
         return html
 
-    '''
-    @classmethod
-    def on_post(cls):
-        ret = Action.on_post()
-        _request = ret['data']
-        _data = {'html':''}
-        if _request['data'] == 'webtable_render':
-            table = globals()[cls.__name__](mytype=['striped', 'hover', 'borderless', 'responsive'])
-            _data['html'] = table._html() #TODO: add current user get data into _html(data=current_user.get_data())
-        return jsonify({'status':'success','data':_data})
-    
-
-    @classmethod
-    def add_url_rule(cls, app, extend=[]):
-        super().add_url_rule(app, extend)
-        if extend:
-            for e in extend:
-                if e['view_func'] == cls.on_post:
-                    return
-        app.add_url_rule(rule=cls.HTML_URL, endpoint='{}_on_post'.format(cls.__name__), view_func=cls.on_post, methods=['POST']) #move this to extend for applying the custom on_post
-    '''
-
     @classmethod
     def test_request(cls, methods=['GET']):
         test_url = '/webtable_test'
@@ -3817,7 +3795,7 @@ class WebTable(WebComponentBootstrap):
             for r in ret:
                 if r['me'] == 'test':
                     data = OOTable.model.query("test")
-                    html = ''.join(cls._html(data=data))
+                    html = ''.join(cls.html(data=data))
                     r['data'] = {'html': html}
             return jsonify({'status': 'success', 'data': ret})
 
@@ -4042,25 +4020,6 @@ class OOTable(WebTable):
             'colReorder': True
         }
 
-    '''
-    @classmethod
-    def on_post(cls, data=None, methods=['GET','POST']):
-
-        if request.method == 'GET':
-            raise NotImplementedError
-            return json.dumps({'html': html, 'setting': cls.setting()})
-        elif request.method == 'POST': # rule for default value
-            if not data:
-                data = {'model':None,'value':None}
-            if 'setting' not in data or not data['setting']:
-                data['setting'] = cls.setting()
-            table = OOTable(value=data)
-            html = ''.join(table._html())
-            return jsonify({'status':'success', 'data': {'html': html, 'setting': data['setting']}})
-        else:
-            raise NotImplementedError
-    '''
-
     def get_data(self, setting_only=False):
         data = super().get_data()
         if not data:
@@ -4079,7 +4038,6 @@ class OOTable(WebTable):
 
     def __enter__(self):
         ret = super().__enter__()
-        # self.add_context_list(self._html())
         self.declare_custom_global_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS,
                                         self.ROW_CHILD_FORMAT_FUNC_BODY)
         self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS,
@@ -4093,43 +4051,24 @@ class OOTable(WebTable):
 
         test_url = '/ootable_test'
 
-        '''
-        test_img_url = '/ootable_test_img'
-        test_chart_url = '/ootable_test_chart'
-        if request.method == 'POST':
-            if test_img_url in request.url_rule.rule:
-                table = OOTable(value={'model':cls.model,'query':{'test':'img'}})
-                html = ''.join(table._html())
-                setting = table.get_data(setting_only=True)
-                return jsonify({'status': 'success', 'data': {'html': html, 'setting': setting}})
-            if test_chart_url in request.url_rule.rule:
-                table = OOTable(value={'model':cls.model,'query':{'test':'chart'}})
-                html = ''.join(table._html())
-                setting = table.get_data(setting_only=True)
-                return jsonify({'status': 'success', 'data': {'html': html, 'setting': setting}})
-        cls.add_url_rule(app=current_app)
-        cls.add_url_rule(app=current_app, extend=[{'rule':test_img_url, 'view_func':cls.test_request, 'methods':['POST']}])
-        cls.add_url_rule(app=current_app, extend=[{'rule': test_chart_url, 'view_func': cls.test_request, 'methods': ['POST']}])
-        '''
-
         def on_post():
             ret = WebPage.on_post()
             for r in ret:
                 if r['me'] == 'image_table':
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
                     data = OOTable.model.query('img')
-                    html = ''.join(OOTable._html(data=data))
+                    html = ''.join(OOTable.html(data=data))
                     # setting = table.get_data(setting_only=True)
                     r['data'] = {'html': html, 'setting': data['setting']}
                 if r['me'] == 'chart_table':
                     data = OOTable.model.query('chart')
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
-                    html = ''.join(OOTable._html(data=data))
+                    html = ''.join(OOTable.html(data=data))
                     # setting = OOTable.get_data(setting_only=True)
                     r['data'] = {'html': html, 'setting': data['setting']}
                 if r['me'] == 'test':
                     data = OOTable.model.query("test")
-                    html = ''.join(OOTable._html(data=data))
+                    html = ''.join(OOTable.html(data=data))
                     # setting = table.get_data(setting_only=True)
                     r['data'] = {'html': html, 'setting': data['setting']}
             return jsonify({'status': 'success', 'data': ret})
@@ -4292,18 +4231,6 @@ class OOTagGroup(WebTable):
         params = {'value': val}
         return self.func_call(params=params)
 
-    '''
-    @classmethod
-    def on_post(cls):
-        ret = Action.on_post()
-        _request = ret['data']
-        _data = {'html': ''}
-        if _request['data'] == 'webtable_render':
-            table = OOTagGroup()
-            _data['html'] = table._html()  # TODO: add current user get data into _html(data=current_user.get_data())
-        return jsonify({'status': 'success', 'data': _data})
-    '''
-
     def check(self, check=True):
         params = {'check': check}
         return self.func_call(params)
@@ -4336,7 +4263,7 @@ class OOTagGroup(WebTable):
                 if r['me'] == 'test':
                     if not r['data']:
                         data = cls._example_data()
-                        html = "'{}'".format(''.join(cls._html(data=data)))
+                        html = "'{}'".format(''.join(cls.html(data=data)))
                     else:
                         checked = r['data'].split(' ')
                         checked = [t for t in checked if t]
