@@ -563,8 +563,9 @@
 			this._unapplyEvents(this._secondaryEvents);
 		},
 		_trigger: function(event, altdate){
-			var date = altdate || this.dates.get(-1),
-				local_date = this._utc_to_local(date);
+			var date = altdate || this.dates.get(-1);
+			if(date === undefined || date === null){return;};
+			let local_date = this._utc_to_local(date);
 
 			this.element.trigger({
 				type: event,
