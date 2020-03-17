@@ -1448,7 +1448,8 @@ class WebCheckbox(WebSpan):
 
 
 class OODatePickerBase:
-    VIEW = {'日': 'day', '周': 'week', '月': 'month'}
+    VIEWS = {'week': '周', 'month': '月', 'day': '日'}
+    
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
     WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年 第%W周")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
@@ -1456,6 +1457,9 @@ class OODatePickerBase:
     DAY_FORMAT_EN = ("yyyy M d", "%Y %m %d")
     WEEK_FORMAT_EN = ("'Week of 'yyyy:w", "Week of %Y:%W")
     MONTH_FORMAT_EN = ("yyyy M", "%Y %m")
+
+    start_func_name = "OODatePickerStart"
+    start_func_params = ["that", "type"]
 
     @classmethod
     def DAY_DATETIME_STR(cls, lang, dt):
@@ -1648,6 +1652,7 @@ class OODatePickerIcon(OODatePickerSimple):
 
     @classmethod
     def test_request(cls, methods=['GET']):
+        """
         class Page(WebPage):
             URL = '/oodatepickericon_test'
 
@@ -1677,6 +1682,73 @@ class OODatePickerIcon(OODatePickerSimple):
                 with r2.add_child(WebColumn(width=["md8"], offset=['mdo2'])) as c2:
                     with page.add_child(globals()[cls.__name__](value='week')) as test1:
                         pass
+
+        html = page.render()
+        print(pprint.pformat(html))
+        return render_template_string(html)
+        """
+        '''Create a testing page containing the component which is being tested'''
+
+        NAME = 'test'
+
+        def on_post():
+            req = WebPage.on_post()
+            dt = None
+            for r in req:
+                if r['me'] == NAME:
+                    lang = r['data']['lang']
+                    format = None
+                    if r['data']['view'] == 5:
+                        start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T00')[0]
+                        if start:
+                            # USE cls FORMATS here
+                            format = cls.FORMATS[lang]['week']['to_format']
+                            dt = datetime.strptime(start, '%Y-%m-%d')
+                    elif r['data']['view'] == 0:
+                        start = None if not r['data']['date'] else r['data']['date']
+                        if start:
+                            if lang == 'zh':
+                                format = cls.DAY_FORMAT_ZH[1]
+                            else:
+                                format = cls.DAY_FORMAT_EN[1]
+                            dt = datetime.strptime(start, format)
+                    elif r['data']['view'] == 1:
+                        start = None if not r['data']['date'] else r['data']['date']
+                        if start:
+                            if lang == 'zh':
+                                format = cls.MONTH_FORMAT_ZH[1]
+                            else:
+                                format = cls.MONTH_FORMAT_EN[1]
+                            dt = datetime.strptime(start, format)
+                    else:
+                        raise NotImplementedError
+
+            return jsonify({'status': 'success', 'data': []})
+
+        # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
+        class Page(WebPage):
+            URL = '/oodatepickericon_test'
+            
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(globals()[cls.__name__](vname=NAME)) as test1:
+                pass
+
+        test1.call_custom_func(fname=test1.start_func_name, fparams={'that': '$("#{}")'.format(test1.id()),
+                                                                     'type': '"{}"'.format(
+                                                                         test1.VIEWS['week'])})
+
+        with test1.on_event_w('change'):
+            with page.render_post_w():
+                test1.render_for_post()
+
+        with page.render_post_w():
+            test1.render_for_post()
 
         html = page.render()
         print(pprint.pformat(html))
