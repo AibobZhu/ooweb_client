@@ -126,18 +126,24 @@ def day_2_week_number(date, first_day=0):
     return week_of_month
 
 
-def week_2_dates(week_str, iso_first_wkday=0):
+'''
+def week_2_dates(_week_str, _format, _lang='zh', _iso_first_wkday=0):
     import numpy as np
+
     def _week_end(week):
         for i in range(0, week.__len__())[::-1]:
             if week[i] != 0:
                 return week[i]
+    year_ = 'year'
 
-    calendar.setfirstweekday(iso_first_wkday)  # 0 for monday, 6 for sunday
-    year = int(week_str.split('年')[0])
-    month = int(week_str.split('月')[0].split(' ')[-1])
-    week_num = int(week_str.split('周')[0].split('第')[-1])
+    if _lang == 'zh':
+
+    calendar.setfirstweekday(_iso_first_wkday)  # 0 for monday, 6 for sunday
+    year = int(_week_str.split('年')[0])
+    month = int(_week_str.split('月')[0].split(' ')[-1])
+    week_num = int(_week_str.split('周')[0].split('第')[-1])
 
     weeks = np.array(calendar.monthcalendar(year, month))
     week = weeks[week_num]
     return [datetime.datetime(year, month, week[0]), datetime.datetime(year, month, _week_end(week))]
+'''

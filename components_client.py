@@ -17,7 +17,7 @@ import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
-from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
+from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange
 import sys, os
 import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -488,7 +488,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         def convert_param_obj(params):
             if isinstance(params, str):
-                print("error: params is instance of str")
+                print("error: params is instance of _str")
             for k, v in params.items():
                 if k == 'params':
                     convert_param_obj(v)
@@ -506,7 +506,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
     def _get_clscall_context(self, func, cls, params=None, sub_context=[]):
         def convert_param_obj(params):
             if isinstance(params, str):
-                print("error: params is instance of str")
+                print("error: params is instance of _str")
             for k, v in params.items():
                 if k == 'params':
                     convert_param_obj(v)
@@ -1448,6 +1448,7 @@ class WebCheckbox(WebSpan):
 
 
 class OODatePickerBase:
+    
     VIEWS = {'week': '周', 'month': '月', 'day': '日'}
     
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
@@ -1462,7 +1463,7 @@ class OODatePickerBase:
     start_func_params = ["that", "type"]
 
     @classmethod
-    def DAY_DATETIME_STR(cls, lang, dt):
+    def DAY_DT_STR(cls, lang, dt):
         format = None
         if lang == 'zh':
             format = cls.DAY_FORMAT_ZH[1]
@@ -1471,17 +1472,17 @@ class OODatePickerBase:
         return dt.strftime(format)
 
     @classmethod
-    def DAY_STR_DT(cls, lang, str):
+    def DAY_STR_DT(cls, _lang, _str):
         dt = None
-        if lang == 'zh':
-            dt = datetime.datetime.strptime(str, cls.DAY_FORMAT_ZH[1])
+        if _lang == 'zh':
+            dt = datetime.datetime.strptime(_str, cls.DAY_FORMAT_ZH[1])
         else:
-            dt = datetime.datetime.strptime(str, cls.DAY_FORMAT_EN[1])
+            dt = datetime.datetime.strptime(_str, cls.DAY_FORMAT_EN[1])
         return dt
 
     @classmethod
     def DAY_STR_STAMP(cls, lang, str):
-        dt = cls.DAY_STR_DT(lang=lang, str=str)
+        dt = cls.DAY_STR_DT(_lang=lang, _str=str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
@@ -1492,19 +1493,22 @@ class OODatePickerBase:
             return "{} {} week:{}".format(dt.year, dt.month, day_2_week_number(dt))
 
     @classmethod
-    def WEEK_STR_DT(cls, lang, str):
-        mon = None
-        sat = None
-        format = cls.WEEK_FORMAT_EN[1]
-        if lang == 'zh':
-            format = cls.WEEK_FORMAT_ZH[1]
-        mon = datetime.datetime.strptime(str + '-1', format + '-%w')  # week starts at monday
-        sun = datetime.datetime.strptime(str + '-6', format + '-%w') + datetime.timedelta(days=1)  # week end at sunday
+    def WEEK_STR_DT(cls, _lang, _str):
+        
+        format_ = cls.WEEK_FORMAT_EN[1]
+        if _lang == 'zh':
+            format_ = cls.WEEK_FORMAT_ZH[1]
+            
+        mon = datetime.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
+        
+        sun = datetime.datetime.strptime(_str + '-6', format_ + '-%w') + \
+              datetime.timedelta(days=1)                                # week end at sunday
+        
         return [mon + datetime.timedelta(days=-7), sun + datetime.timedelta(days=-7)]
 
     @classmethod
     def WEEK_STR_STAMP(cls, lang, str):
-        dt = cls.WEEK_STR_DT(lang=lang, str=str)
+        dt = cls.WEEK_STR_DT(_lang=lang, _str=str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
@@ -1520,12 +1524,13 @@ class OODatePickerBase:
         return [first_dt.strftime(format + '-1'), last_dt.strftime(format + '-' + str(last_day))]
 
     @classmethod
-    def MONTH_STR_DT(cls, lang, str):
+    def MONTH_STR_DT(cls, _lang, _str):
+        
         format = cls.MONTH_FORMAT_EN[1]
-        if lang == 'zh':
+        if _lang == 'zh':
             format = cls.MONTH_FORMAT_ZH[1]
 
-        dt = datetime.datetime.strptime(str, format)
+        dt = datetime.datetime.strptime(_str, format)
         year = dt.year
         month = dt.month
         last_day = calendar.monthrange(year, month)[1]
@@ -1535,12 +1540,12 @@ class OODatePickerBase:
 
     @classmethod
     def MONTH_STR_STAMP(cls, lang, str):
-        dt = cls.MONTH_STR_DT(lang=lang, str=str)
+        dt = cls.MONTH_STR_DT(_lang=lang, _str=str)
         return int(dt.timestamp()) * 1000
 
     FORMATS = {
         'zh': {
-            'day': {'to_format': DAY_FORMAT_ZH[0], 'from_format': DAY_FORMAT_ZH[1], 'str_func': 'DAY_DATETIME_STR',
+            'day': {'to_format': DAY_FORMAT_ZH[0], 'from_format': DAY_FORMAT_ZH[1], 'str_func': 'DAY_DT_STR',
                     'stamp_func': 'DAY_STR_STAMP'},
             'week': {'to_format': WEEK_FORMAT_ZH[0], 'from_format': WEEK_FORMAT_ZH[1], 'str_func': 'WEEK_DATETIME_STR',
                      'stamp_func': 'WEEK_STR_STAMP'},
@@ -1548,7 +1553,7 @@ class OODatePickerBase:
                       'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         },
         'en': {
-            'day': {'to_format': DAY_FORMAT_EN[0], 'from_format': DAY_FORMAT_EN[1], 'str_func': 'DAY_DATETIME_STR',
+            'day': {'to_format': DAY_FORMAT_EN[0], 'from_format': DAY_FORMAT_EN[1], 'str_func': 'DAY_DT_STR',
                     'stamp_func': 'DAY_STR_STAMP'},
             'week': {'to_format': WEEK_FORMAT_EN[0], 'from_format': WEEK_FORMAT_EN[1], 'str_func': 'WEEK_DATETIME_STR',
                      'stamp_func': 'WEEK_STR_STAMP'},
@@ -1585,7 +1590,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
             dt = None
             for r in req:
                 if r['me'] == NAME1:
-                    lang = r['data']['lang']
+                    lang = r['data']['_lang']
                     format = None
                     if r['data']['select'] == '周':
                         start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T')[0]
@@ -1651,77 +1656,77 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 class OODatePickerIcon(OODatePickerSimple):
 
     @classmethod
+    def get_dates(cls, _data):
+
+        if not _data:
+            return None
+
+        lang_ = _data['lang']
+        format_ = None
+        dt_range_ = []
+
+        if _data['view'] == 5:
+
+            # week mode
+            '''
+            start = None if not _data['viewDate'] else _data['viewDate'].split('T00')[0]
+            if start:
+                format_ = cls.FORMATS[lang_]['week']['to_format']
+                dt_ = datetime.strptime(start, '%Y-%m-%d')
+            '''
+            dt_range_ = cls.WEEK_STR_DT(_lang=lang_, _str=_data['date'])
+            # end week mode
+
+        elif _data['view'] == 0:
+
+            # day mode
+            '''
+            start = None if not _data['date'] else _data['date']
+            if start:
+                if lang_ == 'zh':
+                    format_ = cls.DAY_FORMAT_ZH[1]
+                else:
+                    format_ = cls.DAY_FORMAT_EN[1]
+                dt_ = datetime.strptime(start, format_)
+            '''
+            dt_ = cls.DAY_STR_DT(_lang=lang_, _str=_data['date'])
+            dt_range_.append(dt_)
+            dt_range_.append(None)
+            # end day mode
+
+        elif _data['view'] == 1:
+
+            # month mode
+            '''
+            start = None if not _data['date'] else _data['date']
+            if start:
+                if lang_ == 'zh':
+                    format_ = cls.MONTH_FORMAT_ZH[1]
+                else:
+                    format_ = cls.MONTH_FORMAT_EN[1]
+                dt_ = datetime.strptime(start, format_)
+            '''
+            dt_range_ = cls.MONTH_STR_DT(_lang=lang_, _str=_data['date'])
+            # end month mode
+
+        return dt_range_
+
+    @classmethod
     def test_request(cls, methods=['GET']):
-        """
-        class Page(WebPage):
-            URL = '/oodatepickericon_test'
-
-            @classmethod
-            def type_(cls):
-                return 'WebPage'
-
-            @classmethod
-            def on_post(cls):
-                req = super().on_post()
-                if req['me'] == 'oodatepicker':
-                    print(req['me'])
-                return jsonify({'status': 'success', 'data': 'null'})
-
-        Page.init_page(app=current_app, endpoint='oodatepickericon', on_post=Page.on_post)
-
-        with Page() as page:
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=["md8"], offset=['mdo2'])) as c1:
-                    with page.add_child(WebHead1(value="Test OODatePickerIcon with week view")):
-                        pass
-            with page.add_child(WebBr()) as br1:
-                pass
-            with page.add_child(WebBr()) as br2:
-                pass
-            with page.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=["md8"], offset=['mdo2'])) as c2:
-                    with page.add_child(globals()[cls.__name__](value='week')) as test1:
-                        pass
-
-        html = page.render()
-        print(pprint.pformat(html))
-        return render_template_string(html)
-        """
-        '''Create a testing page containing the component which is being tested'''
 
         NAME = 'test'
 
         def on_post():
             req = WebPage.on_post()
-            dt = None
+            dt_range_ = None
             for r in req:
                 if r['me'] == NAME:
-                    lang = r['data']['lang']
-                    format = None
-                    if r['data']['view'] == 5:
-                        start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T00')[0]
-                        if start:
-                            # USE cls FORMATS here
-                            format = cls.FORMATS[lang]['week']['to_format']
-                            dt = datetime.strptime(start, '%Y-%m-%d')
-                    elif r['data']['view'] == 0:
-                        start = None if not r['data']['date'] else r['data']['date']
-                        if start:
-                            if lang == 'zh':
-                                format = cls.DAY_FORMAT_ZH[1]
-                            else:
-                                format = cls.DAY_FORMAT_EN[1]
-                            dt = datetime.strptime(start, format)
-                    elif r['data']['view'] == 1:
-                        start = None if not r['data']['date'] else r['data']['date']
-                        if start:
-                            if lang == 'zh':
-                                format = cls.MONTH_FORMAT_ZH[1]
-                            else:
-                                format = cls.MONTH_FORMAT_EN[1]
-                            dt = datetime.strptime(start, format)
-                    else:
-                        raise NotImplementedError
+                    if r['data']['date']:
+                        dt_range_ = cls.get_dates(r['data'])
+                        print('OODatePickerIcon testing: got dates: {} ~ {}'.format(pprint.pformat(dt_range_[0]),
+                                                                                    pprint.pformat(dt_range_[1])))
+                else:
+                    raise NotImplementedError
 
             return jsonify({'status': 'success', 'data': []})
 
@@ -1736,7 +1741,7 @@ class OODatePickerIcon(OODatePickerSimple):
         Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
 
         with Page() as page:
-            with page.add_child(globals()[cls.__name__](vname=NAME)) as test1:
+            with page.add_child(globals()[cls.__name__](name=NAME)) as test1:
                 pass
 
         test1.call_custom_func(fname=test1.start_func_name, fparams={'that': '$("#{}")'.format(test1.id()),
@@ -1780,7 +1785,7 @@ class OODatePickerRange(OODatePickerSimple):
             req = WebPage.on_post()
             for r in req:
                 if r['me'] == NAME1:
-                    lang = r['data']['lang']
+                    lang = r['data']['_lang']
                     format = None
                     start = None
                     end = None
