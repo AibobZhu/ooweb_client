@@ -19,7 +19,7 @@ from requests import post
 from contextlib2 import contextmanager
 from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange
 import sys, os
-import datetime
+import datetime as dt
 from flask_sqlalchemy import SQLAlchemy
 import json
 from test_class import *
@@ -1475,9 +1475,9 @@ class OODatePickerBase:
     def DAY_STR_DT(cls, _lang, _str):
         dt = None
         if _lang == 'zh':
-            dt = datetime.datetime.strptime(_str, cls.DAY_FORMAT_ZH[1])
+            dt = dt.datetime.strptime(_str, cls.DAY_FORMAT_ZH[1])
         else:
-            dt = datetime.datetime.strptime(_str, cls.DAY_FORMAT_EN[1])
+            dt = dt.datetime.strptime(_str, cls.DAY_FORMAT_EN[1])
         return dt
 
     @classmethod
@@ -1499,12 +1499,12 @@ class OODatePickerBase:
         if _lang == 'zh':
             format_ = cls.WEEK_FORMAT_ZH[1]
             
-        mon = datetime.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
+        mon = dt.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
         
-        sun = datetime.datetime.strptime(_str + '-6', format_ + '-%w') + \
-              datetime.timedelta(days=1)                                # week end at sunday
+        sun = dt.datetime.strptime(_str + '-6', format_ + '-%w') + \
+              dt.timedelta(days=1)                                # week end at sunday
         
-        return [mon + datetime.timedelta(days=-7), sun + datetime.timedelta(days=-7)]
+        return [mon + dt.timedelta(days=-7), sun + dt.timedelta(days=-7)]
 
     @classmethod
     def WEEK_STR_STAMP(cls, lang, str):
@@ -1519,8 +1519,8 @@ class OODatePickerBase:
         year = dt.year
         month = dt.month
         last_day = calendar.monthrange(year, month)[1]
-        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
-        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
+        first_dt = dt.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
+        last_dt = dt.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
         return [first_dt.strftime(format + '-1'), last_dt.strftime(format + '-' + str(last_day))]
 
     @classmethod
@@ -1530,12 +1530,12 @@ class OODatePickerBase:
         if _lang == 'zh':
             format = cls.MONTH_FORMAT_ZH[1]
 
-        dt = datetime.datetime.strptime(_str, format)
+        dt = dt.datetime.strptime(_str, format)
         year = dt.year
         month = dt.month
         last_day = calendar.monthrange(year, month)[1]
-        first_dt = datetime.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
-        last_dt = datetime.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
+        first_dt = dt.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
+        last_dt = dt.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
         return [first_dt, last_dt]
 
     @classmethod
@@ -1566,7 +1566,7 @@ class OODatePickerBase:
 class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
     def __init__(self, language='zh', value={'view': 'week',
-                                             'start': datetime.datetime.today().strftime('%Y %m %d')},
+                                             'start': dt.datetime.today().strftime('%Y %m %d')},
                  views=['day', 'week', 'month'], place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
@@ -1597,10 +1597,10 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
                         if start:
                             # USE cls FORMATS here
                             format = cls.FORMATS[lang]['week']['to_format']
-                            dt = datetime.datetime.strptime(start, "%Y-%m-%d")
+                            dt = dt.datetime.strptime(start, "%Y-%m-%d")
                             dt = dt.timestamp()
                         else:
-                            dt = datetime.datetime.today().timestamp()
+                            dt = dt.datetime.today().timestamp()
                         r['data']['date'] = int(dt)
                     elif r['data']['select'] == '日':
                         start = None if not r['data']['date'] else r['data']['date']
@@ -1609,9 +1609,9 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
                                 format = cls.DAY_FORMAT_ZH[1]
                             else:
                                 format = cls.DAY_FORMAT_EN[1]
-                            dt = datetime.datetime.strptime(start, format).timestamp()
+                            dt = dt.datetime.strptime(start, format).timestamp()
                         else:
-                            dt = datetime.datetime.today().timestamp()
+                            dt = dt.datetime.today().timestamp()
                         r['data']['date'] = int(dt)
                     else:
                         start = None if not r['data']['date'] else r['data']['date']
@@ -1620,9 +1620,9 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
                                 format = cls.MONTH_FORMAT_ZH[1]
                             else:
                                 format = cls.MONTH_FORMAT_EN[1]
-                            dt = datetime.datetime.strptime(start, format).timestamp()
+                            dt = dt.datetime.strptime(start, format).timestamp()
                         else:
-                            dt = datetime.datetime.today().timestamp()
+                            dt = dt.datetime.today().timestamp()
                         r['data']['date'] = int(dt)
 
             return jsonify({'status': 'success', 'data': req})
@@ -1712,6 +1712,44 @@ class OODatePickerIcon(OODatePickerSimple):
         return dt_range_
 
     @classmethod
+    def get_ret_stamp(cls, _data):
+
+        lang = _data['lang']
+        format_ = None
+        if _data['view'] == 5:
+            start = None if not _data['viewDate'] else _data['viewDate'].split('T')[0]
+            if start:
+                # USE cls FORMATS here
+                format_ = cls.FORMATS[lang]['week']['to_format']
+                dt_ = dt.datetime.strptime(start, "%Y-%m-%d")
+                dt_ = dt_.timestamp()
+            else:
+                dt_ = dt.datetime.today().timestamp()
+            _data['date'] = int(dt_)
+        elif _data['view'] == 0:
+            start = None if not _data['date'] else _data['date']
+            if start:
+                if lang == 'zh':
+                    format_ = cls.DAY_FORMAT_ZH[1]
+                else:
+                    format_ = cls.DAY_FORMAT_EN[1]
+                dt_ = dt.datetime.strptime(start, format_).timestamp()
+            else:
+                dt_ = dt.datetime.today().timestamp()
+            _data['date'] = int(dt_)
+        else:
+            start = None if not _data['date'] else _data['date']
+            if start:
+                if lang == 'zh':
+                    format_ = cls.MONTH_FORMAT_ZH[1]
+                else:
+                    format_ = cls.MONTH_FORMAT_EN[1]
+                dt_ = dt.datetime.strptime(start, format_).timestamp()
+            else:
+                dt_ = dt.datetime.today().timestamp()
+            _data['date'] = int(dt_)
+
+    @classmethod
     def test_request(cls, methods=['GET']):
 
         NAME = 'test'
@@ -1725,10 +1763,11 @@ class OODatePickerIcon(OODatePickerSimple):
                         dt_range_ = cls.get_dates(r['data'])
                         print('OODatePickerIcon testing: got dates: {} ~ {}'.format(pprint.pformat(dt_range_[0]),
                                                                                     pprint.pformat(dt_range_[1])))
+                        cls.get_ret_stamp(r['data'])
                 else:
                     raise NotImplementedError
 
-            return jsonify({'status': 'success', 'data': []})
+            return jsonify({'status': 'success', 'data': req})
 
         # border_radius = {"tl": "10px", "tr": "20px", "bl": "30px", "br": "40px"}
         class Page(WebPage):
@@ -1763,8 +1802,8 @@ class OODatePickerIcon(OODatePickerSimple):
 class OODatePickerRange(OODatePickerSimple):
 
     def __init__(self, language='zh',
-                 value={'view': 'week', 'start': datetime.datetime.today().strftime('%Y %m %d'),
-                        'end': datetime.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
+                 value={'view': 'week', 'start': dt.datetime.today().strftime('%Y %m %d'),
+                        'end': dt.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
                  place_holders=('开始', '结束'), **kwargs):
         kwargs['value'] = value
         kwargs['views'] = views
@@ -1799,16 +1838,16 @@ class OODatePickerRange(OODatePickerSimple):
                     start = None if not r['data']['start'] else r['data']['start']
                     if not start:
                         # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
-                        start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
+                        start = dt.datetime.strptime('2020-1-1', '%Y-%m-%d')
                     else:
-                        start = datetime.datetime.strptime(start, format)
+                        start = dt.datetime.strptime(start, format)
 
                     end = None if not r['data']['end'] else r['data']['end']
                     if not end:
                         # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
-                        end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
+                        end = dt.datetime.strptime('2020-12-31', '%Y-%m-%d')
                     else:
-                        end = datetime.datetime.strptime(end, format)
+                        end = dt.datetime.strptime(end, format)
 
                     r['data']['start'] = int(start.timestamp())
                     r['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
@@ -3409,10 +3448,10 @@ class OOCalendar(WebDiv):
 
         _from = request.args.get('from')
         if _from:
-            _from = datetime.datetime.fromtimestamp(float(_from) / 1000.0)
+            _from = dt.datetime.fromtimestamp(float(_from) / 1000.0)
         _to = request.args.get('to')
         if _to:
-            _to = datetime.datetime.fromtimestamp(float(_to) / 1000.0)
+            _to = dt.datetime.fromtimestamp(float(_to) / 1000.0)
         are = request.args.get('are')
         sch = request.args.get('sch')
         dep = request.args.get('dep')
@@ -3507,8 +3546,8 @@ class OOCalendar(WebDiv):
             for r in req_:
                 if r['me'] == NAME:
 
-                    start_ = datetime.datetime.fromtimestamp(int(r['data']['start']) / 1000)
-                    end_ = datetime.datetime.fromtimestamp(int(r['data']['end']) / 1000)
+                    start_ = dt.datetime.fromtimestamp(int(r['data']['start']) / 1000)
+                    end_ = dt.datetime.fromtimestamp(int(r['data']['end']) / 1000)
                     title_ = r['data']['title']
                     view_ = r['data']['view']
                     r['data']['hierarchy'] = "test_hierarchy"
