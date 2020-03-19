@@ -17,7 +17,7 @@ import pprint
 import inspect
 from requests import post
 from contextlib2 import contextmanager
-from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange
+from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
 import sys, os
 import datetime as dt
 from flask_sqlalchemy import SQLAlchemy
@@ -1463,34 +1463,34 @@ class OODatePickerBase:
     start_func_params = ["that", "type"]
 
     @classmethod
-    def DAY_DT_STR(cls, lang, dt):
-        format = None
+    def DAY_DT_STR(cls, lang, _dt):
+        format_ = None
         if lang == 'zh':
-            format = cls.DAY_FORMAT_ZH[1]
+            format_ = cls.DAY_FORMAT_ZH[1]
         else:
-            format = cls.DAY_FORMAT_EN[1]
-        return dt.strftime(format)
+            format_ = cls.DAY_FORMAT_EN[1]
+        return _dt.strftime(format_)
 
     @classmethod
     def DAY_STR_DT(cls, _lang, _str):
-        dt = None
+        dt_ = None
         if _lang == 'zh':
-            dt = dt.datetime.strptime(_str, cls.DAY_FORMAT_ZH[1])
+            dt_ = dt.datetime.strptime(_str, cls.DAY_FORMAT_ZH[1])
         else:
-            dt = dt.datetime.strptime(_str, cls.DAY_FORMAT_EN[1])
-        return dt
+            dt_ = dt.datetime.strptime(_str, cls.DAY_FORMAT_EN[1])
+        return dt_
 
     @classmethod
-    def DAY_STR_STAMP(cls, lang, str):
-        dt = cls.DAY_STR_DT(_lang=lang, _str=str)
+    def DAY_STR_STAMP(cls, lang, _str):
+        dt = cls.DAY_STR_DT(_lang=lang, _str=_str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
-    def WEEK_DATETIME_STR(cls, lang, dt):
+    def WEEK_DATETIME_STR(cls, lang, _dt):
         if lang == 'zh':
-            return "{}年 {}月 第{}周".format(dt.year, dt.month, day_2_week_number(dt))
+            return "{}年 {}月 第{}周".format(_dt.year, _dt.month, day_2_week_number(_dt))
         else:
-            return "{} {} week:{}".format(dt.year, dt.month, day_2_week_number(dt))
+            return "{} {} week:{}".format(_dt.year, _dt.month, day_2_week_number(_dt))
 
     @classmethod
     def WEEK_STR_DT(cls, _lang, _str):
@@ -1507,21 +1507,21 @@ class OODatePickerBase:
         return [mon + dt.timedelta(days=-7), sun + dt.timedelta(days=-7)]
 
     @classmethod
-    def WEEK_STR_STAMP(cls, lang, str):
-        dt = cls.WEEK_STR_DT(_lang=lang, _str=str)
+    def WEEK_STR_STAMP(cls, lang, _str):
+        dt = cls.WEEK_STR_DT(_lang=lang, _str=_str)
         return int(dt.timestamp()) * 1000
 
     @classmethod
-    def MONTH_DATETIME_STR(cls, lang, dt):
-        format = cls.MONTH_FORMAT_EN[1]
+    def MONTH_DATETIME_STR(cls, lang, _dt):
+        format_ = cls.MONTH_FORMAT_EN[1]
         if lang == 'zh':
-            format = cls.MONTH_FORMAT_ZH[1]
-        year = dt.year
-        month = dt.month
+            format_ = cls.MONTH_FORMAT_ZH[1]
+        year = _dt.year
+        month = _dt.month
         last_day = calendar.monthrange(year, month)[1]
         first_dt = dt.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
         last_dt = dt.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
-        return [first_dt.strftime(format + '-1'), last_dt.strftime(format + '-' + str(last_day))]
+        return [first_dt.strftime(format_ + '-1'), last_dt.strftime(format_ + '-' + str(last_day))]
 
     @classmethod
     def MONTH_STR_DT(cls, _lang, _str):
@@ -1530,17 +1530,17 @@ class OODatePickerBase:
         if _lang == 'zh':
             format = cls.MONTH_FORMAT_ZH[1]
 
-        dt = dt.datetime.strptime(_str, format)
-        year = dt.year
-        month = dt.month
+        dt_ = dt.datetime.strptime(_str, format)
+        year = dt_.year
+        month = dt_.month
         last_day = calendar.monthrange(year, month)[1]
         first_dt = dt.datetime.strptime('{}-{}-1'.format(year, month), '%Y-%m-%d')
         last_dt = dt.datetime.strptime('{}-{}-{}'.format(year, month, last_day), '%Y-%m-%d')
         return [first_dt, last_dt]
 
     @classmethod
-    def MONTH_STR_STAMP(cls, lang, str):
-        dt = cls.MONTH_STR_DT(_lang=lang, _str=str)
+    def MONTH_STR_STAMP(cls, lang, _str):
+        dt = cls.MONTH_STR_DT(_lang=lang, _str=_str)
         return int(dt.timestamp()) * 1000
 
     FORMATS = {
