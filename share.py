@@ -5,9 +5,9 @@ import json, zlib
 import random
 import binascii
 import uuid
+import calendar
 from dateutil.relativedelta import relativedelta
 import datetime
-import calendar
 
 # TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
@@ -87,7 +87,7 @@ def _getStr(leng):
     return s
 
 
-def _getSUUID():
+def suuid():
     return str(uuid.uuid4()).split("-")[0]
 
 
@@ -124,6 +124,22 @@ def day_2_week_number(date, first_day=0):
     x = np.array(calendar.monthcalendar(year, month))
     week_of_month = np.where(x == day)[0][0] + 1
     return week_of_month
+
+
+def monday_of_week(week_number, year=None):
+    """
+    Get the monday date of the week. In ISO standard, the monday of week is first week day.
+
+    :param week_number: week number
+    :param year: the year of the week
+    :return: datetime obj
+    """
+    assert 0 <= week_number <= 54
+    if year is None:
+        year = datetime.datetime.today().year
+    first_day = datetime.date(year, 1, 1)
+    first_wkday = first_day.isoweekday()
+    return (first_day + relativedelta(weeks=(week_number - 1))) - relativedelta(days=(first_wkday - 1))
 
 
 '''

@@ -6,26 +6,28 @@
 # Filename       : components_client.py
 # Description    :                       
 #########################################
-import numpy as np
-
-from interfaces import *
-
-import flask
-from flask import current_app, render_template_string, request, jsonify, url_for
-import uuid
-import pprint
-import inspect
-from requests import post
-from contextlib2 import contextmanager
-from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
-import sys, os
-import datetime as dt
-from flask_sqlalchemy import SQLAlchemy
-import json
-from test_class import *
-import copy
-import random
 import calendar
+import copy
+import datetime as dt
+import inspect
+import json
+import os
+import pprint
+import random
+import sys
+import uuid
+
+import dateutil.parser
+from dateutil.relativedelta import relativedelta
+import flask
+import numpy as np
+from contextlib2 import contextmanager
+from flask import current_app, render_template_string, request, jsonify, url_for
+from flask_sqlalchemy import SQLAlchemy
+from interfaces import *
+from requests import post
+from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
+from test_class import *
 
 sys.setrecursionlimit(2000)
 
@@ -1288,7 +1290,7 @@ class WebBtnDropdown(WebBtn):
         self.func_call(params)
 
     @classmethod
-    def test_request(cls, methods=['GET']):
+    def test_request(cls, methods=['GET', 'POST']):
         '''
         with WebPage() as page:
             with page.add_child(globals()[cls.__name__](value='测试',select_options=[{'name':'测试1','href':'#'},{'name':'测试2','href':'#'}])) as btn:
@@ -1308,7 +1310,25 @@ class WebBtnDropdown(WebBtn):
         return render_template_string(html)
         '''
 
-        with WebPage(test=True) as page:
+        name = 'btndp_test'
+        test_url = '/'+name
+
+        def on_post():
+            ret = WebPage.on_post()
+            for r in ret:
+                if r['me'] == name:
+                    r['data'] = {'name': name, 'select':name, 'options': [{'name': 'test', 'action': '#'}]}
+            return jsonify({'status': 'success', 'data': ret})
+
+        class Page(WebPage):
+            URL = test_url
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page(test=True) as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                     with c1.add_child(WebBtnDropdown(value='测试', select_options=[{'name': '测试1', 'href': '#'},
@@ -1318,6 +1338,15 @@ class WebBtnDropdown(WebBtn):
                                                                                   {'name': '测试4',
                                                                                    'href': '#'}])) as btn2:
                         pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(WebBtnDropdown(value='测试on_post', name=name)) as btn_on_post:
+                        pass
+
+        # Actions
+        with page.render_post_w():
+            btn_on_post.render_for_post()
+
         # response to change event and pop up an alert
         '''
         with btn.on_event_w('change'):
@@ -1496,15 +1525,28 @@ class OODatePickerBase:
     def WEEK_STR_DT(cls, _lang, _str):
         
         format_ = cls.WEEK_FORMAT_EN[1]
+        is_view = False
         if _lang == 'zh':
             format_ = cls.WEEK_FORMAT_ZH[1]
-            
-        mon = dt.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
-        
-        sun = dt.datetime.strptime(_str + '-6', format_ + '-%w') + \
-              dt.timedelta(days=1)                                # week end at sunday
-        
-        return [mon + dt.timedelta(days=-7), sun + dt.timedelta(days=-7)]
+            if _str.find('周') < 0:
+                is_view = True
+        elif _lang == 'en':
+            format_ = cls.WEEK_FORMAT_EN[1]
+            if _str.find('week') < 0:
+                is_view = True
+
+        ret = None
+        if not is_view:
+            mon = dt.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
+            sun = dt.datetime.strptime(_str + '-6', format_ + '-%w') + dt.timedelta(days=1) # week end at sunday
+            ret = [mon + dt.timedelta(days=-7), sun + dt.timedelta(days=-7)]
+        else:
+            view_date = dateutil.parser.parse(_str)
+            mon = view_date - relativedelta(days=view_date.weekday())
+            sun = view_date + relativedelta(days=6-view_date.weekday())
+            ret = [mon, sun]
+
+        return ret
 
     @classmethod
     def WEEK_STR_STAMP(cls, lang, _str):
@@ -1674,7 +1716,10 @@ class OODatePickerIcon(OODatePickerSimple):
                 format_ = cls.FORMATS[lang_]['week']['to_format']
                 dt_ = datetime.strptime(start, '%Y-%m-%d')
             '''
-            dt_range_ = cls.WEEK_STR_DT(_lang=lang_, _str=_data['date'])
+            if _data['date']:
+                dt_range_ = cls.WEEK_STR_DT(_lang=lang_, _str=_data['date'])
+            elif _data['viewDate']:
+                dt_range_ = cls.WEEK_STR_DT(_lang=lang_, _str=_data['viewDate'])
             # end week mode
 
         elif _data['view'] == 0:
@@ -3714,7 +3759,7 @@ class WebTable(WebComponentBootstrap):
         } ,
         '''
 
-        schema = [
+        cols = [
             {'name': '事件', 'style': 'width:30%', 'attr': ''},
             {'name': '审批', 'style': 'width:20%', 'attr': '', 'type': 'checkbox'},
             {'name': '完成', 'style': '', 'attr': '', 'type': 'checkbox'},
@@ -3723,6 +3768,11 @@ class WebTable(WebComponentBootstrap):
             {'name': '结束', 'style': '', 'attr': ''},
             {'name': '备份', 'style': '', 'attr': ''},
         ]
+
+        schema = [
+            {'name': '标题', 'class': 'text-center', 'subhead': cols}
+        ]
+
         if schema_only:
             return schema
 
@@ -3878,7 +3928,11 @@ class WebTable(WebComponentBootstrap):
 
         html.append('<tbody class="{}" style="{}">\n'.format(WebTable._body_classes_str(), WebTable._body_styles_str()))
         for tr in _data['records']:
-            html.append('    <tr>\n')
+            if 'details' in tr:
+                html.append('    <tr style="visibility:hidden" class="ootable_detail_tr">\n')
+                tr = [r for r in tr if isinstance(r, dict)]
+            else:
+                html.append('    <tr>\n')
             for i, d in enumerate(tr):
                 td = ''
                 classes = d['class'] if 'class' in d else ''
@@ -3888,8 +3942,7 @@ class WebTable(WebComponentBootstrap):
                 if columns and 'type' in columns[i] and columns[i]['type']:
                     if columns[i]['type'].find('checkbox') == 0:
                         if data_:
-                            td = '        <input type="checkbox" checked="checked" class="{}" style="{}" {}>'.format(
-                                classes, style, attr)
+                            td = '        <input type="checkbox" checked="checked" class="{}" style="{}" {}>'.format(classes, style, attr)
                         else:
                             td = '        <input type="checkbox" class="{}" style="{}" {}>'.format(classes, style, attr)
                     else:
@@ -3926,9 +3979,7 @@ class WebTable(WebComponentBootstrap):
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height="400px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](name='test',
-                                                              mytype=['striped', 'hover', 'borderless',
-                                                                      'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
 
         with page.render_post_w():
@@ -3958,6 +4009,9 @@ class OOTable(WebTable):
     GET_ROW_DATA_FUNC_NAME = 'ootable_get_row_data'
     GET_ROW_DATA_FUNC_ARGS = ['that', 'data_attr="ootable-details"']
 
+    ON_CLICK_ROW_FUNC_NAME = 'on_click_row'
+    ON_CLICK_ROW_FUNC_ARGS = ['that', 'data']
+
     ROW_INFO_FUNC_NAME = 'ootable_row_info'
     ROW_INFO_FUNC_ARGS = ['those', 'data=null']
 
@@ -3981,6 +4035,12 @@ class OOTable(WebTable):
         '   });\n',
         '   next_tr += "</tr>";\n',
         '   return next_tr;\n',
+    )
+
+    ON_EXPAND_ROW_FUNC_NAME = 'on_expand_row'
+    ON_EXPAND_ROW_FUNC_ARGS = ['index', 'row', '$detail']
+    ON_EXPAND_ROW_FUNC_BODY = (
+        "alert('on_expand_row_name!');\n",
     )
 
     CELL_RENDER_FUNC_NAME = 'ootable_cell_render'
@@ -4029,15 +4089,22 @@ class OOTable(WebTable):
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
+                records.append([
+                    'details',
+                    {'data': 'details'},
+                    {'data': 'details'},
+                    {'data': 'details'}
+                ])
             setting = {
-                'scrollY': '200px',
+                'scrollY': '500px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': False,
                 'searching': False,
                 'destroy': True,
                 'colReorder': False,
-                'columnDefs': []
+                'columnDefs': [],
+                'onExpandRow': OOTable.ON_EXPAND_ROW_FUNC_NAME
             }
             return {'schema': schema, 'records': records, 'setting': setting}
 
@@ -4165,17 +4232,24 @@ class OOTable(WebTable):
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
 
-        test_url = '/ootable_test'
+        test_url = '/ootable_testtest'
 
         def on_post():
             ret = WebPage.on_post()
             for r in ret:
                 if r['me'] == 'image_table':
-                    # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
-                    data = OOTable.model.query('img')
-                    html = ''.join(OOTable.html(data=data))
-                    # setting = table.get_data(setting_only=True)
-                    r['data'] = {'html': html, 'setting': data['setting']}
+                    if 'data' in r and 'row_info' in r['data']:
+                        row_info = r['data']['row_info']
+                        row_index = r['data']['row_index']
+                        details = 'details'
+                        html_details = "<td style='border-top:0px'><textarea readonly='readonly'>" + details + "</textarea></td>"
+                        r['data']['details'] = html_details
+                    else:
+                        # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
+                        data = OOTable.model.query('img')
+                        html = ''.join(OOTable.html(data=data))
+                        # setting = table.get_data(setting_only=True)
+                        r['data'] = {'html': html, 'setting': data['setting']}
                 if r['me'] == 'chart_table':
                     data = OOTable.model.query('chart')
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
@@ -4205,8 +4279,8 @@ class OOTable(WebTable):
 
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless',
-                                                                                   'responsive'])) as test:
+                    # with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'responsive'])) as test:
                         # test.render_func()
                         customer_search = []
                         customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
@@ -4243,11 +4317,18 @@ class OOTable(WebTable):
             with page.add_child(WebBr()):
                 pass
 
+            OOTable.ON_CLICK_ROW_FUNC_BODY = (
+                "alert('on_click_row');\n",
+            )
+
+
             with page.add_child(WebRow()) as r4:
                 with r4.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c4:
-                    with c4.add_child(OOTable(name='image_table',
-                                              mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
-                        pass
+                    #with c4.add_child(OOTable(name='image_table', mytype=['striped', 'hover', 'borderless', 'responsive'])) as image_table:
+                    with c4.add_child(OOTable(name='image_table', mytype=['striped', 'hover', 'responsive'])) as image_table:
+                        image_table.declare_custom_global_func(fname=image_table.ON_EXPAND_ROW_FUNC_NAME, fparams=image_table.ON_EXPAND_ROW_FUNC_ARGS, fbody=image_table.ON_EXPAND_ROW_FUNC_BODY)
+                        image_table.declare_custom_global_func(fname=image_table.ON_CLICK_ROW_FUNC_NAME, fparams=image_table.ON_CLICK_ROW_FUNC_ARGS, fbody=image_table.ON_CLICK_ROW_FUNC_BODY)
+
             with page.add_child(WebBr()):
                 pass
 
@@ -4268,10 +4349,10 @@ class OOTable(WebTable):
         with input.on_event_w('change'):
             page.alert('"searching ... "')
             test.draw()
+        '''
 
         with test.on_event_w('click_row'):
             test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
-        '''
 
         with page.render_post_w():
             test.render_for_post()
@@ -4398,8 +4479,7 @@ class OOTagGroup(WebTable):
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless',
-                                                                                   'responsive'])) as test:
+                    with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
                         pass
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
