@@ -3928,11 +3928,7 @@ class WebTable(WebComponentBootstrap):
 
         html.append('<tbody class="{}" style="{}">\n'.format(WebTable._body_classes_str(), WebTable._body_styles_str()))
         for tr in _data['records']:
-            if 'details' in tr:
-                html.append('    <tr style="visibility:hidden" class="ootable_detail_tr">\n')
-                tr = [r for r in tr if isinstance(r, dict)]
-            else:
-                html.append('    <tr>\n')
+            html.append('    <tr>\n')
             for i, d in enumerate(tr):
                 td = ''
                 classes = d['class'] if 'class' in d else ''
@@ -4016,7 +4012,7 @@ class OOTable(WebTable):
     ROW_INFO_FUNC_ARGS = ['those', 'data=null']
 
     ROW_CHILD_FUNC_NAME = 'ootable_row_child'
-    ROW_CHILD_FUNC_ARGS = ['tr', 'data_attr=ootable-details']
+    ROW_CHILD_FUNC_ARGS = ['tr', 'table_id', 'data_attr="ootable-details"']
 
     ROW_CHILD_FORMAT_FUNC_NAME = 'ootable_row_child_format'
     # ROW_CHILD_FORMAT_FUNC_ARGS = ['tr', 'data']
@@ -4089,12 +4085,6 @@ class OOTable(WebTable):
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
-                records.append([
-                    'details',
-                    {'data': 'details'},
-                    {'data': 'details'},
-                    {'data': 'details'}
-                ])
             setting = {
                 'scrollY': '500px',
                 'scrollX': True,
@@ -4104,7 +4094,6 @@ class OOTable(WebTable):
                 'destroy': True,
                 'colReorder': False,
                 'columnDefs': [],
-                'onExpandRow': OOTable.ON_EXPAND_ROW_FUNC_NAME
             }
             return {'schema': schema, 'records': records, 'setting': setting}
 
@@ -4142,7 +4131,7 @@ class OOTable(WebTable):
             else:
                 data = WebTable._example_data()
                 data['setting'] = {
-                    'scrollY': '200px',
+                    'scrollY': '600px',
                     'scrollX': True,
                     'scrollCollapse': True,
                     'paging': False,
@@ -4352,17 +4341,19 @@ class OOTable(WebTable):
         '''
 
         with test.on_event_w('click_row'):
-            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that'})
+            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that', 'table_id': test.id()})
 
         with page.render_post_w():
             test.render_for_post()
             image_table.render_for_post()
             chart_table.render_for_post()
 
+        '''
         with image_table.on_event_w('click_row'):
             image_table.alert('"Click_row!" + ootable_get_rowinfo(that)')
             with page.render_post_w():
                 image_table.row_render_for_post(trigger_event=False)
+        '''
 
         html = page.render()
         return render_template_string(html)
