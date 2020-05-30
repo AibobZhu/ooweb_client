@@ -1389,6 +1389,102 @@ class WebBtnDropdown(WebBtn):
         return render_template_string(html)
 
 
+class WebQuickForm(WebComponentBootstrap):
+    """
+    QuickForm packages FlaskForm
+    """
+
+    PAGE_TEMPLATE = """
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/utils.html" as util %} 
+
+{% block title %}{{ title_name }}{% endblock %}
+
+{% block head %}
+  {{ super() }}
+{% endblock %}
+
+{% block navbar %}
+  {% if nav %}
+  {{ nav.top.render() }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+    {{ super() }}
+    {% block flash %}
+      {{util.flashed_messages(dismissible=True)}}	
+    {% endblock %}
+    {% block modal %}
+    <div class="modal fade" id="events-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div Class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3 class="modal-title">Event</h3>
+          </div>
+          <div class="modal-body" style="height: 400px">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>  <!-- model -->
+    {% endblock %}
+    <div class="container">
+        <div class="jumbotron">
+          <h3>请登录</h3>
+          <p>
+            {% import "bootstrap/wtf.html" as wtf %}
+            {{ wtf.quick_form(form) }}
+          </p>
+        </div>
+    </div>
+{% endblock %}
+
+            """
+
+    @classmethod
+    def test_request(cls, methods=['GET', 'POST']):
+        from flask_wtf import FlaskForm
+        from wtforms import StringField, PasswordField, SubmitField, SelectField
+        from wtforms.fields.html5 import DateTimeLocalField, DateField
+        from wtforms.validators import DataRequired, InputRequired, Length, Email, Required, Length, Regexp, EqualTo
+
+        name = 'quickform'
+
+        def on_post():
+            return
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name)
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '_test', on_post=on_post)
+
+        class LoginForm(FlaskForm):
+            email = StringField(u'邮箱', validators=[
+                DataRequired(message=u'邮箱不能为空'), Length(1, 64),
+                Email(message=u'请输入有效的邮箱地址，比如：username@domain.com')
+            ]
+                                )
+            password = PasswordField(u'密码', validators=[DataRequired(message=u'密码不能为空')])
+
+            login_submit = SubmitField(u'登录')
+
+        login_form = LoginForm(request.form)
+
+        if request.method == 'POST' and login_form.validate_on_submit():
+            print("login submit")
+            return "login submit"
+        else:
+            # border_radius = {"tl":"10px", "tr":"20px", "bl":"30px", "br":"40px"}
+            with Page(test=True) as page:
+                login_tempalte = cls.PAGE_TEMPLATE
+
+                return render_template_string(login_tempalte, form=login_form)
+
+
 class WebFormGroup(WebComponentBootstrap):
     pass
 
