@@ -1000,8 +1000,7 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         try:
             if blueprint:
                 cls.add_url_rule(app=blueprint, extend=[
-                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post,
-                     'methods': ['POST']}])
+                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
                 app.register_blueprint(blueprint=blueprint, url_prefix=url_prefix)
             else:
                 cls.add_url_rule(app, extend=[
@@ -1433,6 +1432,8 @@ class WebQuickForm(WebComponentBootstrap):
     </div>  <!-- model -->
     {% endblock %}
     <div class="container">
+        <br>
+        <br>
         <div class="jumbotron">
           <h3>请登录</h3>
           <p>
@@ -4103,6 +4104,9 @@ class OOTable(WebTable):
 
     ON_CLICK_ROW_FUNC_NAME = 'on_click_row'
     ON_CLICK_ROW_FUNC_ARGS = ['that', 'data']
+    ON_CLICK_ROW_FUNC_BODY = (
+        "\n",
+    )
 
     ROW_INFO_FUNC_NAME = 'ootable_row_info'
     ROW_INFO_FUNC_ARGS = ['those', 'data=null']
@@ -4312,6 +4316,7 @@ class OOTable(WebTable):
                                         self.CELL_RENDER_FUNC_BODY)
         self.declare_custom_global_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS,
                                         self.CREATED_CELL_RENDER_FUNC_BODY)
+        self.declare_custom_global_func(fname=self.ON_CLICK_ROW_FUNC_NAME, fparams=self.ON_CLICK_ROW_FUNC_ARGS, fbody=self.ON_CLICK_ROW_FUNC_BODY)
         return self
 
     @classmethod

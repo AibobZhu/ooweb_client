@@ -25,7 +25,7 @@ class Test(MinXin):
 
         for subclass in cls.__subclasses__():
             if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
-                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
+                    and (subclass.__name__.find('WebPage') < 0):
                 cls._SUBCLASSES[subclass.__name__] = subclass
                 cls.get_sub_classes(subclass)
 
@@ -98,7 +98,7 @@ class TestPage(Test):
         TODO: may add this into a new interface of page
         '''
 
-        nav_items = {'menu_list': []}
+        nav_items = {'title': {'name': '测试所有类', 'action': None}, 'menu_list': []}
         subclasses = self.get_sub_classes(self._root_class)
         for name, klass in subclasses.items():
             test_urls = klass.add_test_route(app)
