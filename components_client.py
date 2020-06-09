@@ -6,6 +6,8 @@
 # Filename       : components_client.py
 # Description    :                       
 #########################################
+import sys
+sys.path.append(".")
 import calendar
 import copy
 import datetime as dt
