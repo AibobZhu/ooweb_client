@@ -490,6 +490,16 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         WebComponent._cur_context_stack = [WebComponent._context]
 
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
+        """
+        Convert an object call to context
+
+        :param func: function name
+        :param caller_id: caller id
+        :param params: parameters in dict
+        :param sub_context: sub context
+        :return: context in dict
+        """
+
         def convert_param_obj(params):
             if isinstance(params, str):
                 print("error: params is instance of _str")
@@ -963,6 +973,260 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
         return render_template_string(html)
 
 
+from dominate import tags
+from flask_nav import Nav
+from flask_nav.elements import *
+from flask_bootstrap.nav import BootstrapRenderer, sha1
+
+
+class WebNav(WebComponentBootstrap):
+    BASE_TEMPLATE = \
+        '''
+          {% extends 'bootstrap/base.html' %}
+
+          {% block styles %}
+            {{ super() }}
+
+{% if style_files %}
+{{ style_files | safe }}
+{% endif %}
+
+{% if styles %}
+{{ styles | safe}}
+{% endif %}
+
+          {% endblock %}
+
+          {% block scripts %}
+            {{ super() }}
+
+{% if script_files %}
+{{ script_files | safe }}
+{% endif %}
+
+            <script>
+
+{% if global_scripts %}
+{{ global_scripts | safe}} 
+{% endif %}            
+
+                $(function(){
+
+{% if scripts %}
+{{ scripts | safe}}
+{% endif %}
+
+                })
+            </script>
+          {% endblock %}
+
+          {% block navbar %}
+
+{% if nav %}
+{{ nav.top.render() }}
+{% endif %}
+
+          {% endblock %}
+
+    '''
+
+    class NavView(View):
+
+        def get_url(self):
+            if self.url_for_kwargs:
+                params = ',' + str(**self.url_for_kwargs)
+            else:
+                params = ''
+            ret = "{{ url_for('" + self.endpoint + "'" + params + ")}}" if self.endpoint else '/'
+
+            return ret
+
+    class ExtendedNavbar(NavigationItem):
+
+        def __init__(self, title, root_class='navbar navbar-default', items=[], right_items=[]):
+            self.title = title
+            self.root_class = root_class
+            self.items = items
+            self.right_items = right_items
+
+    class CustomBootstrapRenderer(BootstrapRenderer):
+
+        def visit_ExtendedNavbar(self, node):
+            node_id = self.id or sha1(str(id(node)).encode()).hexdigest()
+
+            root = tags.nav() if self.html5 else tags.div(role='navigation')
+            root['class'] = node.root_class
+
+            cont = root.add(tags.div(_class='container-fluid'))
+
+            # collapse button
+            header = cont.add(tags.div(_class='navbar-header'))
+            btn = header.add(tags.button())
+            btn['type'] = 'button'
+            btn['class'] = 'navbar-toggle collapsed'
+            btn['data-toggle'] = 'collapse'
+            btn['data-target'] = '#' + node_id
+            btn['aria-expanded'] = 'false'
+            btn['aria-controls'] = 'navbar'
+
+            btn.add(tags.span('Toggle navigation', _class='sr-only'))
+            btn.add(tags.span(_class='icon-bar'))
+            btn.add(tags.span(_class='icon-bar'))
+            btn.add(tags.span(_class='icon-bar'))
+
+            # title may also have a 'get_url()' method, in which case we render
+            # a brand-link
+            if node.title is not None:
+                if hasattr(node.title, 'get_url'):
+                    header.add(tags.a(node.title.text, _class='navbar-brand', href=node.title.get_url()))
+                else:
+                    header.add(tags.span(node.title, _class='navbar-brand'))
+
+            bar = cont.add(tags.div(_class='navbar-collapse collapse', id=node_id))
+            bar_list = bar.add(tags.ul(_class='nav navbar-nav'))
+            for item in node.items:
+                bar_list.add(self.visit(item))
+
+            if node.right_items:
+                right_bar_list = bar.add(tags.ul(_class='nav navbar-nav navbar-right'))
+                for item in node.right_items:
+                    right_bar_list.add(self.visit(item))
+
+            return root
+
+    def init_custom_nav_render(self, app):
+        app.extensions['nav_renderers']['bootstrap'] = (__name__, 'WebNav.CustomBootstrapRenderer')
+        app.extensions['nav_renderers'][None] = (__name__, 'WebNav.CustomBootstrapRenderer')
+
+    def base_navbar(self):
+        """
+        self._nav_items = {
+            'title':{'name':'OwwwO','action':'test'},
+            'menu_list': [
+                {'subgroup':{
+                                'name': 'xxx',
+                                'menu_list': [
+                                    {'name': 'xxx', 'action': 'xxx'},
+                                    {'name': 'xxx', 'action': 'xxx'},
+                                ]
+                            }
+                },
+                {'name': 'xxx', 'action': 'xxx'},
+                ...
+            }
+        }
+
+        :return: WebNav.ExtendedNavbar
+        """
+
+        items = []
+
+        for item in self._nav_items['menu_list']:
+            k1 = list(item.keys())[0]
+            v1 = list(item.values())[0]
+            if k1 == 'subgroup':
+                sg_items = []
+                for menu in v1['menu_list']:
+                    sg_items.append(WebNav.NavView(menu['name'], menu['action']))
+                items.append(Subgroup(v1['name'], sg_items))
+            elif k1 == 'name':
+                items.append(WebNav.NavView(v1, item['action']))
+
+        return WebNav.ExtendedNavbar(
+            title=WebNav.NavView(self._nav_items['title']['name'], self._nav_items['title']['action']),
+            items=items
+        )
+
+    def top_navbar(self):
+        top_bar = self.base_navbar()
+        if 'login' in self._nav_items.keys():
+            if self._nav_items['login']['is_login']:
+                top_bar.right_items = (
+                    Subgroup(
+                        self._nav_items['login']['login_name'],
+                        WebNav.NavView('退出', self._nav_items['login']['logout_href'])
+                    ),
+                )
+            else:
+                top_bar.right_items = (
+                    WebNav.NavView(u'登录', self._nav_items['login']['login_href']),
+                )
+        return top_bar
+
+    def __init__(self, nav_items=None):
+
+        if not hasattr(self, '_nav_items'):
+            self._nav_items = {}
+
+        if nav_items:
+            self._nav_items = {**self._nav_items, **nav_items}
+        else:
+            self._nav_items = self.create_default_nav_items()
+
+        self._top_bar = 'top'
+        self._nav = Nav()
+        self._nav.register_element(self._top_bar, self.top_navbar)
+        if current_app:
+            self._nav.init_app(current_app)
+            self.init_custom_nav_render(current_app)
+
+    def render(self):
+        return
+        pass
+
+    @classmethod
+    def html(cls, nav_items=None):
+        """
+        render with nav items and return html string
+
+        :param nav_items: nav items in list
+        :return: html string
+        """
+        if nav_items is None:
+            nav_items = {}
+        nav = WebNav(nav_items=nav_items)
+        return render_template_string(
+            source=cls.BASE_TEMPLATE,
+        )
+
+    @classmethod
+    def test_request(cls, methods=['GET', 'POST']):
+        '''Create a testing page containing the component tested'''
+
+        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
+        name = 'test_webnav'
+        btn_name = 'test_btn'
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == name:
+                    r['data'] = name
+                elif r['me'] == btn_name:
+                    r['data'] = btn_name
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/'+name
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(WebBtn(name=btn_name, value='测试')) as btn:
+                        pass
+
+        with btn.on_event_w('click'):
+            with page.render_post_w():
+                btn.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
+
+
 class WebPage(WebComponentBootstrap, TestPageClient):
     URL = '/WebPage'
 
@@ -1010,6 +1274,41 @@ class WebPage(WebComponentBootstrap, TestPageClient):
 
         except AssertionError:
             print("Add url rule error!")
+
+    def render(self):
+        '''
+        render and return a complete page information in html
+        :return:
+        '''
+        # components = components_factory(self.context())
+        payload = create_payload(self.context())
+        # print('WebPage::render api:{}'.format(self._ap_i))
+        r = post(url=self._api, json=payload)
+        html = extract_data(r.json()['data'])
+
+        # get nav bar html and insert into page html
+        def insert_nav(page_html, nav_html):
+            """
+            cut <nav> ... </nav> from the page html and insert nav_html into page_html
+            :param page_html:
+            :param nav_html:
+            :return:
+            """
+            pg_bgn = page_html.find('<nav')
+            pg_end = page_html.find('</nav>')
+            page_html_=page_html[:pg_bgn] + page_html[pg_end+6:]
+            nav_bgn = nav_html.find('<nav')
+            nav_end = nav_html.find('</nav>')
+            nav_html_ = nav_html[nav_bgn:nav_end+6]
+            page_html_ = page_html[0:pg_bgn] + nav_html_ + page_html_[pg_bgn:]
+            return page_html_
+
+        if hasattr(self, '_nav_items') and self._nav_items:
+            nav_html = WebNav.html(nav_items=self._nav_items)
+            html = insert_nav(page_html=html, nav_html=nav_html)
+        # nav bar html end
+
+        return render_template_string(html)
 
 
 class WebA(WebComponentBootstrap):
