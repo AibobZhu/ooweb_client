@@ -90,6 +90,9 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
 
 class ComponentInf(MinXin, metaclass=abc.ABCMeta):
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @abc.abstractmethod
     def __enter__(self):
         pass
