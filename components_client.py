@@ -1583,6 +1583,50 @@ class WebBtn(WebComponentBootstrap):
         return render_template_string(html)
 
 
+class WebBtnRadio(WebBtnGroup):
+
+    VAL_FUNC_NAME = 'radio_val'
+    VAL_FUNC_ARGS = ['that', 'data=null']
+
+    @classmethod
+    def test_request(cls, methods=['GET', 'POST']):
+        name = 'radio'
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == name:
+                    print('Radio  value:{}'.format(r['data']))
+                    break
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name)
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '_test', on_post=on_post)
+
+        # border_radius = {"tl":"10px", "tr":"20px", "bl":"30px", "br":"40px"}
+        with Page(test=True) as page:
+            with page.add_child(WebBtnRadio(name=name, items=[{'label': '测试1', 'checked': ''}, {'label': '测试测试测试2'}, {'label': '测试3'}])) as radio:
+                pass
+
+        # response to change event and pop up an alert
+        with page.render_post_w():
+            radio.render_for_post()
+
+        with radio.on_event_w('change'):
+            with LVar(parent=radio, var_name='click_val') as val:
+                radio.call_custom_func(fname=cls.VAL_FUNC_NAME, fparams={'that': '$(that).parent().parent()'})
+            radio.alert('click_val')
+
+        html = page.render()
+        return render_template_string(html)
+
+
 class WebBtnDropdown(WebBtn):
 
     def set_options(self, options=None):
@@ -2030,7 +2074,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
             dt = None
             for r in req:
                 if r['me'] == NAME1:
-                    lang = r['data']['_lang']
+                    lang = r['data']['lang']
                     format = None
                     if r['data']['select'] == '周':
                         start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T')[0]

@@ -108,6 +108,13 @@ class TestPage(Test):
 
         @app.route('/')
         def index():
+            nav_items = {'title': {'name': '测试所有类', 'action': None}, 'menu_list': []}
+            subclasses = self.get_sub_classes(self._root_class)
+            for name, klass in subclasses.items():
+                test_urls = klass.add_test_route(app)
+                nav_items['menu_list'].append({'name': name, 'action': test_urls['test_request']})
+
+            self._nav_items = {**self._nav_items, **nav_items} if hasattr(self, '_nav_item') else nav_items
             return render_template_string(self.render())
 
     def create_app(self):
