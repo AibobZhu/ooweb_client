@@ -2139,6 +2139,15 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
 class OODialog(WebDiv):
 
+    BODY_HTML = """
+        <div class="row">
+        <div class="col-md-8  col-md-offset-1">
+        {% import "bootstrap/wtf.html" as wtf %}
+        {{ wtf.quick_form(form) }}
+        </div>
+        </div>
+    """
+
     @classmethod
     def test_request(cls, methods=['GET', 'POST']):
 
