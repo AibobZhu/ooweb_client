@@ -24,7 +24,7 @@ from dateutil.relativedelta import relativedelta
 import flask
 import numpy as np
 from contextlib2 import contextmanager
-from flask import current_app, render_template_string, request, jsonify, url_for
+from flask import current_app, render_template_string, request, jsonify, url_for, redirect
 from flask_sqlalchemy import SQLAlchemy
 from interfaces import *
 from requests import post
@@ -2135,6 +2135,75 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
         html = page.render()
         print(pprint.pformat(html))
         return render_template_string(html)
+
+
+class OODialog(WebDiv):
+
+    @classmethod
+    def test_request(cls, methods=['GET', 'POST']):
+
+        from flask_wtf import FlaskForm
+        from wtforms import StringField, PasswordField, SubmitField, SelectField
+        from wtforms.fields.html5 import DateTimeLocalField, DateField
+        from wtforms.validators import DataRequired, InputRequired, Length, Email, Required, Length, Regexp, EqualTo
+
+        BTN_NAME = 'btn'
+        DIALOG_NAME = 'dialog'
+        DIALOG_ID = 'dialog'
+
+        def on_post():
+            req = WebPage.on_post()
+            dt = None
+            for r in req:
+                if r['me'] == BTN_NAME:
+                    pass
+                elif r['me'] == DIALOG_NAME:
+                    pass
+
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/oodialog_test'
+
+            @classmethod
+            def type_(cls):
+                return 'WebPage'
+
+        class TestForm(FlaskForm):
+            email = StringField(u'邮箱', validators=[
+                DataRequired(message=u'邮箱不能为空'), Length(1, 64),
+                Email(message=u'请输入有效的邮箱地址，比如：username@domain.com')
+            ]
+                                )
+            password = PasswordField(u'密码', validators=[DataRequired(message=u'密码不能为空')])
+
+            login_submit = SubmitField(u'登录')
+
+        form_html="""
+        <div class="row">
+        <div class="col-md-8  col-md-offset-1">
+        {% import "bootstrap/wtf.html" as wtf %}
+        {{ wtf.quick_form(form) }}
+        </div>
+        </div>
+        """
+        login_form = TestForm(request.form)
+        login_form_html = render_template_string(form_html, form=login_form)
+        if request.method == 'POST' and login_form.validate_on_submit():
+            print("login submit")
+            return redirect(str(request.url_rule) + '#{}'.format(DIALOG_ID))
+        else:
+            Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+            with Page() as page:
+                with page.add_child(OODialog(name=DIALOG_NAME, id=DIALOG_ID, dialog_header="登录", dialog_body=login_form_html)) as dialog:
+                    pass
+                with page.add_child(WebBtn(name=BTN_NAME, value='测试', attrs={'data-toggle': 'modal', 'data-target': '#{}'.format(dialog.id())})) as test1:
+                    pass
+
+            html = page.render()
+            # print(pprint.pformat(html))
+            return render_template_string(html)
 
 
 class OODatePickerIcon(OODatePickerSimple):
