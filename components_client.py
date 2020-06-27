@@ -939,7 +939,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
         def on_post():
             req = WebPage.on_post()
-            for r in req:
+            for r in req::WQ
                 if r['me'] == name_:
                     if not hasattr(cls, 'test_request_data'):
                         r['data'] = name_ + ' Testing'
@@ -2462,6 +2462,43 @@ class OOChartNVD3(WebSvg):
     OOCHART_CREATE_FUNC_NAME = 'oochart_create'
 
     @classmethod
+    def stream_waves(cls, n, m):
+
+        def map_func(i):
+            def map_func_(j):
+                x = 20 * j / m - i / 3
+                return 2 * x * (-.5 * x)
+
+            return list(map(cls.stream_index, list(map(map_func_, range(m)))))
+
+        return list(map(map_func, range(n)))
+
+    @classmethod
+    def stream_index(cls, args):
+        return {'x': args[0], 'y': max(0, -args[1])}
+
+    @classmethod
+    def stream_layers(cls, n, m, o=None):
+
+        def bump(a):
+            x = 1 / (.1 + random.random())
+            y = 2 * random.random() - .5
+            z = 10 / (.1 + random.random())
+            for i in range(int(m)):
+                w = (i / m - y) * z
+                a[i] += x * (-w * w)
+
+        def map_func(x):
+            a = []
+            for i in range(int(m)):
+                a.append(o + o * random.random())
+            for j in range(5):
+                bump(a)
+            return list(map(cls.stream_index, enumerate(a)))
+
+        return list(map(map_func, range(n)))
+
+    @classmethod
     def CALL_CREATE_FUNC(cls, svg, chart_type, chart_data, aobj, parent='null', duration=0, simple=False):
         params = {'svg': svg, 'chart_type': chart_type, 'chart_data': chart_data, 'aobj_id': aobj.id(),
                   'parent': parent,
@@ -3494,8 +3531,30 @@ class OOChartMultiBar(OOChartNVD3):
     OOChartNVD3.OOCHART_CLASSES['mbar'] = __qualname__
 
     @classmethod
+    def example_data(cls):
+
+        '''
+        data = []
+        for stream in range(random.randint(2, 5)):
+            data.append({
+                'key': 'stream' + str(stream),
+                'values': []
+            })
+            for value in range(random.randint(40, 100)):
+                data[-1]['values'].append({
+                    'x': str(value),
+                    'y': random.random()
+                })
+        return data
+        '''
+        ls_data = cls.stream_layers(3, 10+random.random()*100, .1)
+        data = [{'key': 'stream'+str(i), 'values': data} for i, data in enumerate(ls_data)]
+        return data
+
+
+    @classmethod
     def test_request_data(cls):
-        return 'multibar'
+        return cls.example_data()
 
 
 class OOChartBullet(OOChartNVD3):
@@ -4627,7 +4686,7 @@ class OOTable(WebTable):
                 {'name': ''}
             ]
             records = []
-            for _ in range(random.randint(2, 2)):
+            for _ in range(10):
                 records.append((
                     {'data': ("!@#render_chart!@#:" + "mbar;oochart_multibar_example_data").replace(
                         '!@#render_chart!@#', OOTable.RENDER_CHART_KEY)},
@@ -4635,7 +4694,7 @@ class OOTable(WebTable):
                     {'data': _getStr(random.randint(3, 6))}
                 ))
             setting = {
-                'scrollY': '200px',
+                'scrollY': '400px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': False,
@@ -4790,6 +4849,13 @@ class OOTable(WebTable):
                     with c2.add_child(WebInput(value='')) as input:
                         pass
 
+            with page.add_child(WebRow()) as r0:
+                with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
+                    with c5.add_child(OOTable(name='chart_table',
+                                              mytype=['striped', 'hover', 'borderless', 'responsive'],
+                                              )) as chart_table:
+                        pass
+
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                     # with c1.add_child(globals()[cls.__name__](name='test', mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
@@ -4845,12 +4911,7 @@ class OOTable(WebTable):
             with page.add_child(WebBr()):
                 pass
 
-            with page.add_child(WebRow()) as r5:
-                with r5.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
-                    with c5.add_child(OOTable(name='chart_table',
-                                              mytype=['striped', 'hover', 'borderless', 'responsive'],
-                                              )) as chart_table:
-                        pass
+
             with page.add_child(WebBr()):
                 pass
 
@@ -4865,7 +4926,7 @@ class OOTable(WebTable):
         '''
 
         with test.on_event_w('click_row'):
-            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that', 'table_id': test.id()})
+            test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME, fparams={'tr': 'that', 'table_id': '"#{}"'.format(test.id())})
 
         with page.render_post_w():
             test.render_for_post()
