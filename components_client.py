@@ -939,7 +939,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
         def on_post():
             req = WebPage.on_post()
-            for r in req::WQ
+            for r in req:
                 if r['me'] == name_:
                     if not hasattr(cls, 'test_request_data'):
                         r['data'] = name_ + ' Testing'
