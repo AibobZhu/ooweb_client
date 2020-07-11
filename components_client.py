@@ -1859,11 +1859,19 @@ class WebBr(WebComponentBootstrap):
     pass
 
 
+class WebHr(WebComponentBootstrap):
+    pass
+
+
 class WebUl(WebComponentBootstrap):
     pass
 
 
 class WebDiv(WebComponentBootstrap):
+    pass
+
+
+class WebLabel(WebDiv):
     pass
 
 
