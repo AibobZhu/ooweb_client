@@ -3,6 +3,52 @@ var ootable_timeout_execute_queue = []
 
 "use strict";
 
+/*
+function ooattr(that) {
+    var ret = {};
+    $.each(that.attributes, function() {
+        // this.attributes is not a plain object, but an array
+        // of attribute nodes, which contain both the name and value
+        if(this.specified) {
+            ret[this.name] = this.value
+        }
+    });
+    return ret;
+}
+*/
+
+function oocss(a) {
+    var sheets = document.styleSheets, o = {};
+    for (var i in sheets) {
+        var rules = sheets[i].rules || sheets[i].cssRules;
+        for (var r in rules) {
+            if (a.is(rules[r].selectorText)) {
+                o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+            }
+        }
+    }
+    return o;
+}
+
+function oocss2json(css) {
+    var s = {};
+    if (!css) return s;
+    if (css instanceof CSSStyleDeclaration) {
+        for (var i in css) {
+            if ((css[i]).toLowerCase) {
+                s[(css[i]).toLowerCase()] = (css[css[i]]);
+            }
+        }
+    } else if (typeof css == "string") {
+        css = css.split("; ");
+        for (var i in css) {
+            var l = css[i].split(": ");
+            s[l[0].toLowerCase()] = (l[1]);
+        }
+    }
+    return s;
+}
+
 function oocalendar_start(options=null){
     var opts_default = {
             id: 'oocalendar',

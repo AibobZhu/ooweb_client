@@ -4244,6 +4244,80 @@ class OOCalendarBar(WebDiv):
     pass
 
 
+class WebTabItem(WebDiv):
+    pass
+
+
+class WebTab(WebUl):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        '''Create a testing page containing the component tested'''
+
+        tab_name = 'tab_test'
+        tab_contain_name = 'tab_contain_test'
+        tab_item1_name = 'tab_item1'
+        tab_item2_name = 'tab_item2'
+        tab_item3_name = 'tab_item3'
+        tab_contain1_name = 'tab_contain1'
+        tab_contain2_name = 'tab_contain2'
+        tab_contain3_name = 'tab_contain3'
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == tab_name:
+                    print('Got tab active item: {}'.format(r['data']))
+                    r['data'] = tab_item2_name
+                if r['me'] == tab_contain_name:
+                    print('Got tab contain active page: {}'.format(r['data']))
+                    r['data'] = tab_item2_name
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/WebTab_test'
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=tab_name, ul_list=[
+                        {'name': tab_item1_name, 'href': '#' + tab_item1_name},
+                        {'name': tab_item2_name, 'href': '#' + tab_item2_name},
+                        {'name': tab_item3_name, 'href': '#' + tab_item3_name, 'active': True},
+                    ])) as test:
+                        pass
+                    with c1.add_child(WebTabContain(parent=page, name=tab_contain_name)) as contain:
+                        with contain.add_child(WebTabItem(id=tab_item1_name, name=tab_item1_name)) as item1:
+                            with item1.add_child(WebHead3(name=tab_contain1_name, value=tab_contain1_name)) as contain1:
+                                pass
+                        with contain.add_child(WebTabItem(id=tab_item2_name, name=tab_item2_name)) as item2:
+                            with item2.add_child(WebHead3(name=tab_contain2_name, value=tab_contain2_name)) as contain2:
+                                pass
+                        with contain.add_child(WebTabItem(id=tab_item3_name, name=tab_item3_name, ootype=['active'])) as item3:
+                            with item3.add_child(WebHead3(name=tab_contain3_name, value=tab_contain3_name)) as contain3:
+                                pass
+
+        with page.render_post_w():
+            test.render_for_post()
+            contain.render_for_post()
+
+        with test.on_event_w(event='active_change'):
+            with page.render_post_w():
+                test.render_for_post()
+                contain.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
+
+
+class WebTabContain(WebDiv):
+    pass
+
+
 class WebTable(WebComponentBootstrap):
     '''
     WebTable generates a html table from a data including schema and records.
