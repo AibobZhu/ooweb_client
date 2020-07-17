@@ -1435,7 +1435,8 @@ class WebImg(WebComponentBootstrap):
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=page, name=COMPONENT_NAME)) as test:
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=COMPONENT_NAME,
+                                                              value='img/demo.jpg')) as test:
                         pass
 
         with page.render_post_w():
@@ -1868,7 +1869,48 @@ class WebUl(WebComponentBootstrap):
 
 
 class WebDiv(WebComponentBootstrap):
-    pass
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+
+        name_ = cls.__name__
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == name_:
+                    print('got test : {}'.format(r['data']))
+                    html = ''
+                    for i in range(10):
+                        with WebImg(value='img/demo.jpg') \
+                                as img:
+                            img.add_app()
+                            content = img.render_content()
+                            html = html + content['content']
+
+                    r['data'] = {'html': html}
+
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name_)
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(WebDiv(name=name_)) as test:
+                        pass
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class WebLabel(WebDiv):
