@@ -86,7 +86,8 @@ TODO: try with eval, just pass the function calling and express in string, then 
 
 
 class Action(CommandInf, ActionInf, TestClient, ClientBase):
-
+    DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
+    DRAW_IMG_FUNC_ARG = ['img', 'height']
     @contextmanager
     def if_w(self):
         params = {}
@@ -1402,6 +1403,9 @@ class WebField(WebComponentBootstrap):
 
 class WebImg(WebComponentBootstrap):
 
+    VAL_FUNC_NAME = "web_img_val"
+    VAL_FUNC_PARAMS = ['that', 'data']
+
     def __init__(self, value=None, **kwargs):
 
         if value:
@@ -1882,8 +1886,8 @@ class WebDiv(WebComponentBootstrap):
                 if r['me'] == name_:
                     print('got test : {}'.format(r['data']))
                     html = ''
-                    for i in range(10):
-                        with WebImg(value='img/demo.jpg') \
+                    for i in range(2):
+                        with WebImg(value='img/demo.jpg', styles={'border-right': '5px solid black'}) \
                                 as img:
                             img.add_app()
                             content = img.render_content()
