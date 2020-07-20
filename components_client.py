@@ -1937,29 +1937,27 @@ class WebDiv(WebComponentBootstrap):
 
     @classmethod
     def test_request(cls, methods=['GET']):
-        # Create a testing page containing the component tested
+        '''Create a testing page containing the component tested'''
 
-        name_ = cls.__name__
+        name = 'test_div'
+        name2 = 'test2'
+
+        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
 
         def on_post():
             req = WebPage.on_post()
             for r in req:
-                if r['me'] == name_:
-                    print('got test : {}'.format(r['data']))
-                    html = ''
-                    for i in range(2):
-                        with WebImg(value='img/demo.jpg', styles={'border-right': '5px solid black'}) \
-                                as img:
-                            img.add_app()
-                            content = img.render_content()
-                            html = html + content['content']
-
-                    r['data'] = {'html': html}
+                if r['me'] == name:
+                    print('Got test div:{}'.format(r['data']))
+                    r['data'] = {'attr': {'data-test': 'data-value-change'}}
+                elif r['me'] == name2:
+                    #r['data'] = {'style': {'border': '2px solid black', 'height': '300px'}}
+                    pass
 
             return jsonify({'status': 'success', 'data': req})
 
         class Page(WebPage):
-            URL = '/{}_test'.format(name_)
+            URL = '/WebDiv_test'
 
             def type_(self):
                 return 'WebPage'
@@ -1968,11 +1966,17 @@ class WebDiv(WebComponentBootstrap):
         with Page() as page:
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(WebDiv(name=name_)) as test:
+                    with c1.add_child(globals()[cls.__name__](parent=page, value='Test div', name=name,
+                                                              attrs={'data-test': 'data-value'})) as test:
+                        pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c2:
+                    with c2.add_child(WebDiv(name=name2, height='200px', styles={'border': '2px solid black', 'border-radius': '20px'})) as test2:
                         pass
 
         with page.render_post_w():
             test.render_for_post()
+            test2.render_for_post()
 
         html = page.render()
         return render_template_string(html)
