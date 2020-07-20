@@ -882,6 +882,12 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
 
 class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
 
+    BASE_VAL_FUNC_NAME = 'ooweb_base_val'
+    BASE_VAL_FUNC_PARAMS = ['that', 'data', 'trigger_event=false']
+
+    VAL_FUNC_NAME = 'ooweb_val'
+    VAL_FUNC_PARAMS = BASE_VAL_FUNC_PARAMS
+
     def has_class(self, class_):
         raise NotImplementedError
 
@@ -943,7 +949,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
             for r in req:
                 if r['me'] == name_:
                     if not hasattr(cls, 'test_request_data'):
-                        r['data'] = name_ + ' Testing'
+                        r['data'] = {'val': name_+'_testing'}
                     else:
                         r['data'] = cls.test_request_data()
             return jsonify({'status': 'success', 'data': req})
@@ -960,7 +966,7 @@ class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
                     if cls.__name__.find('OOChart') == 0:
                         with c1.add_child(globals()[cls.__name__](
-                                parent=page, value="WebHead", name=name_, height='400px', width='100%'
+                                parent=page, value="WebHead", name=name_, height='500px', width='100%'
                         )) as test:
                             pass
                     else:
@@ -1380,10 +1386,12 @@ class WebHead6(WebHead1):
 
 
 class WebField(WebComponentBootstrap):
+    VAL_FUNC_NAME = 'webfield_val'
+    VAL_FUNC_PARAMS = WebComponentBootstrap.BASE_VAL_FUNC_PARAMS
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
-        '''Create a testing page containing the component tested'''
         # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
 
         with WebPage() as page:
@@ -1396,6 +1404,59 @@ class WebField(WebComponentBootstrap):
                             test.height()
                         test.alert("'height:'+height_var")
                         test.set_js(False)
+
+        html = page.render()
+        return render_template_string(html)
+    '''
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+
+        name_ = cls.__name__
+        name2 = 'test2'
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == name_:
+                    if not hasattr(cls, 'test_request_data'):
+                        r['data'] = {'val': name_ + '_testing'}
+                    else:
+                        r['data'] = cls.test_request_data()
+                elif r['me'] == name2:
+                    r['data'] = {}
+
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name_)
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    if cls.__name__.find('OOChart') == 0:
+                        with c1.add_child(globals()[cls.__name__](
+                                parent=page, value="WebHead", name=name_, height='500px', width='100%'
+                        )) as test:
+                            pass
+                    else:
+                        with c1.add_child(globals()[cls.__name__](parent=page, value=name_, name=name_)) as test:
+                            pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c2:
+                    with c2.add_child(WebField(name=name2)) as test2:
+                        with test2.add_child(WebHead1(value='Test')) as test2_head:
+                            pass
+
+
+        with page.render_post_w():
+            test.render_for_post()
+            test2.render_for_post()
 
         html = page.render()
         return render_template_string(html)
