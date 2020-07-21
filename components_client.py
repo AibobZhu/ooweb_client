@@ -1331,7 +1331,8 @@ class WebColumn(WebComponentBootstrap):
 
 
 class WebHead1(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webhead_val'
+
     '''
     @classmethod
     def test_request(cls, methods=['GET']):
