@@ -2094,7 +2094,7 @@ class OODatePickerBase:
                 is_view = True
         elif _lang == 'en':
             format_ = cls.WEEK_FORMAT_EN[1]
-            if _str.find('week') < 0:
+            if _str.find('Week') < 0:
                 is_view = True
 
         ret = None
