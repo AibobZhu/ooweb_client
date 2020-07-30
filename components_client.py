@@ -1923,6 +1923,50 @@ class WebSelect(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webselect_val'
     VAL_FUNC_PARAMS = WebComponentBootstrap.VAL_FUNC_PARAMS
 
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+
+        name_ = cls.__name__
+
+        def on_post():
+            req = WebPage.on_post()
+            for r in req:
+                if r['me'] == name_:
+                    print('Got testing data: {}'.format(r['data']))
+                    '''
+                    if not hasattr(cls, 'test_request_data') or not cls.test_request_data:
+                        r['data'] = {'val': name_ + '_testing'}
+                    else:
+                        r['data'] = cls.test_request_data()
+                    '''
+                    r['data'] = {'options':[{'text': 'OptionResetByOnPost1'},
+                                            {'text': 'OptionResetByOnPost2'},
+                                            {'text': 'OptionResetByOnPost3', 'selected': 'true'}]}
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name_)
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    options = [{'text': 'option1'},
+                               {'text': 'option2'},
+                               {'selected': True, 'text': 'option3'}]
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=name_, options=options)) as test:
+                        pass
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
+
 
 class WebSpan(WebComponentBootstrap):
     pass
