@@ -1918,6 +1918,12 @@ class WebFormInline(WebComponentBootstrap):
     pass
 
 
+class WebSelect(WebComponentBootstrap):
+
+    VAL_FUNC_NAME = 'webselect_val'
+    VAL_FUNC_PARAMS = WebComponentBootstrap.VAL_FUNC_PARAMS
+
+
 class WebSpan(WebComponentBootstrap):
     pass
 
