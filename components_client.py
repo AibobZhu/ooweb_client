@@ -1934,15 +1934,12 @@ class WebSelect(WebComponentBootstrap):
             for r in req:
                 if r['me'] == name_:
                     print('Got testing data: {}'.format(r['data']))
-                    '''
-                    if not hasattr(cls, 'test_request_data') or not cls.test_request_data:
-                        r['data'] = {'val': name_ + '_testing'}
-                    else:
-                        r['data'] = cls.test_request_data()
-                    '''
-                    r['data'] = {'options':[{'text': 'OptionResetByOnPost1'},
-                                            {'text': 'OptionResetByOnPost2'},
-                                            {'text': 'OptionResetByOnPost3', 'selected': 'true'}]}
+                    selected_option = int(r['data']['selected'][-1:])
+                    selected_option = selected_option % 3
+                    r['data'] = {'options': [{'text': 'OptionResetByOnPost1'},
+                                             {'text': 'OptionResetByOnPost2'},
+                                             {'text': 'OptionResetByOnPost3'}]}
+                    r['data']['options'][selected_option]['selected'] = True
             return jsonify({'status': 'success', 'data': req})
 
         class Page(WebPage):
@@ -1964,8 +1961,18 @@ class WebSelect(WebComponentBootstrap):
         with page.render_post_w():
             test.render_for_post()
 
+        with test.on_event_w(event='change'):
+            with page.render_post_w():
+                test.render_for_post()
+
         html = page.render()
         return render_template_string(html)
+
+
+class WebSelect2(WebSelect):
+
+    VAL_FUNC_NAME = 'webselect2_val'
+
 
 
 class WebSpan(WebComponentBootstrap):
@@ -1982,6 +1989,67 @@ class WebHr(WebComponentBootstrap):
 
 class WebUl(WebComponentBootstrap):
     pass
+
+
+class WebDatalist(WebSelect):
+
+    VAL_FUNC_NAME = 'webdatalist_val'
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+
+        name_ = cls.__name__
+        TEST_ID = 'test_id'
+        INPUT_NAME = 'test_input'
+
+        def on_post():
+            req = WebPage.on_post()
+            options = [{'text': 'OptionResetByOnPost1'},
+                       {'text': 'OptionResetByOnPost2'},
+                       {'text': 'OptionResetByOnPost3', 'selected': 'true'}]
+            for r in req:
+                if r['me'] == name_:
+                    print('Got testing data: {}'.format(r['data']))
+                    r['data'] = {'options': options}
+                elif r['me'] == INPUT_NAME:
+                    print('Got testing input data: {}'.format(r['data']))
+                    input_text = r['data']['val']
+                    for o in options:
+                        if 'selected' in o:
+                            del o['selected']
+                    options.append({'text': input_text, 'selected': True})
+
+            return jsonify({'status': 'success', 'data': req})
+
+        class Page(WebPage):
+            URL = '/{}_test'.format(name_)
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
+                        options = [{'text': 'option1'},
+                                   {'text': 'option2'},
+                                   {'selected': True, 'text': 'option3'}]
+                        with input.add_child(
+                                globals()[cls.__name__](parent=page, name=name_, id=TEST_ID, options=options)) as test:
+                            pass
+
+        with page.render_post_w():
+            test.render_for_post()
+
+        with input.on_event_w(event='keydown', filter=13):
+            with page.render_post_w():
+                input.render_for_post()
+                test.render_for_post()
+
+        html = page.render()
+        return render_template_string(html)
 
 
 class WebDiv(WebComponentBootstrap):
