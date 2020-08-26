@@ -17,6 +17,15 @@ function ooattr(that) {
 }
 */
 
+function is_in_list(list, element) {
+    for(var i=0;i<list.length;i++){
+        if(element === list[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 function oocss(a) {
     var sheets = document.styleSheets, o = {};
     for (var i in sheets) {
@@ -896,7 +905,7 @@ var oochart_example_datas = {
     'multibar': oochart_multibar_example_data
 }
 
-function webpage_render_post(url, data){
+function webpage_render_post(url, data, async=true){
     let data_post = [];
     let data_func = {};
     data.forEach(function(val,index,arr){
@@ -904,6 +913,7 @@ function webpage_render_post(url, data){
         data_func[val.me] = {'that':val.that, 'func':val.func, 'trigger_event':val.trigger_event};
     })
     let data_j = JSON.stringify(data_post);
+    $.ajaxSetup({'async': async})
     $.post(url, {'data':data_j}, function(response,status){
         let ret_data = response.data;
         if(ret_data != null && ret_data !== 'null' && ret_data !== 'undefined'){

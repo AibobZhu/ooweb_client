@@ -123,6 +123,7 @@ class TestPage(Test):
         from flask import Flask
         from flask_appconfig import AppConfig
         from flask_bootstrap import Bootstrap
+        from flask_socketio import SocketIO
 
         app = Flask(__name__)
         AppConfig(app, 'default_config.py')
@@ -133,6 +134,8 @@ class TestPage(Test):
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
                                                 os.path.join(basedir, self._TEST_DB + timestamp)
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        self.socketio = SocketIO(app=app, debug=True)
+        app.socketio = self.socketio
         self.create_test_routes(app)
         self.app_client = app.test_client()
         self.app = app
