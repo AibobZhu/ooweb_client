@@ -3170,7 +3170,6 @@ class OOChatServer(OOChatClient):
 
         def on_post():
             req = WebPage.on_post()
-
             return jsonify({'status': 'success', 'data': req})
 
         Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
