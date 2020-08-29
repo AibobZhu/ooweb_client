@@ -373,7 +373,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def render_for_post(self, trigger_event=False):
+    def render_for_post(self, return_parts=['all'], trigger_event=False):
         pass
 
     @abc.abstractmethod

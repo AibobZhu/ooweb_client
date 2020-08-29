@@ -360,9 +360,9 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         finally:
             self._pop_current_context()
 
-    def render_for_post(self, trigger_event=False):
-        params = {'trigger_event': trigger_event}
-        return self.func_call({})
+    def render_for_post(self, return_parts=['all'], trigger_event=False):
+        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
+        return self.func_call(params)
 
     @contextmanager
     def timeout_w(self, time=None):
@@ -2757,30 +2757,6 @@ class OOChatClient(WebComponentBootstrap):
 
         def on_post():
             req = WebPage.on_post()
-
-            OOChatClient.on_post(req=req, myname=NAME)
-            server_message = None
-            client_message = None
-            for r in req:
-                if r['me'] == SERVER_DATA:
-                    print('Got message of "message from server" : {}'.format(r['data']))
-                    server_message = r['data']
-                elif r['me'] == BODY:
-                    print('Got data of panel body : {}'.format(r['data']))
-                    if 'style' not in r['data']:
-                        r['data'] = {**r['data'], **cls.DEFAULT_BODY_STYLE}
-                    else:
-                        r['data']['style']['height'] = cls.DEFAULT_BODY_STYLE['height']
-                    if server_message:
-                        OOChatClient.body_process(body_data=r['data'], message=server_message, me=USER_NAME)
-                    if client_message:
-                        OOChatClient.body_process(body_data=r['data'], message=client_message, me=USER_NAME)
-                elif r['me'] == INPUT:
-                    print('Got data of input : {}'.format(r['data']))
-                    client_message = {'from': '我', 'data': {'message': r['data']['val']}, 'type': 'me'}
-                elif r['me'] == SEND_BTN:
-                    print('Got data of send btn : {}'.format(r['data']))
-
             return jsonify({'status': 'success', 'data': req})
 
         Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
@@ -3117,16 +3093,18 @@ class OOWebChatNM(Namespace):
     def on_my_ping(self):
         emit('my_pong')
 
+    '''
     def on_message_from_client(self, message):
         print('oowebchatnm.on_message_from_client, message:{}'.format(message))
         emit(OOChatServer.MSG_EVENT_SERVER, {'message': 'Message received!',
                                              'from': '客服',
                                              'to': message['from']})
+    '''
 
 
 class ServerChatNM(OOWebChatNM):
 
-    def __init__(self, server_obj, socket_namespace=None):
+    def __init__(self, server_obj, socket_namespace='test_socket_namespace'):
         super().__init__(namespace=socket_namespace)
         self.server_obj = server_obj
 
@@ -3147,7 +3125,7 @@ class ServerChatNM(OOWebChatNM):
     def on_open_room(self, data):
         print('ServerChatNM.on_to_server, got message:{}'.format(data))
         emit(OOChatServer.MSG_OPEN_ROOM_SERVER, {'from': data['from'],
-                                                 'to': '客服'}, broadcast=True)
+                                                 'to': data['to']}, broadcast=True)
 
 
 class OOChatServer(OOChatClient):
@@ -3295,32 +3273,13 @@ class OOChartPie(OOChartNVD3):
             },
             {
                 "label": "Two",
-                "value": 0
+                "value": 15
             },
             {
                 "label": "Three",
                 "value": 32.807804682612
             },
-            {
-                "label": "Four",
-                "value": 196.45946739256
-            },
-            {
-                "label": "Five",
-                "value": 0.19434030906893
-            },
-            {
-                "label": "Six",
-                "value": 98.079782601442
-            },
-            {
-                "label": "Seven",
-                "value": 13.925743130903
-            },
-            {
-                "label": "Eight",
-                "value": 5.1387322875705
-            }
+
         ]
 
 
