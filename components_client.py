@@ -381,7 +381,7 @@ class Action(CommandInf, ActionInf, TestClient, ClientBase):
         return self.func_call(params)
 
 
-class Format(BootstrapInf, FormatInf, ClientBase):
+class Format(FormatInf, ClientBase):
 
     def pad(self, pad=None):
         raise NotImplementedError
@@ -479,6 +479,41 @@ class Format(BootstrapInf, FormatInf, ClientBase):
     def border_radius(self, radius=None):
         params = {'radius': radius}
         self.func_call(params)
+
+
+class FormatBootstrap(Format, BootstrapInf):
+
+    @staticmethod
+    def get_sub_classes(cls):
+        """
+        Get all subclasses recursively
+        """
+
+        for subclass in cls.__subclasses__():
+            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
+                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
+                cls._SUBCLASSES[subclass.__name__] = subclass
+                cls.get_sub_classes(subclass)
+
+        return cls._SUBCLASSES
+
+    @classmethod
+    def create_default_nav_items(cls):
+        menu = {
+            'title': {'name': 'OwwwO', 'action': cls.DEFAULT_URL},
+            'menu_list': [
+                {'name': 'test menu 1', 'action': cls.DEFAULT_URL},
+                {'name': 'test menu 2', 'action': cls.DEFAULT_URL}
+            ],
+            'login': {
+                'site_name': 'OwwwO',
+                'is_login': False,
+                'login_name': 'TestUser',
+                'login_href': cls.DEFAULT_URL,
+                'logout_href': cls.DEFAULT_URL
+            }
+        }
+        return menu
 
 
 class WebComponent(ComponentInf, ClientInf, ClientBase):
@@ -880,7 +915,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
                 return data
 
 
-class WebComponentBootstrap(WebComponent, Action, Format, ClientBase):
+class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
 
     BASE_VAL_FUNC_NAME = 'ooweb_base_val'
     BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']

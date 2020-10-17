@@ -1,43 +1,23 @@
 import abc
 from test_class import *
 
+
 class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
 
     DEFAULT_URL='index'
 
     _SUBCLASSES = {}
 
-    @staticmethod
+    @abc.abstractmethod
     def get_sub_classes(cls):
         """
         Get all subclasses recursively
         """
+        pass
 
-        for subclass in cls.__subclasses__():
-            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
-                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
-                cls._SUBCLASSES[subclass.__name__] = subclass
-                cls.get_sub_classes(subclass)
-
-        return cls._SUBCLASSES
-
-    @classmethod
+    @abc.abstractmethod
     def create_default_nav_items(cls):
-        menu = {
-            'title': {'name': 'OwwwO', 'action': cls.DEFAULT_URL},
-            'menu_list': [
-                {'name': 'test menu 1', 'action': cls.DEFAULT_URL},
-                {'name': 'test menu 2', 'action': cls.DEFAULT_URL}
-            ],
-            'login': {
-                'site_name': 'OwwwO',
-                'is_login': False,
-                'login_name': 'TestUser',
-                'login_href': cls.DEFAULT_URL,
-                'logout_href': cls.DEFAULT_URL
-            }
-        }
-        return menu
+        pass
 
     @abc.abstractmethod
     def check_col_name(self, col):
@@ -387,6 +367,7 @@ class ActionInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def height(self, height=None):
         pass
+
 
 class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
 
