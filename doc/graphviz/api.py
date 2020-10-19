@@ -2,18 +2,68 @@ from uml import Uml
 
 dot = Uml(name='OwwwOClassAPI', comment='OwwwO class API')
 
-dot.inf(name='FormatInf',methods=[
-    'pad', 'margin', 'width', 'height', 'align',
-    'value', 'color', 'font', 'styles', 'styles_str', 'add_styles', 'remove_styles',
-    'atts', 'atts_str', 'add_atts', 'remove_atts', 'classes', 'classes_str', 'add_class', 'remove_class', 'border_radius'
+'''
+Default values: first get the default value of parameters, if None, try to get from config or theme, 
+there should be a default builtin theme
+
+The parameter of border is a dict, containing the keys 'width', 'radius'. 
+The value of radius is a dict, containing the keys of 'top-left', 'top-right', 'bottom-right', 'bottom-left': 
+example:
+{ 
+   width: '3px', 
+   radius: 
+       {'top-left': '3px', 'top-right':'3px', 'bottom':'3px', 'bottom': '3px'}
+}
+
+The value of color is a dict, containing the keys of 'background', 'containing', 'border', 
+example:
+color(background='red',
+    containing='blue',
+    border='green',
+    font='yellow')
+'''
+dot.inf(name='AppearanceInf', methods=[
+    'width', 'height', 'color', 'font', 'border'
 ])
+
+'''
+pad(top='10px', bottom='3px', 'left'='4px', right='1px')
+margin is same with pad
+align(horizon='left'/'center'/'right', vertical='top'/'center'/'bottom')
+'''
+dot.inf(name='PositionInf', methods=[
+    'pad', 'margin', 'align'
+])
+
+'''
+if attrs is given only one parameter and the type is dict, remove all attributes and reset with the parameter's value,
+else if attrs is given parameters in **kwargs, just append attributes with the parameters, 
+if a value in **kwarg passed in attrs is 'remove-me', then remove the attribute.
+example:
+attrs('data-value'='100', 'data-example': '200') # This set the 2 data attributes
+attrs('data-value'='remove-me') # Remove attribute data-value
+attrs('remove-all') # Remove all data attributes
+
+if classes is given several parameters, then set the classes, if one of them begin with '-', then remove it, 
+else if is given a '-', then remove all classes
+example:
+classes('class1','class2') # This set the classes
+classes('-class1') # This remove class1
+classes('-') # This remove all classes
+'''
+dot.inf(name='PropertyInf', methods=[
+    'value', 'attrs', 'classes', 'styles'
+])
+
 dot.inf(name='ActionInf', methods=[
-    'has_class', 'add_class', 'remove_class', 'on_click', 'on_change', 'on_ready', 'post'
+    'on_event_w', 'render_post_w', 'render_for_post'
 ])
+
 dot.inf(name='CommandInf', methods=[
     'if_', 'else_', 'for_', 'var', 'g_var',
     'is_js', 'set_js', 'is_condition', 'set_condition', 'condition', 'cmds'
 ])
+
 dot.inf(name='ComponentInf', methods=[
     '__enter__', '__exit__', 'name', 'id', 'children', 'add_child', 'parent', 'module', 'type_', 'url', 'render',
     'context', 'add_context', 'scripts', 'add_scripts', 'set_script_indent', 'get_script_indent',
@@ -25,17 +75,21 @@ dot.klass(name='Action',
 )
 dot.impl('Action', 'ActionInf')
 dot.impl('Action', 'CommandInf')
+dot.impl('Action', 'AppearanceInf')
+dot.impl('Action', 'PositionInf')
+dot.impl('Action', 'PropertyInf')
 
 dot.klass(name='ActionJquery')
 dot.deri('ActionJquery','Action')
 
-dot.klass(name='Format', attrs=[
-                'UNITS', '_atts', '_classes', '_WIDTH', '_value'
-            ],methods=[
-                'check_hw'
-            ]
+dot.klass(name='Format', attrs=['UNITS', '_attrs', '_styles', '_classes', '_value',
+                                '_width', '_height', '_color', '_font', '_border',
+                                '_pad', '_margin', '_align',
+                                ],
 )
-dot.impl('Format', 'FormatInf')
+dot.impl('Format', 'AppearanceInf')
+dot.impl('Format', 'PositionInf')
+dot.impl('Format', 'PropertyInf')
 
 dot.klass(name='FormatBootstrap', attrs=[
         'COL_NAME', 'COL_OFFSET_NAME', 'ALIGN', '-----------------------',
@@ -112,7 +166,6 @@ with dot.subgraph() as lev1:
     lev1.node('ComponentInf')
     lev1.node('ActionInf')
     lev1.node('CommandInf')
-    lev1.node('FormatInf')
 
 with dot.subgraph() as lev2:
     lev2.attr(rank='same')
