@@ -7,16 +7,15 @@ VIEW_CONFIG = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'educloud secre
 __all__ = ['index', 'VIEW_CONFIG']
 
 from examples.example_project.pages.home import page_class as Home
+from examples.example_project.pages.example import page_class as Example
 
 @view.route('/')
 def index():
     page = Home().render()
     return page
 
-'''
 @view.route('/example')
 def example():
     page = Example().render()
     return page
-'''
 

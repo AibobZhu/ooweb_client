@@ -986,7 +986,7 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
                     if not hasattr(cls, 'test_request_data'):
                         r['data'] = {'val': name_+'_testing'}
                     else:
-                        r['data'] = cls.test_request_data()
+                        r['data'] = {'val': cls.test_request_data()}
             return jsonify({'status': 'success', 'data': req})
 
         class Page(WebPage):
@@ -1713,7 +1713,11 @@ class WebBtnRadio(WebBtnGroup):
 
         # border_radius = {"tl":"10px", "tr":"20px", "bl":"30px", "br":"40px"}
         with Page(test=True) as page:
-            with page.add_child(WebBtnRadio(name=name, items=[{'label': '测试1', 'checked': ''}, {'label': '测试测试测试2'}, {'label': '测试3'}])) as radio:
+            with page.add_child(WebBtnRadio(name=name,
+                                            items=[
+                                                {'label': '测试1', 'checked': ''},
+                                                {'label': '测试测试测试2'},
+                                                {'label': '测试3'}])) as radio:
                 pass
 
         # response to change event and pop up an alert
@@ -1724,6 +1728,8 @@ class WebBtnRadio(WebBtnGroup):
             with LVar(parent=radio, var_name='click_val') as val:
                 radio.call_custom_func(fname=cls.VAL_FUNC_NAME, fparams={'that': '$(that).parent().parent()'})
             radio.alert('click_val')
+            with page.render_post_w():
+                radio.render_for_post()
 
         html = page.render()
         return render_template_string(html)
@@ -2142,7 +2148,7 @@ class WebDiv(WebComponentBootstrap):
 
 
 class WebLabel(WebDiv):
-    pass
+    VAL_FUNC_NAME = 'weblabel_val'
 
 
 class WebCheckbox(WebSpan):
@@ -5519,7 +5525,8 @@ class OOTable(WebTable):
                     'searching': False,
                     'destroy': True,
                     'colReorder': False,
-                    'columnDefs': []
+                    'columnDefs': [],
+                    'border': True
                 }
                 return data
                 raise NotImplementedError
@@ -5626,7 +5633,8 @@ class OOTable(WebTable):
                     # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
                     html = ''.join(OOTable.html(data=data))
                     # setting = OOTable.get_data(setting_only=True)
-                    r['data'] = {'html': html, 'setting': data['setting']}
+                    r['data'] = {'html': html, 'setting': data['setting'], 'remove_class': ['borderless', 'table-borderless'],
+                                 'add_class':['cell-border']}
                 if r['me'] == 'test':
                     data = OOTable.model.query("test")
                     html = ''.join(OOTable.html(data=data))
@@ -5652,6 +5660,7 @@ class OOTable(WebTable):
                 with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c5:
                     with c5.add_child(OOTable(name='chart_table',
                                               mytype=['striped', 'hover', 'borderless', 'responsive'],
+                                              classes=['cell-border']
                                               )) as chart_table:
                         pass
 
