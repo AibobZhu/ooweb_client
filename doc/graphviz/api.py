@@ -55,7 +55,7 @@ dot.inf(name='PropertyInf', methods=[
     'value', 'attrs', 'classes', 'styles'
 ])
 
-dot.inf(name='ActionInf', methods=[
+dot.inf(name='EventInf', methods=[
     'on_event_w', 'render_post_w', 'render_for_post'
 ])
 
@@ -73,7 +73,7 @@ dot.inf(name='ComponentInf', methods=[
 dot.klass(name='Action',
           attrs=['_js', '_condition']
 )
-dot.impl('Action', 'ActionInf')
+dot.impl('Action', 'EventInf')
 dot.impl('Action', 'CommandInf')
 dot.impl('Action', 'AppearanceInf')
 dot.impl('Action', 'PositionInf')
@@ -124,7 +124,7 @@ dot.klass('WebComponentClient')
 dot.deri('WebComponentClient', 'WebComponent')
 '''
 dot.impl('WebComponentClient', 'CommandInf')
-dot.impl('WebComponentClient', 'ActionInf')
+dot.impl('WebComponentClient', 'EventInf')
 dot.impl('WebComponentClient', 'FormatInf')
 '''
 
@@ -164,7 +164,7 @@ dot.deri('Web...Client', 'WebComponentClient')
 with dot.subgraph() as lev1:
     lev1.attr(rank='same')
     lev1.node('ComponentInf')
-    lev1.node('ActionInf')
+    lev1.node('EventInf')
     lev1.node('CommandInf')
 
 with dot.subgraph() as lev2:

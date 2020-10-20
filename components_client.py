@@ -984,9 +984,11 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
             for r in req:
                 if r['me'] == name_:
                     if not hasattr(cls, 'test_request_data'):
-                        r['data'] = {'val': name_+'_testing'}
+                        r['data']['text'] = name_+'_testing'
+                        del r['data']['html']
+                        del r['data']['val']
                     else:
-                        r['data'] = {'val': cls.test_request_data()}
+                        r['data'] = {'data': cls.test_request_data()}
             return jsonify({'status': 'success', 'data': req})
 
         class Page(WebPage):

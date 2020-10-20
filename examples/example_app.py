@@ -12,8 +12,8 @@ import json
 from contextlib2 import contextmanager
 from flask import Flask, render_template_string
 from flask_bootstrap import Bootstrap
-from pages import create_demo_page
-from settings import *
+from examples.pages import create_demo_page
+#from settings import *
 
 app = Flask(__name__)
 Bootstrap(app)
