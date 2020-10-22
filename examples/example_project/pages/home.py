@@ -1,5 +1,4 @@
 from examples.example_project.pages.common_imports import *
-from examples.example_project.view import VIEW_CONFIG
 from examples.example_project.pages import ExampleBasePage
 
 '''
@@ -52,8 +51,6 @@ page.elements[HEAD1].action = action1
 '''
 
 page_name = 'owwwo_demo_home'
-view = Blueprint(page_name, __name__)
-view.config = VIEW_CONFIG
 
 url_prefix = '/{}_post'.format(page_name)
 HEAD_NAME = 'test_head'
@@ -65,8 +62,8 @@ LANG = 'zh'
 
 #model = ExampleData()
 
-
-def on_post():
+'''
+def do_post(self):
     req_ = oocc.WebPage.on_post()
 
     for i, r in enumerate(req_):
@@ -87,7 +84,7 @@ def on_post():
             r['data']['add_class'] = ['col-md-8', 'col-lg-8']
 
     return jsonify({'status': 'success', 'data': req_})
-
+'''
 
 class Page(ExampleBasePage):
     URL = url_prefix + '/on_post'
@@ -96,16 +93,16 @@ class Page(ExampleBasePage):
         return 'WebPage'
 
 
-def init_page(app):
-    #Page.init_page(app=app, blueprint=view, url_prefix=url_prefix, endpoint=page_name, on_post=on_post)
-    pass
-
-def render(self, app):
-
-    page = Page(app=app, blueprint=view, url_prefix=url_prefix, endpoint=page_name, on_post=on_post,
+page = Page(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
                 default_url='view.index', nav=ExampleBasePage.get_nav(current_user=current_user),
                 value=ExampleBasePage.TITLE, container_classes='container')
 
+def render(self, app):
+    #Page.init_page(app=app, page_name=page_name, url_prefix=url_prefix, endpoint=page_name, on_post=on_post)
+    if hasattr(page, 'rendered'):
+        if page.rendered:
+            return page.render()
+    page.rendered = True
     def place(self):
         with self.add_child(oocc.WebRow()) as r1:
             with r1.add_child(oocc.WebColumn(name=C1_NAME, width=self._col_width, offset=page._col_offset)) as c1:
@@ -131,18 +128,18 @@ def render(self, app):
     """
     Actions
     """
-    '''
     def action1(self, req):
-        print("Processing req['me']:{}".format(req['me']))
-        print("Got data: req['data']:{}".format(req['data']))
         req['data'] = {'text': '<OwwwO> Demo'}
 
-    page.components[HEAD_NAME].action = action1
-    '''
+    page.components[HEAD_NAME].action = types.MethodType(action1, page.components[HEAD_NAME])
+
+    def action2(self, req):
+        req['data'] = {'text': 'This a demo website created with <OwwwO> framework.' }
+    page.components[INTRO_NAME].action = types.MethodType(action2, page.components[INTRO_NAME])
 
     return page.render()
 
 
-page_class = type('Class_' + page_name, (ExampleBasePage,), {
+page_class = type('Class_' + page_name, (object,), {
     'render': render
 })

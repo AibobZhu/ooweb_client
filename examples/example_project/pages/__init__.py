@@ -59,6 +59,7 @@ class ExampleBasePage(oocc.WebPage):
     def __init__(self, app=None,
                  blueprint=None, url_prefix=None, endpoint=None, on_post=None,
                  default_url='view.index', nav_items=None, value=TITLE, **kwargs):
+
         kwargs['default_url'] = default_url
         super().__init__(app=app, blueprint=blueprint, url_prefix=url_prefix, endpoint=endpoint,
                          on_post=on_post,

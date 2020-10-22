@@ -74,7 +74,8 @@ class Page(ExampleBasePage):
 
 
 def init_page(app):
-    Page.init_page(app=app, blueprint=view, url_prefix=url_prefix, endpoint=page_name, on_post=on_post)
+    Page.init_page(app=app,
+                   page_name=page_name, url_prefix=url_prefix, endpoint=page_name, on_post=on_post)
 
 
 def render(self):

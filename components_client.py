@@ -25,7 +25,7 @@ from dateutil.relativedelta import relativedelta
 import flask
 import numpy as np
 from contextlib2 import contextmanager
-from flask import current_app, render_template_string, request, jsonify, url_for, redirect
+from flask import current_app, render_template_string, request, jsonify, url_for, redirect, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from interfaces import *
 from requests import post
@@ -1029,6 +1029,10 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
         html = page.render()
         return render_template_string(html)
 
+    def action(self, req):
+        print('Got request')
+        if req:
+            print('     req["me"]:{}, req["data"]:{}'.format(req['me'],req['data']))
 
 from dominate import tags
 from flask_nav import Nav
@@ -1305,8 +1309,7 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         '''
         raise NotImplemented
 
-    def __init__(self, app=None,
-                 blueprint=None, url_prefix=None, endpoint=None, on_post=None,
+    def __init__(self, app=None,page_name=None, url_prefix=None, endpoint=None,
                  test=False, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
@@ -1326,16 +1329,69 @@ class WebPage(WebComponentBootstrap, TestPageClient):
             )
         self.place = types.MethodType(place, self)
         self.components = {}
-        #self.init_page(app=app, blueprint=blueprint, url_prefix=url_prefix, endpoint=endpoint, on_post=on_post)
+        #self.init_page(app=app, page_name=page_name, url_prefix=url_prefix, endpoint=endpoint, on_post=on_post)
+        self.rendered = False
 
+    def do_post(self):
+        req_ = self.on_post()
+
+        for i, r in enumerate(req_):
+            for name in self.components.keys():
+                if name == r['me']:
+                    self.components[name].action(req=r)
+            '''
+            if r['me'] == HEAD_NAME:
+                r['data'] = {'text': '<OwwwO> Demo'}
+
+            elif r['me'] == INTRO_NAME:
+                del r['data']['html']
+                r['data']['text'] = 'This a demo website created with <OwwwO> framework.'
+
+            elif r['me'] == C1_NAME:
+                r['data']['remove_class'] = ['col-md-8', 'col-lg-8']
+                r['data']['add_class'] = ['col-md-8', 'col-lg-8']
+
+            elif r['me'] == C2_NAME:
+                r['data']['remove_class'] = ['col-md-8', 'col-lg-8']
+                r['data']['add_class'] = ['col-md-8', 'col-lg-8']
+            '''
+
+        return jsonify({'status': 'success', 'data': req_})
+
+    def init_api(self,
+                 app,page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
+
+        if not self.app:
+            self.app = app
+        if not hasattr(self, '_api') or not self._api:
+            self.set_api()
+
+        view = Blueprint(page_name, __name__)
+        view.config = view_config
+        try:
+            if view:
+                self.add_url_rule(app=view, extend=[
+                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+                app.register_blueprint(blueprint=view, url_prefix=url_prefix)
+            else:
+                self.add_url_rule(app, extend=[
+                    {'rule': self.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+
+        except AssertionError:
+            print("Add url rule error!")
 
     @classmethod
-    def init_page(cls, app, blueprint=None, url_prefix=None, endpoint=None, on_post=None):
+    def init_page(cls, app,
+                  page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
+
+        view = Blueprint(page_name, __name__)
+        view.config = view_config
+
         try:
-            if blueprint:
-                cls.add_url_rule(app=blueprint, extend=[
+            if view:
+                cls.add_url_rule(app=view, extend=[
                     {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
-                app.register_blueprint(blueprint=blueprint, url_prefix=url_prefix)
+                app.register_blueprint(blueprint=view, url_prefix=url_prefix)
             else:
                 cls.add_url_rule(app, extend=[
                     {'rule': cls.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
@@ -1381,6 +1437,7 @@ class WebPage(WebComponentBootstrap, TestPageClient):
     def default_events(self):
         with self.render_post_w():
             [element.render_for_post() for element in self.components.values()]
+
 
 class WebA(WebComponentBootstrap):
     pass
