@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template_string, jsonify, request, redirect
+from flask import Blueprint, render_template_string, jsonify, request, redirect, current_app
 #from examples.example_project.pages.example import Example
 
 view = Blueprint('view', __name__)
@@ -11,7 +11,7 @@ from examples.example_project.pages.example import page_class as Example
 
 @view.route('/')
 def index():
-    page = Home().render()
+    page = Home().render(app=current_app)
     return page
 
 @view.route('/example')

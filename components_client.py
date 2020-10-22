@@ -18,6 +18,7 @@ import pprint
 import random
 import sys
 import uuid
+import types
 
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
@@ -54,7 +55,8 @@ class ClientBase(metaclass=abc.ABCMeta):
         return context
 
     def func_call(self, params):
-        context = self._get_objcall_context(func=inspect.stack()[1][3], caller_id=self.id(), params=params)
+        context = self._get_objcall_context(
+            func=inspect.stack()[1][3], caller_id=self.id(), params=params)
         context['sub_context'] = []
         self.add_context(context)
         return context
@@ -570,7 +572,7 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
             'sub_context': sub_context
         }
 
-    def __init__(self, test=False, client=True, **kwargs):
+    def __init__(self, page=None, test=False, client=True, **kwargs):
         self._client = client
         kwargs['client'] = client
         super().__init__(test=test, **kwargs)
@@ -584,9 +586,15 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         else:
             self._name = self.name()
 
+
         self._parent = None
         if 'parent' in kwargs:
             self._parent = kwargs['parent']
+
+        self._page = page
+        if not page:
+            if isinstance(self, WebPage):
+                self._page = self
 
         self._children = set()
         if 'children' in kwargs:
@@ -608,8 +616,9 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         # self._mycont = self.add_context(context)
         self._mycont = [context]
         self.add_context(context)
+        self.components = None
 
-    def add_app(self):
+    def set_api(self):
         if hasattr(self, "app") and self.app:
             self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
         else:
@@ -660,6 +669,10 @@ class WebComponent(ComponentInf, ClientInf, ClientBase):
         assert (not objs)
         self._children.add(child)
         child._parent = self
+        assert(self._page)
+        assert(isinstance(self._page, WebPage))
+        child._page = self._page
+        child._page.components[child.name()] = child
         params = {'child_id': child.id()}
         self.func_call(params)
         return child
@@ -1292,7 +1305,9 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         '''
         raise NotImplemented
 
-    def __init__(self, app=None, test=False, **kwargs):
+    def __init__(self, app=None,
+                 blueprint=None, url_prefix=None, endpoint=None, on_post=None,
+                 test=False, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
         self._url = self.URL
@@ -1303,7 +1318,16 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         if not hasattr(self, 'app'):
             self.app = current_app
         super().__init__(test=test, **kwargs)
-        self.add_app()
+        self.set_api()
+
+        def place(self):
+            raise RuntimeError(
+                "Error: instance {} of WebPage hasn't implemented 'place' member function yet!".format(self.name())
+            )
+        self.place = types.MethodType(place, self)
+        self.components = {}
+        #self.init_page(app=app, blueprint=blueprint, url_prefix=url_prefix, endpoint=endpoint, on_post=on_post)
+
 
     @classmethod
     def init_page(cls, app, blueprint=None, url_prefix=None, endpoint=None, on_post=None):
@@ -1354,6 +1378,9 @@ class WebPage(WebComponentBootstrap, TestPageClient):
 
         return render_template_string(html)
 
+    def default_events(self):
+        with self.render_post_w():
+            [element.render_for_post() for element in self.components.values()]
 
 class WebA(WebComponentBootstrap):
     pass
@@ -5803,7 +5830,7 @@ class OOTagGroup(WebTable):
             for i in range(len(data['schema'])):
                 with WebCheckbox(value=_getStr(random.randint(2, 5))) as locals()['wc' + str(i)]:
                     pass
-                locals()['wc' + str(i)].add_app()
+                locals()['wc' + str(i)].set_api()
                 wc_content = locals()['wc' + str(i)].render_content()
                 td.append({'data': wc_content['content'], 'attr': 'nowrap'})
                 del locals()['wc' + str(i)]

@@ -56,16 +56,13 @@ class ExampleBasePage(oocc.WebPage):
     PAGE = None
     TITLE = 'OWWWO Demo'
 
-    def __init__(self, default_url='view.index', nav_items=None, value=TITLE, **kwargs):
+    def __init__(self, app=None,
+                 blueprint=None, url_prefix=None, endpoint=None, on_post=None,
+                 default_url='view.index', nav_items=None, value=TITLE, **kwargs):
         kwargs['default_url'] = default_url
-        '''
-        if nav_items is None:
-            nav_items = CustomPage.get_nav(current_user=current_user)
-        kwargs['nav_items'] = nav_items
-        kwargs['value'] = value
-        '''
-
-        super().__init__(**kwargs)
+        super().__init__(app=app, blueprint=blueprint, url_prefix=url_prefix, endpoint=endpoint,
+                         on_post=on_post,
+                         **kwargs)
 
         if 'default_col_width' in kwargs:
             self._col_width = kwargs['default_col_width']
