@@ -87,23 +87,24 @@ def do_post(self):
     return jsonify({'status': 'success', 'data': req_})
 '''
 
-page = ExampleBasePage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
+page = oocc.WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
                 default_url='view.index', nav=ExampleBasePage.get_nav(current_user=current_user),
                 value=ExampleBasePage.TITLE, container_classes='container')
 page.page_name = page_name
 page.url_prefix = url_prefix
-
+default_width = ['md8', 'lg8']
+default_offset = ['mdo2', 'lgo2']
 def place(self):
     with self.add_child(oocc.WebRow()) as r1:
-        with r1.add_child(oocc.WebColumn(name=C1_NAME, width=self._col_width, offset=page._col_offset)) as c1:
+        with r1.add_child(oocc.WebColumn(name=C1_NAME, width=default_width, offset=default_offset)) as c1:
             with c1.add_child(oocc.WebHead3(parent=self, name=HEAD_NAME, value=HEAD_NAME)) as head:
                 pass
     with self.add_child(oocc.WebRow()) as r2:
-        with r2.add_child(oocc.WebColumn(width=page._col_width, offset=page._col_offset)) as c2:
+        with r2.add_child(oocc.WebColumn(width=default_width, offset=default_offset)) as c2:
             with c2.add_child(oocc.WebHr()) as hr:
                 pass
     with self.add_child(oocc.WebRow()) as r3:
-        with r3.add_child(oocc.WebColumn(name=C2_NAME, width=page._col_width, offset=page._col_offset)) as c3:
+        with r3.add_child(oocc.WebColumn(name=C2_NAME, width=default_width, offset=default_offset)) as c3:
             with c3.add_child(oocc.WebLabel(parent=page, name=INTRO_NAME)) as intro:
                 pass
 

@@ -17,31 +17,48 @@ web_instance = flow.rect(
     width=module_width,
     color=module_color)
 register_url = flow.rect(
-    name='register_url',
-    label='Define URL\l(page.register_url)\l',
-    width=module_width,
-    color=module_color)
+    name='register url',
+    label='Define URL\l(page.url_prefix)\l',
+    width=sub_module_width,
+    color=sub_module_color)
+page_name = flow.rect(
+    name='page_name',
+    label='Page Name\lpage.page_name\l',
+    width=sub_module_width,
+    color=sub_module_color
+)
 layout = flow.rect(
     name='Layout',
-    label='Placement\l(Define page.render function)',
+    label='Placements\l(page.place = place_func)\lLike placing components\l',
     width=module_width,
     color=module_color)
 create_component = flow.rect(
     name='Create components',
+    label='Create components\l(with page.add_child(WebComponent(...))) as com:\l...)',
     width=sub_module_width,
     color=sub_module_color)
+add_events = flow.rect(
+    name='Add events',
+    label='Events\l(page.events.append(event_function))\lLike adding inputs\l',
+    width=module_width,
+    color=module_color
+)
 add_action = flow.rect(
-    name='Add action',
-    label='Routing\l(page.register_action)\l',
+    name='Add actions',
+    label='Actions\l(page.components[NAME].action=a_action_func)\lLike connecting/routing components\l',
     width=module_width,
     color=module_color)
 
 flow.flow_edge(tail='Start',head='Create page object')
-flow.flow_edge(tail='Create page object', head='register_url')
-flow.flow_edge(tail='register_url', head='Layout')
+flow.flow_edge(tail='Create page object', head='Layout')
+flow.flow_edge(tail='Create page object', head='register url')
+flow.flow_edge(tail='register url', head='Create page object')
+flow.flow_edge(tail='register url', head='page_name')
+flow.flow_edge(tail='page_name', head='register url')
 flow.flow_edge(tail='Layout', head='Create components')
 flow.flow_edge(tail='Create components', head='Layout')
-flow.flow_edge(tail='Layout', head='Add action')
-flow.flow_edge(tail='Add action', head='End')
+flow.flow_edge(tail='Layout', head='Add events')
+flow.flow_edge(tail='Add events', head='Add actions')
+flow.flow_edge(tail='Add actions', head='End')
 
 flow.render('output/create_page.gv', view=True)

@@ -990,8 +990,7 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
     def test_request(cls, methods=['GET']):
         # Create a testing page containing the component tested
 
-        name_ = cls.__name__
-
+        '''
         def on_post():
             req = WebPage.on_post()
             for r in req:
@@ -1025,9 +1024,52 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
 
         with page.render_post_w():
             test.render_for_post()
+        '''
+        name_ = cls.__name__
+        page_name = 'test_' + name_
+        url_prefix = '/{}'.format(page_name)
+        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
+        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
+                       default_url=page_name + '_result', nav=None,
+                       value=page_name, container_classes='container')
+        page.page_name = page_name
+        page.url_prefix = url_prefix
+        page.view_config = view_config
+        default_width = ['md8', 'lg8']
+        default_offset = ['mdo2', 'lgo2']
+        test_cls = globals()[cls.__name__]
 
-        html = page.render()
+        def place(self):
+            with self.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
+                    if test_cls.__name__.find('OOChart') == 0:
+                        with c1.add_child(test_cls(
+                                parent=page, value=page_name, name=name_, height='500px', width='100%')) as test:
+                            pass
+                    elif test_cls.__name__.find('WebNav') != 0:
+                        with c1.add_child(test_cls(
+                                parent=page, value=page_name, name=name_, var_name='var_' + name_)) as test:
+                            pass
+
+        page.place = types.MethodType(place, page)
+        page.place()
+
+        page.default_events()
+
+        def action1(self, req):
+            if not hasattr(self, 'test_request_data'):
+                req['data']['text'] = name_ + '_testing'
+                del req['data']['html']
+                del req['data']['val']
+            else:
+                req['data'] = {'data': self.test_request_data()}
+        html = ''
+        if name_.find('WebNav') != 0:
+            page.components[name_].action = types.MethodType(action1, page.components[name_])
+            page.init_api(app=current_app, on_post=page.do_post)
+            html = page.render()
         return render_template_string(html)
+
 
     def action(self, req):
         print('Got request')
@@ -1350,26 +1392,32 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         if not hasattr(self, '_api') or not self._api:
             self.set_api()
 
-        view = Blueprint(page_name, __name__)
-        view.config = view_config
+        page_name_ = self.page_name if not page_name else page_name
+        view_config_ = self.view_config if not view_config else view_config
+        url_prefix_ = self.url_prefix if not url_prefix else url_prefix
+        endpoint_ = page_name_ if not endpoint else endpoint
+        on_post_ = self.on_post if not on_post else on_post
+
+        view = Blueprint(page_name_, __name__)
+        view.config = view_config_
         try:
             if view:
                 self.add_url_rule(app=view, extend=[
                                                         {
                                                             'rule': '/on_post',
-                                                            'endpoint': endpoint,
-                                                            'view_func': on_post,
+                                                            'endpoint': endpoint_,
+                                                            'view_func': on_post_,
                                                             'methods': ['POST']
                                                         }
                                                     ]
                                   )
-                app.register_blueprint(blueprint=view, url_prefix=url_prefix)
+                app.register_blueprint(blueprint=view, url_prefix=url_prefix_)
             else:
                 self.add_url_rule(app, extend=[
                                                 {
-                                                    'rule': self.url_prefix,
-                                                    'endpoint': endpoint,
-                                                    'view_func': on_post,
+                                                    'rule': url_prefix_,
+                                                    'endpoint': endpoint_,
+                                                    'view_func': on_post_,
                                                     'methods': ['POST']
                                                 },
                                               ]
@@ -1489,7 +1537,9 @@ class WebHead2(WebHead1):
 
 
 class WebHead3(WebHead1):
-    pass
+
+    def __enter__(self):
+        return super().__enter__()
 
 
 class WebHead4(WebHead1):
