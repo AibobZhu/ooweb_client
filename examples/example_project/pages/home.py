@@ -1,6 +1,7 @@
 from examples.example_project.pages.common_imports import *
 from examples.example_project.pages import ExampleBasePage
 
+
 '''
 HEAD1='head1'
 
@@ -96,7 +97,8 @@ class Page(ExampleBasePage):
 page = Page(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
                 default_url='view.index', nav=ExampleBasePage.get_nav(current_user=current_user),
                 value=ExampleBasePage.TITLE, container_classes='container')
-
+page.page_name = page_name
+page.url_prefix = url_prefix
 
 def place(self):
     with self.add_child(oocc.WebRow()) as r1:
@@ -135,5 +137,11 @@ page.components[HEAD_NAME].action = types.MethodType(action1, page.components[HE
 def action2(self, req):
     req['data'] = {'text': 'This a demo website created with <OwwwO> framework.'}
 
+
 page.components[INTRO_NAME].action = types.MethodType(action2, page.components[INTRO_NAME])
 
+'''
+Register himself
+'''
+from examples.example_project.view import pages
+pages.append(page)

@@ -1289,6 +1289,7 @@ class WebNav(WebComponentBootstrap):
 
 
 class WebPage(WebComponentBootstrap, TestPageClient):
+
     URL = '/WebPage'
 
     PAGE = None

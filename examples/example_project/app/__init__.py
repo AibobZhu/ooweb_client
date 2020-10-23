@@ -9,7 +9,6 @@ from examples.example_project.pages import home
 from examples.example_project.pages import example
 import components_client as oocc
 
-
 def create_app():
 
     app = Flask(__name__)
@@ -32,9 +31,11 @@ def create_app():
         return None
 
     app.register_blueprint(bp_view)
-    home.page.init_api(app=app, page_name=home.page_name,
-                       view_config=view.VIEW_CONFIG, url_prefix=home.url_prefix,
-                       endpoint=home.page_name, on_post=home.page.do_post)
-    #example.init_page(app)
+
+    '''
+    initial each page here
+    '''
+    [pg.init_api(app=app, page_name=pg.page_name, view_config=view.VIEW_CONFIG,
+                   url_prefix=pg.url_prefix, endpoint=pg.page_name, on_post=pg.do_post) for pg in view.pages]
 
     return app

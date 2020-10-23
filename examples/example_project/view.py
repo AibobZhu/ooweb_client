@@ -5,7 +5,7 @@ bp_view = Blueprint('view', __name__)
 VIEW_CONFIG = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'educloud secret key'}
 
 __all__ = ['index', 'VIEW_CONFIG']
-
+pages = []
 import examples.example_project.pages.home as home
 
 from examples.example_project.pages.example import page_class as Example
