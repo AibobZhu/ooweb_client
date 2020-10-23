@@ -87,14 +87,7 @@ def do_post(self):
     return jsonify({'status': 'success', 'data': req_})
 '''
 
-class Page(ExampleBasePage):
-    URL = url_prefix
-
-    def type_(self):
-        return 'WebPage'
-
-
-page = Page(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
+page = ExampleBasePage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
                 default_url='view.index', nav=ExampleBasePage.get_nav(current_user=current_user),
                 value=ExampleBasePage.TITLE, container_classes='container')
 page.page_name = page_name

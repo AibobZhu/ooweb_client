@@ -33,7 +33,7 @@ def create_app():
     app.register_blueprint(bp_view)
 
     '''
-    initial each page here
+    Auto initial each page here
     '''
     [pg.init_api(app=app, page_name=pg.page_name, view_config=view.VIEW_CONFIG,
                    url_prefix=pg.url_prefix, endpoint=pg.page_name, on_post=pg.do_post) for pg in view.pages]

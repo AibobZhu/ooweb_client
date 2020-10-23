@@ -1290,7 +1290,7 @@ class WebNav(WebComponentBootstrap):
 
 class WebPage(WebComponentBootstrap, TestPageClient):
 
-    URL = '/WebPage'
+    #URL = '/WebPage'
 
     PAGE = None
 
@@ -1314,8 +1314,8 @@ class WebPage(WebComponentBootstrap, TestPageClient):
                  test=False, **kwargs):
         self._set_context([])
         self._root_class = WebComponentBootstrap
-        self._url = self.URL
-        kwargs['url'] = self.URL
+        self._url = url_prefix if url_prefix else '/webpage'
+        kwargs['url'] = self._url
 
         if app:
             self.app = app
@@ -1355,17 +1355,30 @@ class WebPage(WebComponentBootstrap, TestPageClient):
         try:
             if view:
                 self.add_url_rule(app=view, extend=[
-                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+                                                        {
+                                                            'rule': '/on_post',
+                                                            'endpoint': endpoint,
+                                                            'view_func': on_post,
+                                                            'methods': ['POST']
+                                                        }
+                                                    ]
+                                  )
                 app.register_blueprint(blueprint=view, url_prefix=url_prefix)
             else:
                 self.add_url_rule(app, extend=[
-                    {'rule': self.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+                                                {
+                                                    'rule': self.url_prefix,
+                                                    'endpoint': endpoint,
+                                                    'view_func': on_post,
+                                                    'methods': ['POST']
+                                                },
+                                              ]
+                                  )
 
         except AssertionError:
             print("Add url rule error!")
 
-    @classmethod
-    def init_page(cls, app,
+    def init_page(self, app,
                   page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
 
         view = Blueprint(page_name, __name__)
@@ -1373,12 +1386,12 @@ class WebPage(WebComponentBootstrap, TestPageClient):
 
         try:
             if view:
-                cls.add_url_rule(app=view, extend=[
+                self.add_url_rule(app=view, extend=[
                     {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
                 app.register_blueprint(blueprint=view, url_prefix=url_prefix)
             else:
                 cls.add_url_rule(app, extend=[
-                    {'rule': cls.URL, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
+                    {'rule': self.url_prefix, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
 
         except AssertionError:
             print("Add url rule error!")

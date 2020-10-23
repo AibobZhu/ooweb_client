@@ -103,6 +103,9 @@ class ExampleBasePage(oocc.WebPage):
             'lang': 'zh'
         }
 
+    def type_(self):
+        return 'WebPage'
+
     '''
     def render(self, on_post=None):
 
