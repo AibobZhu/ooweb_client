@@ -1032,7 +1032,7 @@ class WebComponentBootstrap(WebComponent, Action, FormatBootstrap, ClientBase):
     def action(self, req):
         print('Got request')
         if req:
-            print('     req["me"]:{}, req["data"]:{}'.format(req['me'],req['data']))
+            print('     req["me"]:{}'.format(req['me']))
 
 from dominate import tags
 from flask_nav import Nav
@@ -1329,7 +1329,6 @@ class WebPage(WebComponentBootstrap, TestPageClient):
             )
         self.place = types.MethodType(place, self)
         self.components = {}
-        #self.init_page(app=app, page_name=page_name, url_prefix=url_prefix, endpoint=endpoint, on_post=on_post)
         self.rendered = False
 
     def do_post(self):
@@ -1339,22 +1338,6 @@ class WebPage(WebComponentBootstrap, TestPageClient):
             for name in self.components.keys():
                 if name == r['me']:
                     self.components[name].action(req=r)
-            '''
-            if r['me'] == HEAD_NAME:
-                r['data'] = {'text': '<OwwwO> Demo'}
-
-            elif r['me'] == INTRO_NAME:
-                del r['data']['html']
-                r['data']['text'] = 'This a demo website created with <OwwwO> framework.'
-
-            elif r['me'] == C1_NAME:
-                r['data']['remove_class'] = ['col-md-8', 'col-lg-8']
-                r['data']['add_class'] = ['col-md-8', 'col-lg-8']
-
-            elif r['me'] == C2_NAME:
-                r['data']['remove_class'] = ['col-md-8', 'col-lg-8']
-                r['data']['add_class'] = ['col-md-8', 'col-lg-8']
-            '''
 
         return jsonify({'status': 'success', 'data': req_})
 

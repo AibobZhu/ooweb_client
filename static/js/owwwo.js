@@ -905,7 +905,7 @@ var oochart_example_datas = {
     'multibar': oochart_multibar_example_data
 }
 
-function webpage_render_post(url, data, async=true){
+function webpage_render(url, data, async=true){
     let data_post = [];
     let data_func = {};
     data.forEach(function(val,index,arr){

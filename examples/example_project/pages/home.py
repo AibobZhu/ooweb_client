@@ -52,7 +52,7 @@ page.elements[HEAD1].action = action1
 
 page_name = 'owwwo_demo_home'
 
-url_prefix = '/{}_post'.format(page_name)
+url_prefix = '/{}'.format(page_name)
 HEAD_NAME = 'test_head'
 INTRO_NAME = 'test_intro'
 C1_NAME = 'c1_name'
@@ -87,7 +87,7 @@ def do_post(self):
 '''
 
 class Page(ExampleBasePage):
-    URL = url_prefix + '/on_post'
+    URL = url_prefix
 
     def type_(self):
         return 'WebPage'
@@ -97,49 +97,43 @@ page = Page(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
                 default_url='view.index', nav=ExampleBasePage.get_nav(current_user=current_user),
                 value=ExampleBasePage.TITLE, container_classes='container')
 
-def render(self, app):
-    #Page.init_page(app=app, page_name=page_name, url_prefix=url_prefix, endpoint=page_name, on_post=on_post)
-    if hasattr(page, 'rendered'):
-        if page.rendered:
-            return page.render()
-    page.rendered = True
-    def place(self):
-        with self.add_child(oocc.WebRow()) as r1:
-            with r1.add_child(oocc.WebColumn(name=C1_NAME, width=self._col_width, offset=page._col_offset)) as c1:
-                with c1.add_child(oocc.WebHead3(parent=self, name=HEAD_NAME, value=HEAD_NAME)) as head:
-                    pass
-        with self.add_child(oocc.WebRow()) as r2:
-            with r2.add_child(oocc.WebColumn(width=page._col_width, offset=page._col_offset)) as c2:
-                with c2.add_child(oocc.WebHr()) as hr:
-                    pass
-        with self.add_child(oocc.WebRow()) as r3:
-            with r3.add_child(oocc.WebColumn(name=C2_NAME, width=page._col_width, offset=page._col_offset)) as c3:
-                with c3.add_child(oocc.WebLabel(parent=page, name=INTRO_NAME)) as intro:
-                    pass
 
-    page.place = types.MethodType(place, page)
-    page.place()
-
-    """
-    Events
-    """
-    page.default_events()
-
-    """
-    Actions
-    """
-    def action1(self, req):
-        req['data'] = {'text': '<OwwwO> Demo'}
-
-    page.components[HEAD_NAME].action = types.MethodType(action1, page.components[HEAD_NAME])
-
-    def action2(self, req):
-        req['data'] = {'text': 'This a demo website created with <OwwwO> framework.' }
-    page.components[INTRO_NAME].action = types.MethodType(action2, page.components[INTRO_NAME])
-
-    return page.render()
+def place(self):
+    with self.add_child(oocc.WebRow()) as r1:
+        with r1.add_child(oocc.WebColumn(name=C1_NAME, width=self._col_width, offset=page._col_offset)) as c1:
+            with c1.add_child(oocc.WebHead3(parent=self, name=HEAD_NAME, value=HEAD_NAME)) as head:
+                pass
+    with self.add_child(oocc.WebRow()) as r2:
+        with r2.add_child(oocc.WebColumn(width=page._col_width, offset=page._col_offset)) as c2:
+            with c2.add_child(oocc.WebHr()) as hr:
+                pass
+    with self.add_child(oocc.WebRow()) as r3:
+        with r3.add_child(oocc.WebColumn(name=C2_NAME, width=page._col_width, offset=page._col_offset)) as c3:
+            with c3.add_child(oocc.WebLabel(parent=page, name=INTRO_NAME)) as intro:
+                pass
 
 
-page_class = type('Class_' + page_name, (object,), {
-    'render': render
-})
+page.place = types.MethodType(place, page)
+page.place()
+
+"""
+Events
+"""
+page.default_events()
+
+"""
+Actions
+"""
+
+def action1(self, req):
+    req['data'] = {'text': '<OwwwO> Demo'}
+
+
+page.components[HEAD_NAME].action = types.MethodType(action1, page.components[HEAD_NAME])
+
+
+def action2(self, req):
+    req['data'] = {'text': 'This a demo website created with <OwwwO> framework.'}
+
+page.components[INTRO_NAME].action = types.MethodType(action2, page.components[INTRO_NAME])
+
