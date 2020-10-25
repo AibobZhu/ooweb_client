@@ -912,7 +912,17 @@ function webpage_render(url, data, async=true){
         data_post.push({'data':val.data, 'me':val.me});
         data_func[val.me] = {'that':val.that, 'func':val.func, 'trigger_event':val.trigger_event};
     })
-    let data_j = JSON.stringify(data_post);
+    let data_j = null;
+    try{
+        data_j = JSON.stringify(data_post);
+    }catch(err){
+        let data_a = []
+        data_post.forEach(function(val, index, arr){
+            let val_j = JSON.stringify(val);
+            data_a.push(val_j);
+        })
+        data_j = JSON.stringify(data_a)
+    }
     $.ajaxSetup({'async': async})
     $.post(url, {'data':data_j}, function(response,status){
         let ret_data = response.data;
