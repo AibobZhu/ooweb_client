@@ -2894,7 +2894,7 @@ class OOChatClient(WebComponentBootstrap):
         test_cls = globals()[cls.__name__]
 
         def place(self):
-            with self.add_child(WebRow()) as r1:
+            with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
                     with c1.add_child(globals()[cls.__name__](parent=self, name=NAME, socket_namespace=NAMESPACE,
                                                               user_name=USER_NAME,
@@ -2913,39 +2913,6 @@ class OOChatClient(WebComponentBootstrap):
 
         return page
 
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-
-        NAMESPACE = '/test_namespace'
-        SERVER_DATA = 'server_data'
-        NAME = 'test'
-        USER_NAME = '用户' + str(random.randint(1, 100))
-        BODY, INPUT, SEND_BTN = OOChatClient.get_names(myname=NAME)
-
-        class Page(WebPage):
-            URL = '/OOChatClient_test'
-
-            def type_(self):
-                return 'WebPage'
-
-        def on_post():
-            req = WebPage.on_post()
-            return jsonify({'status': 'success', 'data': req})
-
-        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
-
-        with Page() as page:
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=page, name=NAME, socket_namespace=NAMESPACE,
-                                                              user_name=USER_NAME,
-                                                              radius='10px 10px 10px 10px')) as chat_test:
-                        pass
-
-        html = page.render()
-        return render_template_string(html)
-    '''
 
 from flask_socketio import *
 
@@ -3306,6 +3273,7 @@ class OOChatServer(OOChatClient):
 
     VAL_FUNC_NAME = 'oochatserver_val'
 
+
     @classmethod
     def _test_request_page(cls):
         NAMESPACE = '/test_namespace'
@@ -3338,11 +3306,11 @@ class OOChatServer(OOChatClient):
 
         page.place = types.MethodType(place, page)
         page.place()
+
         current_app.socketio.on_namespace(ServerChatNM(server_obj=None, socket_namespace=NAMESPACE))
 
         def default_events(self):
-            with self.render_post_w():
-                pass
+            pass
 
         page.default_events = types.MethodType(default_events, page)
         page.default_events()
@@ -3350,41 +3318,6 @@ class OOChatServer(OOChatClient):
         page.init_api(app=current_app, on_post=page.do_post)
 
         return page
-
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        NAMESPACE = '/test_namespace'
-        SERVER_DATA = 'server_data'
-        NAME = '客服'
-        USER_NAME = '客服'
-        PANEL_NAME = 'chat'
-
-        class Page(WebPage):
-            URL = '/OOChatServer_test'
-
-            def type_(self):
-                return 'WebPage'
-
-        def on_post():
-            req = WebPage.on_post()
-            return jsonify({'status': 'success', 'data': req})
-
-        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
-
-        with Page() as page:
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn()) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=page, name=NAME,
-                                                              user_name=USER_NAME, socket_namespace=NAMESPACE,
-                                                              radius='10px 10px 10px 10px')) as chat_test:
-                        pass
-
-        current_app.socketio.on_namespace(ServerChatNM(server_obj=None, socket_namespace=NAMESPACE))
-
-        html = page.render()
-        return render_template_string(html)
-    '''
 
 
 class OOChartNVD3(WebSvg):
