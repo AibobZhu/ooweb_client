@@ -153,6 +153,31 @@ class TestPage(Test):
     def test_start(self):
         self.app.run(host='0.0.0.0', port=5600, threaded=True)
 
+_TEST_DB = 'test.db'
+def create_app():
+    '''create app, and all test urls'''
+
+    from flask import Flask
+    from flask_appconfig import AppConfig
+    from flask_bootstrap import Bootstrap
+    from flask_socketio import SocketIO
+
+    app = Flask(__name__)
+    AppConfig(app, 'test_config.py')
+    Bootstrap(app)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['TESTING'] = True
+    timestamp = datetime.datetime.now().strftime('-%Y-%m-%d-%H-%M-%S.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
+                                            os.path.join(basedir, _TEST_DB + timestamp)
+    app.socketio = SocketIO(app=app, debug=True)
+    #self.create_test_routes(app)
+    #self.app_client = app.test_client()
+    app.db = SQLAlchemy(app)
+    app.db.drop_all()
+    app.db.create_all()
+
+    return app
 
 class TestPageClient(TestClient, TestPage):
 
