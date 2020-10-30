@@ -4641,14 +4641,15 @@ class OOBanner(OOBannerTest, WebDiv):
         super().__init__(**kwargs)
 
     def _get_banner(self):
-        if not self._imgs:
-            self._imgs = [
+        imgs = [
                 {'file': 'img/carousel_demo1.jpg', 'title': '', 'href': '#'},
                 {'file': 'img/carousel_demo2.jpg', 'title': '', 'href': '#'},
                 {'file': 'img/carousel_demo3.jpg', 'title': '', 'href': '#'},
             ]
 
-        return {'id': self.id(), 'imgs': self._imgs, 'draw_img': self.DRAW_IMG_FUNC_NAME, 'height': self._height}
+        height = '400px' if not hasattr(self, '_height') else self._height
+
+        return {'id': self.id(), 'imgs': imgs, 'draw_img': self.DRAW_IMG_FUNC_NAME, 'height': height}
 
 
 class OOCalendar(OOCalendarTest, WebDiv):
