@@ -391,34 +391,40 @@ class Action(CommandInf, ActionInf, ClientBase):
         return self.func_call(params)
 
 
-class Format(FormatInf, ClientBase):
-
+class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
+    pass
     def pad(self, pad=None):
-        raise NotImplementedError
+        params = {'pad': pad}
+        return  self.func_call(params=params)
 
     def margin(self, margin=None):
-        raise NotImplementedError
+        params = {'margin': margin}
+        return self.func_call(params=params)
 
     def width(self, width=None):
-        raise NotImplementedError
+        params = {'width': width}
+        return self.func_call(params=params)
 
     def height(self, height=None):
         params = {'height': height}
         return self.func_call(params=params)
 
     def align(self, align=None):
-        raise NotImplementedError
+        params = {'align': align}
+        return self.func_call(params=params)
 
     def value(self, value=None):
         raise NotImplementedError
 
     def color(self, color=None):
-        raise NotImplementedError
+        params = {'color': color}
+        return self.func_call(params=params)
 
     def font(self, font=None):
-        raise NotImplementedError
+        params = {'font': font}
+        return self.func_call(params=params)
 
-    def attrs(self, klass=None):
+    def attrs(self, attrs=None):
         raise NotImplementedError
 
     def attrs_str(self):
@@ -939,7 +945,7 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         pass
 
 
-class WebComponentBootstrap(WebComponent, Action, FormatBootstrap):
+class WebComponentClient(WebComponent, Action, FormatBootstrap):
 
     BASE_VAL_FUNC_NAME = 'ooweb_base_val'
     BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']
@@ -1068,7 +1074,7 @@ from flask_nav.elements import *
 from flask_bootstrap.nav import BootstrapRenderer, sha1
 
 
-class WebNav(WebComponentBootstrap):
+class WebNav(WebComponentClient):
     BASE_TEMPLATE = \
         '''
           {% extends 'bootstrap/base.html' %}
@@ -1317,7 +1323,7 @@ class WebNav(WebComponentBootstrap):
     '''
 
 
-class WebPage(WebComponentBootstrap):
+class WebPage(WebComponentClient):
 
     PAGE = None
 
@@ -1340,7 +1346,7 @@ class WebPage(WebComponentBootstrap):
     def __init__(self, app=None,page_name=None, url_prefix=None, endpoint=None,
                  test=False, **kwargs):
         self._set_context([])
-        self._root_class = WebComponentBootstrap
+        self._root_class = WebComponentClient
         if 'url' in kwargs:
             self._url = kwargs['url']
         else:
@@ -1509,19 +1515,19 @@ class WebPage(WebComponentBootstrap):
         '''
 
 
-class WebA(WebComponentBootstrap):
+class WebA(WebComponentClient):
     pass
 
 
-class WebRow(WebComponentBootstrap):
+class WebRow(WebComponentClient):
     pass
 
 
-class WebColumn(WebComponentBootstrap):
+class WebColumn(WebComponentClient):
     pass
 
 
-class WebHead1(WebComponentBootstrap):
+class WebHead1(WebComponentClient):
     VAL_FUNC_NAME = 'webhead_val'
 
 
@@ -1547,9 +1553,9 @@ class WebHead6(WebHead1):
     pass
 
 
-class WebField(WebComponentBootstrap):
+class WebField(WebComponentClient):
     VAL_FUNC_NAME = 'webfield_val'
-    VAL_FUNC_PARAMS = WebComponentBootstrap.BASE_VAL_FUNC_PARAMS
+    VAL_FUNC_PARAMS = WebComponentClient.BASE_VAL_FUNC_PARAMS
 
 
     @classmethod
@@ -1614,7 +1620,7 @@ class WebField(WebComponentBootstrap):
         return page
 
 
-class WebImg(WebComponentBootstrap):
+class WebImg(WebComponentClient):
 
     VAL_FUNC_NAME = "web_img_val"
     VAL_FUNC_PARAMS = ['that', 'data']
@@ -1669,7 +1675,7 @@ class WebImg(WebComponentBootstrap):
     '''
 
 
-class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
+class WebBtnToggle(WebBtnToggleTest, WebComponentClient):
 
     def toggle(self):
         '''
@@ -1680,14 +1686,14 @@ class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
         return self.func_call(params)
 
 
-class WebBtnGroup(WebComponentBootstrap):
+class WebBtnGroup(WebComponentClient):
     pass
 
 
-class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentBootstrap):
+class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentClient):
     pass
 
-class WebBtnToolbar(WebComponentBootstrap):
+class WebBtnToolbar(WebComponentClient):
 
     '''
     @classmethod
@@ -1711,7 +1717,7 @@ class WebBtnToolbar(WebComponentBootstrap):
         return json.dumps({"status": "sucess"}), 201
 
 
-class WebBtn(WebBtnTest, WebComponentBootstrap):
+class WebBtn(WebBtnTest, WebComponentClient):
 
     @classmethod
     def on_post(cls):
@@ -1954,7 +1960,7 @@ class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
         self.func_call(params)
 
 
-class WebQuickForm(WebComponentBootstrap):
+class WebQuickForm(WebComponentClient):
     """
     QuickForm packages FlaskForm
     """
@@ -2054,31 +2060,31 @@ class WebQuickForm(WebComponentBootstrap):
     '''
 
 
-class WebFormGroup(WebComponentBootstrap):
+class WebFormGroup(WebComponentClient):
     pass
 
 
-class WebInputGroup(WebComponentBootstrap):
+class WebInputGroup(WebComponentClient):
     pass
 
 
-class WebInput(WebComponentBootstrap):
+class WebInput(WebComponentClient):
 
     VAL_FUNC_NAME = 'webinput_val'
 
 
-class WebInputGroup(WebComponentBootstrap):
+class WebInputGroup(WebComponentClient):
     pass
 
 
-class WebFormInline(WebComponentBootstrap):
+class WebFormInline(WebComponentClient):
     pass
 
 
-class WebSelect(WebSelectTest, WebComponentBootstrap):
+class WebSelect(WebSelectTest, WebComponentClient):
 
     VAL_FUNC_NAME = 'webselect_val'
-    VAL_FUNC_PARAMS = WebComponentBootstrap.VAL_FUNC_PARAMS
+    VAL_FUNC_PARAMS = WebComponentClient.VAL_FUNC_PARAMS
 
     '''
     @classmethod
@@ -2107,22 +2113,22 @@ class WebSelect2(WebSelect):
     VAL_FUNC_NAME = 'webselect2_val'
 
 
-class WebSpan(WebComponentBootstrap):
+class WebSpan(WebComponentClient):
     pass
 
 
-class WebB(WebComponentBootstrap):
+class WebB(WebComponentClient):
     pass
 
-class WebBr(WebComponentBootstrap):
-    pass
-
-
-class WebHr(WebComponentBootstrap):
+class WebBr(WebComponentClient):
     pass
 
 
-class WebUl(WebUlTest, WebComponentBootstrap):
+class WebHr(WebComponentClient):
+    pass
+
+
+class WebUl(WebUlTest, WebComponentClient):
     VAL_FUNC_NAME = 'webul_val'
 
 
@@ -2188,7 +2194,7 @@ class WebDatalist(WebDatalistTest, WebSelect):
     '''
 
 
-class WebDiv(WebComponentBootstrap):
+class WebDiv(WebComponentClient):
 
     VAL_FUNC_NAME = 'webdiv_val'
 
@@ -2876,7 +2882,7 @@ class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
     '''
 
 
-class WebSvg(WebComponentBootstrap):
+class WebSvg(WebComponentClient):
 
     def id(self, _id=None):
         if not _id:
@@ -2887,7 +2893,7 @@ class WebSvg(WebComponentBootstrap):
             self._id = _id
 
 
-class OOChatClient(WebComponentBootstrap):
+class OOChatClient(WebComponentClient):
 
     VAL_FUNC_NAME = 'oochatclient_val'
     INIT_FUNC_NAME = 'oochatclient_init'
@@ -5272,7 +5278,7 @@ class WebTabContain(WebDiv):
     pass
 
 
-class WebTable(WebComponentBootstrap):
+class WebTable(WebComponentClient):
     '''
     WebTable generates a html table from a data including schema and records.
     schema leads to table heads and records lead to table body.
@@ -6109,7 +6115,7 @@ class OOTagGroup(WebTable):
         return page
 
 
-class Var(WebComponentBootstrap):
+class Var(WebComponentClient):
 
     VAL_FUNC_NAME = 'var_val'
 
@@ -6195,7 +6201,7 @@ class GVar(GVarTest, Var):
     '''
 
 
-class OOList(OOListTest, ListInf, WebComponentBootstrap):
+class OOList(OOListTest, ListInf, WebComponentClient):
 
     @contextmanager
     def append_w(self):
@@ -6285,7 +6291,7 @@ class OOList(OOListTest, ListInf, WebComponentBootstrap):
         return self._var_name
 
 
-class OODict(OODictTest, DictInf, WebComponentBootstrap):
+class OODict(OODictTest, DictInf, WebComponentClient):
 
     def __init__(self, parent, var_name=None, **kwargs):
         kwargs['parent'] = parent

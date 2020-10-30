@@ -1,6 +1,94 @@
 import abc
 from test_class import *
 
+class AppearanceInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def width(self, width):
+        pass
+
+    @abc.abstractmethod
+    def height(self, height):
+        pass
+
+    @abc.abstractmethod
+    def color(self, color):
+        pass
+
+    @abc.abstractmethod
+    def font(self, font):
+        pass
+
+    @abc.abstractmethod
+    def border(self, border):
+        pass
+
+    @abc.abstractmethod
+    def disable(self, disable):
+        pass
+
+
+class PositionInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def pad(self, pad):
+        pass
+
+    @abc.abstractmethod
+    def margin(self, margin):
+        pass
+
+    @abc.abstractmethod
+    def align(self, align):
+        pass
+
+
+class PropertyInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def value(self, value):
+        pass
+
+    @abc.abstractmethod
+    def attrs(self, attrs):
+        pass
+
+    @abc.abstractmethod
+    def classes(self, classes):
+        pass
+
+    @abc.abstractmethod
+    def styles(self, styles):
+        pass
+
+
+class EventInf(MinXin, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def on_event_w(self, event, filter='', propagation=None):
+        '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
+        pass
+
+    @abc.abstractmethod
+    def render_post_w(self):
+        pass
+
+    @abc.abstractmethod
+    def render_for_post(self):
+        pass
+
+    @abc.abstractmethod
+    def trigger_event(self, event, filter='', propagation=None):
+        pass
+
+    @abc.abstractmethod
+    def sync(self, sync=True):
+        pass
+
+    @abc.abstractmethod
+    def timeout_w(self, time):
+        pass
+
 
 class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
 
@@ -119,9 +207,11 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def url(self, url=None, js=True):
         pass
 
+    '''
     @abc.abstractmethod
     def type_(self):
         pass
+    '''
 
     @abc.abstractmethod
     def render_content(self):
@@ -187,6 +277,7 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def get_style_files(self):
         pass
 
+    '''
     def data_format(self):
         raise NotImplementedError
 
@@ -197,6 +288,7 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def events_default_action(self, req):
         return super().events_default_action(req=req)
+    '''
 
 
 class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
@@ -259,241 +351,6 @@ class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class ActionInf(MinXin, metaclass=abc.ABCMeta):
-
-    '''
-    All the interfaces about js operations
-
-    TODO: add w_ head of all the function with decorated with contextmanager
-    '''
-
-    @abc.abstractmethod
-    def has_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def add_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def remove_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def on_event_w(self,event,filter='',propagation=None):
-        '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
-        pass
-
-    @abc.abstractmethod
-    def stop_event(self, event, filter='', stop=False):
-        '''set/unset event stop running flag'''
-        pass
-
-    @abc.abstractmethod
-    def trigger_event(self,event):
-        '''Trigger the event on the element'''
-        pass
-
-    @abc.abstractmethod
-    def post_w(self, url, data, success):
-        pass
-
-    @classmethod
-    def on_post(cls):
-        raise NotImplementedError
-    
-    @abc.abstractmethod
-    def val(self, value=''):
-        pass
-
-    @abc.abstractmethod
-    def empty(self):
-        '''
-        Empty the element's value or children, can be used in val when parameter is blank.
-        :return:
-        '''
-        pass
-
-    @abc.abstractmethod
-    def add_attrs(self, attrs):
-        pass
-
-    @abc.abstractmethod
-    def remove_attrs(self, attrs):
-        pass
-
-    @abc.abstractmethod
-    def disable(self, disable):
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    def add_url_rule(cls, app, extend=[]):
-        '''
-        Add the urls which are used by this class. and also can add some extend urls for customizing
-        :param app:
-        :param extended:
-        :return:
-        '''
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    def _example_data(cls):
-        pass
-
-    @abc.abstractmethod
-    def false(self):
-        pass
-
-    @abc.abstractmethod
-    def true(self):
-        pass
-
-    @abc.abstractmethod
-    def null(self):
-        pass
-
-    @abc.abstractmethod
-    def sync(self, sync=True):
-        pass
-
-    @abc.abstractmethod
-    def render_for_post(self, return_parts=['all'], trigger_event=False):
-        pass
-
-    @abc.abstractmethod
-    def render_post_w(self):
-        pass
-
-    @abc.abstractmethod
-    def timeout_w(self, time):
-        pass
-
-    @abc.abstractmethod
-    def height(self, height=None):
-        pass
-
-
-class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def empty(self):
-        pass
-
-    @abc.abstractmethod
-    def is_(self):
-        pass
-
-    @abc.abstractmethod
-    def data(self):
-        pass
-
-    @abc.abstractmethod
-    def declare_event(self, event, use_clsname=False, selector=None, filter=''):
-        pass
-
-    @abc.abstractmethod
-    def children(self, filter=''):
-        pass
-
-    @abc.abstractmethod
-    def each_w(self):
-        pass
-
-
-class FormatInf(MinXin, metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def pad(self, pad=None):
-        pass
-
-    @abc.abstractmethod
-    def margin(self, margin=None):
-        pass
-
-    @abc.abstractmethod
-    def width(self, width=None):
-        pass
-
-    @abc.abstractmethod
-    def height(self, height=None):
-        pass
-
-    @abc.abstractmethod
-    def align(self, align=None):
-        pass
-
-    @abc.abstractmethod
-    def value(self, value=None):
-        pass
-
-    @abc.abstractmethod
-    def color(self, color=None):
-        pass
-
-    @abc.abstractmethod
-    def font(self, font=None):
-        pass
-
-    @abc.abstractmethod
-    def styles(self, style=None):
-        pass
-    
-    @abc.abstractmethod
-    def styles_str(self):
-        pass
-
-    @abc.abstractmethod
-    def add_styles(self, styles):
-        pass
-    
-    @abc.abstractmethod
-    def remove_style(self, style):
-        pass
-
-    @abc.abstractmethod
-    def attrs(self, attrs=None):
-        pass
-
-    @abc.abstractmethod
-    def attrs_str(self):
-        pass
-
-    @abc.abstractmethod
-    def add_attrs(self, attrs):
-        pass
-
-    @abc.abstractmethod
-    def remove_attrs(self, attrs):
-        pass
-
-    @abc.abstractmethod
-    def classes(self, classes=None):
-        pass
-
-    @abc.abstractmethod
-    def classes_str(self):
-        pass
-
-    @abc.abstractmethod
-    def add_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def remove_class(self, class_):
-        pass
-
-    @abc.abstractmethod
-    def border_radius(self, radius=None):
-        '''
-        Set the border radius
-        :param radius: {'tl':1px, 'tr':2px, 'br':3px, 'bl':4px}
-        :return:
-        '''
-        pass
-
-
 class CommandInf(MinXin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -551,6 +408,91 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def call_custom_func(self, fname='', fparams={}):
         pass
+
+
+class ActionInf(MinXin, EventInf, CommandInf, AppearanceInf, PositionInf, PropertyInf, metaclass=abc.ABCMeta):
+
+    '''
+    All the interfaces about js operations
+
+    TODO: add w_ head of all the function with decorated with contextmanager
+    '''
+    pass
+
+    '''
+    @abc.abstractmethod
+    def val(self, value=''):
+        pass
+
+    @abc.abstractmethod
+    def empty(self):
+        pass
+
+    @abc.abstractmethod
+    def add_attrs(self, attrs):
+        pass
+
+    @abc.abstractmethod
+    def remove_attrs(self, attrs):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def add_url_rule(cls, app, extend=[]):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def _example_data(cls):
+        pass
+
+    @abc.abstractmethod
+    def false(self):
+        pass
+
+    @abc.abstractmethod
+    def true(self):
+        pass
+
+    @abc.abstractmethod
+    def null(self):
+        pass
+
+    @abc.abstractmethod
+    def height(self, height=None):
+        pass
+    '''
+
+
+class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def empty(self):
+        pass
+
+    @abc.abstractmethod
+    def is_(self):
+        pass
+
+    @abc.abstractmethod
+    def data(self):
+        pass
+
+    @abc.abstractmethod
+    def declare_event(self, event, use_clsname=False, selector=None, filter=''):
+        pass
+
+    @abc.abstractmethod
+    def children(self, filter=''):
+        pass
+
+    @abc.abstractmethod
+    def each_w(self):
+        pass
+
+
+class FormatInf(MinXin, AppearanceInf, PositionInf, PropertyInf, metaclass=abc.ABCMeta):
+    pass
 
 
 class ClientInf(MinXin, metaclass=abc.ABCMeta):
