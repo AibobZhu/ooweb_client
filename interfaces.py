@@ -8,12 +8,14 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
 
     _SUBCLASSES = {}
 
+    '''
     @abc.abstractmethod
     def get_sub_classes(cls):
         """
         Get all subclasses recursively
         """
         pass
+    '''
 
     @abc.abstractmethod
     def create_default_nav_items(cls):
@@ -191,6 +193,10 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_data(self):
         pass
+
+    @abc.abstractmethod
+    def events_default_action(self, req):
+        return super().events_default_action(req=req)
 
 
 class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):

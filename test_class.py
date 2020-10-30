@@ -1,7 +1,8 @@
 import os, datetime
 from flask_sqlalchemy import SQLAlchemy
-from flask import render_template_string, current_app
-
+from flask import render_template_string, current_app, jsonify
+import types
+import copy
 
 class MinXin:
 
@@ -9,21 +10,718 @@ class MinXin:
         super().__init__()
 
 
-class Test(MinXin):
-    '''
-    Page all the testing methods. The subclass inherited it
-    '''
-    _TEST_JS = ''
+class ClassTest():
 
     _SUBCLASSES = {}
+    _PAGE_CLASS = None
+    RENDERED_HTML = None
+    CLASS_TEST_HTML = None
 
-    @staticmethod
-    def get_sub_classes(cls):
+    def place_components_for_class_test(self, **kwargs):
+        """
+        Note: type of 'self' is WebPage.
+        This function is used by being assigned to a WebPage object's place_components
+        """
+        page = self
+        assert 'testing_class' in kwargs
+        testing_class = kwargs['testing_class']
+        class_name = testing_class.__name__
+        name_ = class_name
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        default_width = ['md6', 'lg6']
+        default_offset = ['mdo3', 'mdo3']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
+                if class_name.find('OOChart') == 0:
+                    with c1.add_child(testing_class(
+                            parent=page, value=class_name, name=name_, height='400px', width='100%'
+                    )) as test:
+                        pass
+                else:
+                    with c1.add_child(testing_class(parent=page, name=name_, oovalue=name_)) as test:
+                        pass
+
+    def on_post_for_class_test(self):
+        name = self.name()
+        req = self._page.on_post()
+        for r in req:
+            if r['me'] == name:
+                self.events_action_for_class_test(req=r)
+
+        return jsonify({'status': 'success', 'data': req})
+
+    def events_action_for_class_test(self, req):
+        cls = self.__class__
+        name_ = cls.__name__
+        print('Class testing, class {} got req:{}'.format(name_, req))
+        if not hasattr(cls, 'test_request_data') or not cls.test_request_data:
+            req['data'] = {'val': name_ + '_testing from on_post', 'text': name_ + '_testing from on_post'}
+        else:
+            req['data'] = {'data': cls.test_request_data()}
+
+    def events_trigger_for_class_test(self):
+        print('class {} events_trigger'.format(self.__class__.__name__))
+        page = self._page
+        if (not hasattr(self, '_PAGE_CLASS')) or (hasattr(self, '_PAGE_CLASS') and self._PAGE_CLASS is None):
+            page = self
+            with page.render_post_w():
+                for name, component in page._components.items():
+                    component.render_for_post()
+            return
+
+        '''
+        Do custom event trigger here or replace below
+        '''
+        with page.render_post_w():
+            self.render_for_post()
+
+    @classmethod
+    def get_sub_classes(cls, root_class):
         """
         Get all subclasses recursively
         """
 
-        for subclass in cls.__subclasses__():
+        for subclass in root_class.__subclasses__():
+            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
+                    and (subclass.__name__.find('WebPage') < 0):
+                cls._SUBCLASSES[subclass.__name__] = {'class': subclass, 'test_request': subclass.test_request,
+                                                      'test_result': subclass.test_result}
+                cls.get_sub_classes(subclass)
+
+        return cls._SUBCLASSES
+
+    def __init__(self, test=False, client=False, **kwargs):
+        super().__init__(**kwargs)
+        self._test = test
+        self.custom_test_init()
+
+    def custom_test_init(self):
+        """
+        Do custom test initialization for a class if necessary
+        """
+        pass
+
+    def get_test_js(self):
+        """
+        TODO: discard
+        """
+
+        url = ''
+        return '''alert('!@#class_name!@#');\n'''.replace('!@#class_name!@#', self.__class__.__name__)
+
+    @classmethod
+    def test_result(cls):
+        '''
+        TODO: will discard
+        '''
+        raise NotImplementedError
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class_name = cls.__name__
+
+        PageClass = cls._PAGE_CLASS
+        page = PageClass(app=current_app, url='/' + cls.__name__ + '_test')
+
+        page.place_components = types.MethodType(
+            cls.place_components_for_class_test, page)
+        page.place_components(testing_class=cls)
+
+        this_obj = page._components[class_name]
+        page.events_trigger = types.MethodType(this_obj.__class__.events_trigger_for_class_test, page)
+        this_obj.on_post_for_class_test = types.MethodType(this_obj.__class__.on_post_for_class_test, this_obj )
+        page.init_on_post(app=current_app,
+                          on_post=this_obj.on_post_for_class_test,
+                          endpoint=cls.__name__ + '_test',
+                          url='/' + cls.__name__ + '_test')
+
+        html = page.render()
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
+
+class GVarTest(ClassTest):
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        WebHead1 = page._SUBCLASSES['WebHead1']['class']
+        WebHead3 = page._SUBCLASSES['WebHead3']['class']
+        GVar = page._SUBCLASSES['GVar']['class']
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+        with page.add_child(WebHead1(value='Test GVar and js values')) as head1:
+            pass
+        with page.add_child(WebHead3(value='var test = false;')) as head3:
+            pass
+        with page.add_child(GVar(parent=page, name='GVar', var_name='test')) as gv:
+            gv.false
+        with page.add_child(WebBtn(value='Test GVar assign', name='TestBtn')) as btn:
+            pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        btn = page._components['TestBtn']
+        gv = page._components['GVar']
+        with btn.on_event_w('click'):
+            with gv.assign_w():
+                gv.true
+            btn.alert('"GVar value should be true, real:"+test')
+
+
+class OOListTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self._page
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+        LVar = page._SUBCLASSES['LVar']['class']
+        OOList = page._SUBCLASSES['OOList']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                with c1.add_child(WebBtn(name='TestBtn', value='Test OOList')) as btn:
+                    pass
+        with btn.on_event_w('click'):
+            with btn.add_child(LVar(parent=btn, name='lvar', var_name='data')) as data:
+                with data.add_child(OOList(parent=data, name='OOList')) as list_data:
+                    with list_data.append_w():
+                        list_data.add_script('"value1"', indent=False)
+                    with list_data.append_w():
+                        list_data.add_script('"value2"', indent=False)
+                list_data.add_script(';\n')
+                page.alert(
+                    "'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
+
+    def events_trigger_for_class_test(self):
+        print('OOList.events_trigger_for_class_test')
+
+
+class OODictTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+        OODict = page._SUBCLASSES['OODict']['class']
+        with page.add_child(WebBtn(value='Test dict', name='name1')) as btn1:
+            pass
+        with page.add_child(WebBtn(value='Test dict update', name='name2')) as btn2:
+            pass
+
+        with btn1.on_event_w('click'):
+            with btn1.add_child(OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict')) as dict:
+                pass
+            btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+
+        with btn2.on_event_w("click"):
+            with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict_update') as dict_update:
+                pass
+            with dict_update.update_w(key='key2'):
+                dict_update.add_script('"val_updated";\n', indent=False)
+            btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+
+    def events_trigger_for_class_test(self):
+        pass
+
+
+class WebBtnRadioTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
+
+        assert 'testing_class' in kwargs
+        name = kwargs['testing_class'].__name__
+
+        with page.add_child(WebBtnRadio(name=name, mytype=['inline'],
+                                        items=[{'label': '测试1', 'checked': ''},
+                                               {'label': '测试测试测试2'},
+                                               {'label': '测试3'}])) as radio:
+            pass
+
+    def events_action_for_class_test(self, req):
+        print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
+        req['data'] = {'oovalue': '测试3'}
+        print('Class testing: testing for {} is setting "测试3" always'.format(self.__class__.__name__))
+
+    def events_trigger_for_class_test(self):
+        page = self
+        radio = page._components['WebBtnRadio']
+        LVar = page._SUBCLASSES['LVar']['class']
+        cls = radio.__class__
+
+        with page.render_post_w():
+            radio.render_for_post()
+
+        with radio.on_event_w('change'):
+            radio.alert('"Please checking on server side to find \'Class testing, class {} got: ...\''
+                       ' And the radio buttons is set {} always by on_post function on server side"'.format(cls.__name__,
+                       '测试3'))
+            with LVar(parent=radio, var_name='click_val') as val:
+                radio.val()
+                radio.add_script('\n')
+                radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
+                with page.render_post_w():
+                    radio.render_for_post()
+
+
+class WebBtnGroupVerticalTest(ClassTest):
+
+    def events_trigger_for_class_test(self):
+        pass
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        WebBtnGroupVertical = page._SUBCLASSES['WebBtnGroupVertical']['class']
+        WebBtnDropdown = page._SUBCLASSES['WebBtnDropdown']['class']
+
+        with page.add_child(WebBtnGroupVertical(name=this_class.__name__)) as toolbar1:
+            with toolbar1.add_child(WebBtnDropdown(value='WebBtnDropdown1')) as area1:
+                pass
+            with toolbar1.add_child(WebBtnDropdown(value='WebBtnDropdown2')) as area2:
+                pass
+
+
+class WebBtnDropdownTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        WebBtnDropdown = page._SUBCLASSES['WebBtnDropdown']['class']
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+        name = this_class.__name__
+
+        with page.add_child(WebBtnDropdown(value='测试', name=name, select_options=[{'name': '测试1', 'href': '#'},
+                                                                                  {'name': '测试2',
+                                                                                   'href': '#'}])) as btn:
+            pass  # btn.clear(call=True)
+        with page.add_child(WebBtn(value="Disable drop button", name='DisableBtn')) as disable_btn:
+            '''
+            with disable_btn.on_event_w('click'):
+                btn.disable(True)
+            '''
+            pass
+        with page.add_child(WebBtn(value='Enable drop button', name='EnableBtn')) as enable_btn:
+            '''
+            with enable_btn.on_event_w('click'):
+                btn.disable(False)
+            '''
+            pass
+        with page.add_child(WebBtn(value='Change options', name='ChangeBtn')) as change_btn:
+            '''
+            with change_btn.on_event_w('click'):
+                options = [{'name': 'op1', 'href': '#'}]
+                btn.set_options(options=options)
+                btn.val('"新菜单"')
+            '''
+            pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = page._components['WebBtnDropdown']
+        disable_btn = page._components['DisableBtn']
+        enable_btn = page._components['EnableBtn']
+        change_btn = page._components['ChangeBtn']
+
+        with disable_btn.on_event_w('click'):
+            test_obj.disable(True)
+
+        with enable_btn.on_event_w('click'):
+            test_obj.disable(False)
+
+        with change_btn.on_event_w('click'):
+            options = [{'name': 'op1, changed by change button', 'href': '#'}]
+            test_obj.set_options(options=options)
+            test_obj.val('"menu items/options are changed by change button"')
+
+
+class WebBtnTest(ClassTest):
+
+    def events_default_action(self, req):
+        pass
+
+    def events_action_for_class_test(self, req):
+        cls = self.__class__
+        name_ = cls.__name__
+        print('Class testing, class {} got req:{}'.format(name_, req))
+        req['data'] = {'oovalue': name_ + ' from on_post'}
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = page._components['WebBtn']
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+
+        with page.render_post_w():
+            test_obj.render_for_post()
+        with test_obj.on_event_w('click'):
+            test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
+            with page.render_post_w():
+                test_obj.render_for_post()
+
+
+class WebBtnToggleTest(ClassTest):
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = page._components['WebBtnToggle']
+        with page.render_post_w():
+            test_obj.render_for_post()
+        with test_obj.on_event_w('click'):
+            test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
+            with page.render_post_w():
+                test_obj.render_for_post()
+
+
+class WebCheckboxTest(ClassTest):
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = page._components['WebCheckbox']
+        LVar = page._SUBCLASSES['LVar']['class']
+        with test_obj.on_event_w('change'):
+            with LVar(parent=self, var_name="data") as data:
+                test_obj.val()
+            test_obj.alert(' data + " clicked !"')
+
+
+class WebSelectTest(ClassTest):
+
+    def events_action_for_class_test(self, req):
+        print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
+        req['data'] = {'options': [{'text': 'OptionResetByOnPost1'},
+                                 {'text': 'OptionResetByOnPost2'},
+                                 {'text': 'OptionResetByOnPost3', 'selected': 'true'}]}
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = page._components['WebSelect']
+        with page.render_post_w():
+            test_obj.render_for_post()
+
+        with test_obj.on_event_w('change'):
+            test_obj.alert('"Testing works that \'OptionResetByOnPost3\' item is always slected."')
+            with page.render_post_w():
+                test_obj.render_for_post()
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        name_ = this_class.__name__
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                options = [{'text': 'option1'},
+                           {'text': 'option2'},
+                           {'selected': True, 'text': 'option3'}]
+                with c1.add_child(this_class(parent=page, name=name_, options=options)) as test:
+                    pass
+
+
+class WebDatalistTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        TEST_ID = 'test_id'
+        INPUT_NAME = 'test_input'
+        name_ = this_class.__name__
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebInput = page._SUBCLASSES['WebInput']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
+                    options = [{'text': 'option1'},
+                               {'text': 'option2'},
+                               {'selected': True, 'text': 'option3'}]
+                    with input.add_child(
+                            this_class(parent=page, name=name_, id=TEST_ID, options=options)) as test:
+                        pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        input = page._components['test_input']
+        test_obj = page._components['WebDatalist']
+        with page.render_post_w():
+            test_obj.render_for_post()
+
+        with input.on_event_w(event='keydown', filter=13):
+            with page.render_post_w():
+                test_obj.render_for_post()
+
+    def events_action_for_class_test(self, req):
+        print('Class testing, WebDatalist got req:{}'.format(req['data']))
+
+        options = [{'text': 'OptionResetByOnPost1'},
+                   {'text': 'OptionResetByOnPost2'},
+                   {'text': 'OptionResetByOnPost3', 'selected': 'true'}]
+        req['data'] = {'options': options}
+
+
+class WebUlTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        cls = kwargs['testing_class']
+        name = cls.__name__
+        item1 = 'item1'
+        item2 = 'item2'
+        item3 = 'item3'
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with c1.add_child(cls(parent=page, value="WebUl", name=name, ul_list=[
+                    {'name': item1, 'href': '#' + item1, 'active': True},
+                    {'name': item2, 'href': '#' + item2},
+                    {'name': item3, 'href': '#' + item3}
+                ])) as test:
+                    pass
+
+    def events_action_for_class_test(self, req):
+        data  = '' if 'data' not in req else req['data']
+        print('Class testing, class {} got req:{}'.format(self.__class__.__name__, data))
+        req['data'] = {'oovalue': '{} Testing from event_action on server side'.format(self.__class__.__name__)}
+
+
+class OOGeneralSelectorTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        testing_class = kwargs['testing_class']
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebBr = page._SUBCLASSES['WebBr']['class']
+        WebBtn = page._SUBCLASSES['WebBtn']['class']
+
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                with c1.add_child(
+                        testing_class(styles={'display': 'flex'}, name=testing_class.__name__)) as gs1:
+                    pass
+        with page.add_child(WebBr()) as br1:
+            pass
+
+        with page.add_child(WebRow()) as r3:
+            with r3.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c3:
+                with c3.add_child(WebBtn(value='select值', name='test_btn')) as val_btn:
+                    pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        gs1 = page._components['OOGeneralSelector']
+        val_btn = page._components['test_btn']
+        LVar = page._SUBCLASSES['LVar']['class']
+
+        with gs1.on_event_w('change'):
+            page.alert('"Please check console output on server side, should find \'Got gselector menu:xxx\'"')
+            with page.render_post_w():
+                gs1.render_for_post()
+
+        # Test getting select values of OOGeneralSelector
+        with val_btn.on_event_w('click'):
+            with LVar(parent=gs1, var_name='gs1_value') as gs1_val:
+                gs1.val()
+            gs1.alert(
+                'gs1_value[0].select + " " + gs1_value[1].select + " " + gs1_value[2].select + " " + gs1_value[3].select')
+
+        with page.render_post_w():
+            gs1.render_for_post()
+
+    def events_action_for_class_test(self, req):
+        page = self._page
+        OOGeneralSelector = page._SUBCLASSES['OOGeneralSelector']['class']
+        r = req
+        if 'data' not in r:
+            r['data'] = OOGeneralSelector._example_data()
+        for d in r['data']:
+            if not d['options']:
+                option1 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
+                option1['name'] = d['name'] + '_option1'
+                option2 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
+                option2['name'] = d['name'] + '_option2'
+                d['options'].append(option1)
+                d['options'].append(option2)
+
+                d['name'] = option1['name']
+                d['select'] = option1['name']
+            else:
+                print('Got gselector menu:{}'.format(d['select']))
+
+
+class OODatePickerSimpleTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        name = this_class.__name__
+        with page.add_child(
+                this_class(name=name, radius={'tl': '8px', 'tr': '5px', 'br': '9px', 'bl': '5px'},
+                                        width="500px")) as test1:
+            pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = self._components['OODatePickerSimple']
+
+        with test_obj.on_event_w('change'):
+            with page.render_post_w():
+                test_obj.render_for_post(trigger_event=False)
+
+        with page.render_post_w():
+            test_obj.render_for_post(trigger_event=False)
+
+    def events_action_for_class_test(self, req):
+        r = req
+        lang = r['data']['lang']
+        format_ = None
+        cls = self.__class__
+        if r['data']['select'] == '周':
+            start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T')[0]
+            if start:
+                # USE cls FORMATS here
+                format_ = cls.FORMATS[lang]['week']['to_format']
+                dt = datetime.datetime.strptime(start, "%Y-%m-%d")
+                dt = dt.timestamp()
+            else:
+                dt = datetime.today().timestamp()
+            r['data']['date'] = int(dt)
+        elif r['data']['select'] == '日':
+            start = None if not r['data']['date'] else r['data']['date']
+            if start:
+                if lang == 'zh':
+                    format_ = cls.DAY_FORMAT_ZH[1]
+                else:
+                    format_ = cls.DAY_FORMAT_EN[1]
+                dt = datetime.strptime(start, format_).timestamp()
+            else:
+                dt = datetime.datetime.today().timestamp()
+            r['data']['date'] = int(dt)
+        else:
+            start = None if not r['data']['date'] else r['data']['date']
+            if start:
+                if lang == 'zh':
+                    format_ = cls.MONTH_FORMAT_ZH[1]
+                else:
+                    format_ = cls.MONTH_FORMAT_EN[1]
+                dt = datetime.strptime(start, format_).timestamp()
+            else:
+                dt = datetime.datetime.today().timestamp()
+            r['data']['date'] = int(dt)
+
+
+class OODatePickerIconTest(ClassTest):
+
+    def events_trigger_for_class_test(self):
+        page = self
+        test_obj = self._components['OODatePickerIcon']
+        with page.render_post_w():
+            test_obj.render_for_post()
+
+        with test_obj.on_event_w('change'):
+            with page.render_post_w():
+                test_obj.render_for_post()
+
+    def events_action_for_class_test(self, req):
+        r = req
+        cls = self.__class__
+        if r['data']['date']:
+            dt = cls.get_dates(_data=r['data'])
+            print('OODatePickerIcon testing: got dates: {} ~ {}'.format(
+                pprint.pformat(dt[0]), pprint.pformat(dt[1]))
+            )
+            cls.get_ret_stamp(r['data'])
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        this_class = kwargs['testing_class']
+        name = this_class.__name__
+        with page.add_child(this_class(name=name)) as test:
+            pass
+        test.call_custom_func(fname=test.start_func_name,
+                              fparams={'that': '$("#{}")'.format(test.id()),
+                                       'type': '"{}"'.format(test.VIEWS['week'])})
+
+
+class OODatePickerRangeTest(ClassTest):
+
+    def events_trigger_for_class_test(self):
+        page = self
+        this_obj = page._components['OODatePickerRange']
+        this_class = this_obj.__class__
+
+        with this_obj.on_event_w('change'):
+            with page.render_post_w():
+                this_obj.render_for_post()
+
+        with page.render_post_w():
+            this_obj.render_for_post()
+
+    def events_action_for_class_test(self, req):
+        page = self._page
+        test_obj = self
+        r = req
+        cls = test_obj.__class__
+
+        lang = r['data']['lang']
+        format = None
+        start = None
+        end = None
+        if r['data']['select'] == '周':
+            format = cls.FORMATS[lang]['week']['from_format']
+        elif r['data']['select'] == '日':
+            format = cls.FORMATS[lang]['day']['from_format']
+        else:
+            format = cls.FORMATS[lang]['month']['from_format']
+
+        start = None if not r['data']['start'] else r['data']['start']
+        if not start:
+            # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
+            start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
+        else:
+            start = datetime.datetime.strptime(start, format)
+
+        end = None if not r['data']['end'] else r['data']['end']
+        if not end:
+            # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
+            end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
+        else:
+            end = datetime.datetime.strptime(end, format)
+
+        r['data']['start'] = int(start.timestamp())
+        r['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
+        r['data']['end'] = int(end.timestamp())
+        r['data']['end_viewDate'] = end.strftime("%Y-%m-%dT")
+
+
+class OOBannerTest(ClassTest):
+
+    def events_action_for_class_test(self, req):
+        print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
+        banner = self._get_banner()
+        new_html = render_template_string(self.CAROUSEL_HTML,
+                                          banner=banner)
+        req['data']['html'] = new_html
+
+
+'''
+class Test(MinXin):
+
+    _SUBCLASSES = {}
+
+    @classmethod
+    def get_sub_classes(cls, root_class):
+        """
+        Get all subclasses recursively
+        """
+
+        for subclass in root_class.__subclasses__():
             if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
                     and (subclass.__name__.find('WebPage') < 0):
                 cls._SUBCLASSES[subclass.__name__] = subclass
@@ -38,22 +736,12 @@ class Test(MinXin):
             self.test_init()
 
     def get_test_js(self):
-        '''
-        Post test result to url of class_name_test_result
-        Sub class should overwrite this according its own condition if necessary
-        '''
-
-        '''
-        test_js = self._TEST_JS
-        return test_js
-        '''
 
         url = ''
-        return '''alert('!@#class_name!@#');\n'''.replace('!@#class_name!@#', self.__class__.__name__)
+        return 'alert(\'!@#class_name!@#\');\n'.replace('!@#class_name!@#', self.__class__.__name__)
 
     @classmethod
     def test_result(cls):
-        '''sub class should overwr'''
 
         # return 'OK', 201
         raise NotImplementedError
@@ -67,9 +755,8 @@ class Test(MinXin):
         return {'test_request': url_request, 'test_result': url_result}
 
     @classmethod
-    def test_init(cls):
+    def custom_test_init(cls):
         pass
-
 
 class TestClient(Test):
 
@@ -78,7 +765,6 @@ class TestClient(Test):
         self._test = test
         if self._test and self._client and hasattr(self, 'test_init'):
             self.test_init()
-
 
 class TestPage(Test):
     _TEST_DB = 'test.db'
@@ -93,10 +779,6 @@ class TestPage(Test):
         self.create_app()
 
     def create_test_routes(self, app):
-        '''
-        Create a test url route and page link for each subclass, each page contains a test case in js. Finally create an index page of all tests
-        TODO: may add this into a new interface of page
-        '''
 
         nav_items = {'title': {'name': '测试所有类', 'action': None}, 'menu_list': []}
         subclasses = self.get_sub_classes(self._root_class)
@@ -108,20 +790,10 @@ class TestPage(Test):
 
         @app.route('/')
         def index():
-            '''
-            nav_items = {'title': {'name': '测试所有类', 'action': None}, 'menu_list': []}
-            subclasses = self.get_sub_classes(self._root_class)
-            for name, klass in subclasses.items():
-                test_urls = klass.add_test_route(app)
-                nav_items['menu_list'].append({'name': name, 'action': test_urls['test_request']})
-
-            self._nav_items = {**self._nav_items, **nav_items} if hasattr(self, '_nav_item') else nav_items
-            '''
             return render_template_string(self.render())
 
     def create_app(self):
-        '''create app, and all test urls'''
-
+        
         from flask import Flask
         from flask_appconfig import AppConfig
         from flask_bootstrap import Bootstrap
@@ -152,6 +824,255 @@ class TestPage(Test):
 
     def test_start(self):
         self.app.run(host='0.0.0.0', port=5600, threaded=True)
+'''
+
+class OOCalendarTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+        NAME = 'OOCalendar'
+        TITLE = 'title'
+        this_class = kwargs['testing_class']
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebHead2 = page._SUBCLASSES['WebHead2']['class']
+        OOCalendarBar = page._SUBCLASSES['OOCalendarBar']['class']
+        WebBr = page._SUBCLASSES['WebBr']['class']
+        with page.add_child(WebRow()) as r0:
+            with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c0:
+                with c0.add_child(WebHead2(name=TITLE)) as title:
+                    pass
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                with c1.add_child(OOCalendarBar()) as bar:
+                    pass
+        with page.add_child(WebRow()) as r2:
+            with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                with c2.add_child(this_class(name=NAME)) as calendar:
+                    pass
+        with page.add_child(WebBr()):
+            pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        title = page._components['title']
+        calendar = page._components['OOCalendar']
+
+        with page.render_post_w():
+            calendar.render_for_post()
+            title.render_for_post()
+
+        with calendar.on_event_w('change'):
+            calendar.alert('"Calendar changed!"')
+            with page.render_post_w():
+                calendar.render_for_post()
+                title.render_for_post()
+
+    '''
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class_name = cls.__name__
+
+        PageClass = cls._PAGE_CLASS
+        page = PageClass(app=current_app, url='/' + cls.__name__ + '_test')
+
+        page.place_components = types.MethodType(
+            cls.place_components_for_class_test, page)
+        page.place_components(testing_class=cls)
+
+        page.events_trigger = types.MethodType(PageClass.events_trigger_for_class_test, page)
+        this_obj = page._components[class_name]
+        this_obj.events_trigger = types.MethodType(this_obj.__class__.events_trigger_for_class_test, this_obj)
+
+        page.init_on_post(app=current_app,
+                          on_post=page._components[class_name].on_post_for_class_test,
+                          endpoint=cls.__name__ + '_test',
+                          url='/' + cls.__name__ + '_test')
+
+        html = page.render()
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+    '''
+
+    '''
+    @classmethod
+    def test_request(cls, methods=['GET']):
+
+        NAME = 'calendar'
+        TITLE = 'title'
+
+        def on_post():
+
+            req_ = WebPage.on_post()
+            title_ = '时间标题'
+            for r in req_:
+                if r['me'] == NAME:
+
+                    start_ = datetime.fromtimestamp(int(r['data']['start']) / 1000)
+                    end_ = datetime.fromtimestamp(int(r['data']['end']) / 1000)
+                    title_ = r['data']['title']
+                    view_ = r['data']['view']
+                    r['data']['hierarchy'] = "test_hierarchy"
+
+                elif r['me'] == TITLE:
+
+                    r['data'] = {'text': title_}
+
+                elif r['me'].find(components_client.OOCalendar.ME_PRE) == 0:
+
+                    # Return data   directly, for the OOCalendar buildin requests,
+                    #   needn't {'me':xxx, 'data':xxx} anymore
+
+                    req_ = OOCalendar.on_post(r)['data']
+                    break
+
+            return jsonify({'status': 'success', 'data': req_})
+
+        class Page(WebPage):
+
+            URL = '/OOCalendar_test_post'
+
+            def type_(self):
+                return 'WebPage'
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page(app=current_app, on_post=on_post, on_post_endpoint=cls.__name__ + '_test') as page:
+            with page.add_child(WebRow()) as r0:
+                with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c0:
+                    with c0.add_child(WebHead2(name=TITLE)) as title:
+                        pass
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                    with c1.add_child(OOCalendarBar()) as bar:
+                        pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
+                    with c2.add_child(globals()[cls.__name__](name=NAME)) as calendar:
+                        pass
+            with page.add_child(WebBr()):
+                pass
+
+        html = page.render()
+        return render_template_string(html)
+    '''
+    def on_post_for_class_test(self):
+        NAME = self.__class__.__name__
+        TITLE = 'title'
+        WebPage = self._PAGE_CLASS
+        req_ = WebPage.on_post()
+        title_ = '时间标题'
+        OOCalendar = self.__class__
+        for r in req_:
+            if r['me'] == NAME:
+
+                start_ = datetime.datetime.fromtimestamp(int(r['data']['start']) / 1000)
+                end_ = datetime.datetime.fromtimestamp(int(r['data']['end']) / 1000)
+                title_ = r['data']['title']
+                view_ = r['data']['view']
+                r['data']['hierarchy'] = "test_hierarchy"
+
+            elif r['me'] == TITLE:
+
+                r['data'] = {'text': title_}
+
+            elif r['me'].find(OOCalendar.ME_PRE) == 0:
+
+                # Return data   directly, for the OOCalendar buildin requests,
+                #   needn't {'me':xxx, 'data':xxx} anymore
+
+                req_ = OOCalendar.on_post_builtin(r)['data']
+                break
+
+        return jsonify({'status': 'success', 'data': req_})
+
+
+class WebTabTest(ClassTest):
+
+    def place_components_for_class_test(self, **kwargs):
+        testing_class = kwargs['testing_class']
+        cls = testing_class
+        tab_name = testing_class.__name__
+        tab_contain_name = 'tab_contain_test'
+        tab_item1_name = 'tab_item1'
+        tab_item2_name = 'tab_item2'
+        tab_item3_name = 'tab_item3'
+        tab_contain1_name = 'tab_contain1'
+        tab_contain2_name = 'tab_contain2'
+        tab_contain3_name = 'tab_contain3'
+        page = self
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebTabContain = page._SUBCLASSES['WebTabContain']['class']
+        WebTabItem = page._SUBCLASSES['WebTabItem']['class']
+        WebHead3 = page._SUBCLASSES['WebHead3']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with c1.add_child(cls(parent=page, name=tab_name, ul_list=[
+                    {'name': tab_item1_name, 'href': '#' + tab_item1_name},
+                    {'name': tab_item2_name, 'href': '#' + tab_item2_name},
+                    {'name': tab_item3_name, 'href': '#' + tab_item3_name, 'active': True},
+                ])) as test:
+                    pass
+                with c1.add_child(WebTabContain(parent=page, name=tab_contain_name)) as contain:
+                    with contain.add_child(WebTabItem(id=tab_item1_name, name=tab_item1_name)) as item1:
+                        with item1.add_child(WebHead3(name=tab_contain1_name, value=tab_contain1_name)) as contain1:
+                            pass
+                    with contain.add_child(WebTabItem(id=tab_item2_name, name=tab_item2_name)) as item2:
+                        with item2.add_child(WebHead3(name=tab_contain2_name, value=tab_contain2_name)) as contain2:
+                            pass
+                    with contain.add_child(
+                            WebTabItem(id=tab_item3_name, name=tab_item3_name, ootype=['active'])) as item3:
+                        with item3.add_child(WebHead3(name=tab_contain3_name, value=tab_contain3_name)) as contain3:
+                            pass
+
+    def events_trigger_for_class_test(self):
+        tab_contain_name = 'tab_contain_test'
+        tab_item1_name = 'tab_item1'
+        tab_item2_name = 'tab_item2'
+        tab_item3_name = 'tab_item3'
+        tab_contain1_name = 'tab_contain1'
+        tab_contain2_name = 'tab_contain2'
+        tab_contain3_name = 'tab_contain3'
+
+        page = self
+        test = page._components['WebTab']
+        contain = page._components[tab_contain_name]
+
+        with page.render_post_w():
+            test.render_for_post()
+            contain.render_for_post()
+
+        with test.on_event_w(event='active_change'):
+            with page.render_post_w():
+                test.render_for_post()
+                contain.render_for_post()
+
+    def on_post_for_class_test(self):
+        tab_name = self.__class__.__name__
+        tab_contain_name = 'tab_contain_test'
+        tab_item1_name = 'tab_item1'
+        tab_item2_name = 'tab_item2'
+        tab_item3_name = 'tab_item3'
+        tab_contain1_name = 'tab_contain1'
+        tab_contain2_name = 'tab_contain2'
+        tab_contain3_name = 'tab_contain3'
+        WebPage = self._PAGE_CLASS
+        req = WebPage.on_post()
+        for r in req:
+            if r['me'] == tab_name:
+                print('Got tab active item: {}'.format(r['data']))
+                r['data'] = tab_item2_name
+            if r['me'] == tab_contain_name:
+                print('Got tab contain active page: {}'.format(r['data']))
+                r['data'] = tab_item2_name
+        return jsonify({'status': 'success', 'data': req})
+
 
 _TEST_DB = 'test.db'
 def create_app():
@@ -179,13 +1100,91 @@ def create_app():
 
     return app
 
+
+def test_home(app, PageClass, RootClass):
+
+    if hasattr(PageClass, 'TEST_HOME_HTML') and PageClass.TEST_HOME_HTML:
+        return PageClass.TEST_HOME_HTML
+
+    WebPage = PageClass
+    RootClass = RootClass
+    test_page = WebPage(app=current_app)
+    test_page.socketio = app.socketio
+    test_page.db = app.db
+    subclasses = test_page.get_sub_classes(root_class=RootClass)
+    WebRow = subclasses['WebRow']['class']
+    WebColumn = subclasses['WebColumn']['class']
+    WebHead1 = subclasses['WebHead1']['class']
+    WebHr = subclasses['WebHr']['class']
+    WebNav = subclasses['WebNav']['class']
+    WebBtn = subclasses['WebBtn']['class']
+    class_objs = []
+
+    def place_components(self):
+        with self.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
+                with c1.add_child(WebHead1(value='OWWWO Classes Testing')) as head:
+                    pass
+        with self.add_child(WebRow()) as r2:
+            with r2.add_child(WebColumn(width=['md8', 'lg8'], offset=['mdo2', 'lgo2'])) as c2:
+                with c2.add_child(WebHr()) as hr:
+                    pass
+        with self.add_child(WebRow()) as r3:
+            with r3.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c3:
+                for name, subclass in subclasses.items():
+                    if name == 'WebPage':
+                        subclass['class']._PAGE_CLASS = WebPage
+                        continue
+                    url_request = 'test_' + name + '_request'
+                    subclass['class']._PAGE_CLASS = WebPage
+                    setattr(subclass['class'], 'RENDERED_HTML', None)
+                    setattr(subclass['class'], 'CLASS_TEST_HTML', None)
+                    app.add_url_rule('/' + url_request, endpoint=url_request, view_func=subclass['test_request'],
+                                     methods=['GET', 'POST'])
+                    url_result = 'test_' + name + '_result'
+                    app.add_url_rule('/' + url_result, endpoint=url_result, view_func=subclass['test_result'],
+                                     methods=['POST'])
+                    with c3.add_child(WebBtn(name=name, value=name, width='260px',
+                                             styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
+                        class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
+        for class_obj in class_objs:
+            with class_obj['obj'].on_event_w('click'):
+                self.add_script('location="/{}";'.format(class_obj['test_request_url']))
+
+        if not hasattr(self, '_nav_items'):
+            self._nav_items = {}
+
+        menu = {
+                'title': {'name': 'OwwwO', 'endpoint': 'home'},
+                'login': {
+                    'site_name': 'OwwwO',
+                    'is_login': False,
+                    'login_name': 'TestUser',
+                    'login_href': '/',
+                    'logout_href': '/'
+                }
+            }
+        self.nav = WebNav(nav_items=menu)
+    test_page.place_components = types.MethodType(place_components, test_page)
+    test_page.place_components()
+
+    def events_trigger(self):
+        print('test_page set event_trigger do nothing')
+
+    test_page.events_trigger = types.MethodType(events_trigger, test_page)
+
+    html = test_page.render()
+    PageClass.TEST_HOME_HTML = render_template_string(html)
+    return PageClass.TEST_HOME_HTML
+
+'''
 class TestPageClient(TestClient, TestPage):
 
     def __init__(self, test=False, **kwargs):
         super().__init__(test=test, **kwargs)
         if test and self._client:
             TestPage.test_init(self)
-
+'''
 
 class ExampleData():
     LAST_NAME = [
