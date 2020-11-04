@@ -1,7 +1,8 @@
 import abc
+from contextlib2 import contextmanager
 from test_class import *
 
-class AppearanceInf(MinXin, metaclass=abc.ABCMeta):
+class AppearanceInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def width(self, width):
@@ -28,7 +29,7 @@ class AppearanceInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class PositionInf(MinXin, metaclass=abc.ABCMeta):
+class PositionInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def pad(self, pad):
@@ -43,7 +44,7 @@ class PositionInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class PropertyInf(MinXin, metaclass=abc.ABCMeta):
+class PropertyInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def value(self, value):
@@ -62,9 +63,10 @@ class PropertyInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class EventInf(MinXin, metaclass=abc.ABCMeta):
+class EventInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
+    @contextmanager
     def on_event_w(self, event, filter='', propagation=None):
         '''Declare an execute_list, capture the event if not yet, push the following actions into the execute list'''
         pass
@@ -90,7 +92,7 @@ class EventInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
+class BootstrapInf(metaclass=abc.ABCMeta):
 
     DEFAULT_URL='index'
 
@@ -158,10 +160,7 @@ class BootstrapInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class ComponentInf(MinXin, metaclass=abc.ABCMeta):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class ComponentInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __enter__(self):
@@ -226,19 +225,31 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_context_list(self,context_list):
+    def set_context(self, context):
         pass
 
+    @abc.abstractmethod
+    def add_context_indent(self, indent):
+        pass
+
+    @abc.abstractmethod
+    def get_context_indent(self):
+        pass
+
+    '''
+    @abc.abstractmethod
+    def add_context_list(self,context_list):
+        pass
+    '''
+
+    '''
     @abc.abstractmethod
     def scripts(self):
         pass
+    '''
 
     @abc.abstractmethod
-    def add_script(self, scripts, indent=True, place=None):
-        pass
-
-    @abc.abstractmethod
-    def add_script_list(self, script_list, place=None):
+    def add_scripts(self, scripts, indent=True, place=None):
         pass
 
     @abc.abstractmethod
@@ -246,38 +257,47 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_script_files(self, files):
+    def add_scripts_files(self, files):
         pass
 
     @abc.abstractmethod
-    def get_script_files(self):
+    def get_scripts_files(self):
         pass
 
     @abc.abstractmethod
-    def set_script_indent(self, indent):
+    def set_scripts_indent(self, indent):
         pass
 
     @abc.abstractmethod
-    def get_script_indent(self):
+    def get_scripts_indent(self):
         pass
 
     @abc.abstractmethod
-    def get_style(self):
+    def add_styles(self, styles):
         pass
 
     @abc.abstractmethod
-    def add_style(self, styles):
+    def get_styles(self):
         pass
 
     @abc.abstractmethod
-    def add_style_files(self, files):
+    def add_styles_files(self, files):
         pass
 
     @abc.abstractmethod
-    def get_style_files(self):
+    def get_styles_files(self):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def add_url_rule(cls, app, extend=[]):
         pass
 
     '''
+    @abc.abstractmethod
+    def add_script_list(self, script_list, place=None):
+        pass
+
     def data_format(self):
         raise NotImplementedError
 
@@ -289,9 +309,12 @@ class ComponentInf(MinXin, metaclass=abc.ABCMeta):
     def events_default_action(self, req):
         return super().events_default_action(req=req)
     '''
+    @abc.abstractmethod
+    def render(self):
+        pass
 
 
-class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
+class CustomComponentInf(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
@@ -351,7 +374,7 @@ class CustomComponentInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class CommandInf(MinXin, metaclass=abc.ABCMeta):
+class CommandInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def if_w(self):
@@ -410,14 +433,13 @@ class CommandInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class ActionInf(MinXin, EventInf, CommandInf, AppearanceInf, PositionInf, PropertyInf, metaclass=abc.ABCMeta):
+class ActionInf(EventInf, AppearanceInf, PositionInf, PropertyInf):
 
     '''
     All the interfaces about js operations
 
     TODO: add w_ head of all the function with decorated with contextmanager
     '''
-    pass
 
     '''
     @abc.abstractmethod
@@ -434,11 +456,6 @@ class ActionInf(MinXin, EventInf, CommandInf, AppearanceInf, PositionInf, Proper
 
     @abc.abstractmethod
     def remove_attrs(self, attrs):
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    def add_url_rule(cls, app, extend=[]):
         pass
 
     @classmethod
@@ -463,7 +480,7 @@ class ActionInf(MinXin, EventInf, CommandInf, AppearanceInf, PositionInf, Proper
         pass
     '''
 
-
+'''
 class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -489,13 +506,13 @@ class ActionJqueryInf(ActionInf, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def each_w(self):
         pass
+'''
 
-
-class FormatInf(MinXin, AppearanceInf, PositionInf, PropertyInf, metaclass=abc.ABCMeta):
+class FormatInf(AppearanceInf, PositionInf, PropertyInf):
     pass
 
 
-class ClientInf(MinXin, metaclass=abc.ABCMeta):
+class ClientInf(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
@@ -522,21 +539,21 @@ class ClientInf(MinXin, metaclass=abc.ABCMeta):
         pass
 
 
-class ListInf(MinXin, metaclass=abc.ABCMeta):
+class ListInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def append_w(self):
         pass
 
 
-class DictInf(MinXin, metaclass=abc.ABCMeta):
+class DictInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update_w(self, dict):
         pass
 
 
-class VarInf(MinXin, metaclass=abc.ABCMeta):
+class VarInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def equal(self):

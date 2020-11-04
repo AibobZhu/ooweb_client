@@ -68,15 +68,16 @@ dot.inf(name='CommandInf', methods=[
 dot.inf(name='ComponentInf', methods=[
     '__enter__', '__exit__', 'name', 'id',
     'children', 'add_child', 'remove_child', 'empty_children', 'parent', 'module', 'url',
-    'render_content', 'context', 'add_context', 'set_context', 'set_context_indent', 'get_context_indent',
-    'add_scripts', 'replace_scripts', 'add_scripts_files', 'get_scripts_files', 'set_scripts_indent', 'get_scripts_indent',
-    'add_styles', 'get_styles', 'add_styles_files', 'get_styles_files',
-    'add_url_rule'
+    'render', 'render_context', 'context', 'add_context',
+    'scripts', 'add_scripts', 'replace_scripts', 'add_script_files', 'get_script_files', 'set_script_indent', 'get_script_indent',
+    'get_style', 'add_style', 'add_style_files', 'get_style_files',
 ])
 
+dot.klass(name='ClientInf', fontcolor='blue')
+
 dot.klass(name='ActionInf')
-dot.deri('ActionInf', 'AppearanceInf')
 dot.deri('ActionInf', 'EventInf')
+dot.deri('ActionInf', 'AppearanceInf')
 dot.deri('ActionInf', 'PositionInf')
 dot.deri('ActionInf', 'PropertyInf')
 
@@ -87,16 +88,28 @@ dot.impl('Action', 'CommandInf')
 dot.klass(name='ActionJquery')
 dot.deri('ActionJquery','Action')
 
+dot.klass(name='ActionClient', fontcolor='blue')
+dot.impl('ActionClient', 'ActionInf')
+dot.impl('ActionClient', 'CommandInf')
+
+dot.klass(name='ActionJqueryClient', fontcolor='blue')
+dot.deri('ActionJqueryClient','ActionClient')
+
 dot.klass(name='FormatInf')
 dot.deri('FormatInf', 'AppearanceInf')
 dot.deri('FormatInf', 'PositionInf')
 dot.deri('FormatInf', 'PropertyInf')
 
 dot.klass(name='Format', attrs=['UNITS', '_attrs', '_styles', '_classes', '_value',
-                                '_width', '_height', '_color', '_font', '_border', '_disable',
+                                '_width', '_height', '_color', '_font', '_border',
                                 '_pad', '_margin', '_align',
                                 ])
 dot.impl('Format', 'FormatInf')
+
+dot.klass(name='FormatClient', fontcolor='blue')
+dot.impl('FormatClient', 'FormatInf')
+
+dot.klass(name='ClientBase', fontcolor='blue')
 
 dot.klass(name='FormatBootstrap', attrs=[
         'COL_NAME', 'COL_OFFSET_NAME', 'ALIGN', '-----------------------',
@@ -105,6 +118,9 @@ dot.klass(name='FormatBootstrap', attrs=[
         'check_col_name', 'check_align', 'offset', 'get_width_name', 'get_offset_name'
     ])
 dot.deri('FormatBootstrap','Format')
+
+dot.klass(name='FormatBootstrapClient', fontcolor='blue')
+dot.deri('FormatBootstrapClient','FormatClient')
 
 dot.klass(name='WebComponent', attrs=[
         '_id', '_name', '_context', '_scripts', '_script_indent', '_styles',
@@ -123,61 +139,107 @@ dot.klass(name='ClassTest', methods=[
 
 dot.klass('WebComponentBootstrap')
 dot.deri('WebComponentBootstrap', 'WebComponent')
-dot.comp('WebComponentBootstrap', 'ActionJquery')
-dot.comp('WebComponentBootstrap', 'FormatBootstrap')
-dot.impl('WebComponentBootstrap', 'AppearanceInf')
-dot.impl('WebComponentBootstrap', 'EventInf')
-dot.impl('WebComponentBootstrap', 'PositionInf')
-dot.impl('WebComponentBootstrap', 'PropertyInf')
+dot.deri('WebComponentBootstrap', 'ActionJquery')
+dot.deri('WebComponentBootstrap', 'FormatBootstrap')
 dot.deri('WebComponentBootstrap', 'ClassTest')
+
+dot.klass('WebComponentBootstrapClient', fontcolor='blue')
+dot.deri('WebComponentBootstrapClient', 'WebComponentClient')
+dot.deri('WebComponentBootstrapClient', 'ActionJqueryClient')
+dot.deri('WebComponentBootstrapClient', 'FormatBootstrapClient')
+dot.deri('WebComponentBootstrapClient', 'ClassTest')
+dot.impl('WebComponentBootstrapClient', 'ClientInf')
+dot.deri('WebComponentBootstrapClient', 'ClientBase')
+
+dot.klass('WebComponentClient', fontcolor='blue')
+dot.impl('WebComponentClient', 'ComponentInf')
+
+'''
+dot.impl('WebComponentClient', 'CommandInf')
+dot.impl('WebComponentClient', 'EventInf')
+dot.impl('WebComponentClient', 'FormatInf')
+'''
 
 dot.klass(name='WebPage')
 dot.deri('WebPage','WebComponentBootstrap')
 
+dot.klass(name='WebPageClient', fontcolor='blue')
+dot.deri('WebPageClient','WebComponentBootstrapClient')
+
 dot.klass(name='WebTable')
 dot.deri('WebTable','WebComponentBootstrap')
+
+dot.klass(name='WebTableClient', fontcolor='blue')
+dot.deri('WebTableClient', 'WebComponentBootstrapClient')
 
 dot.klass(name='WebBtnToggle', methods=['toggle_class', 'toggle'])
 dot.deri('WebBtnToggle', 'WebComponentBootstrap')
 
+dot.klass(name='WebBtnToggleClient', methods=['toggle_class', 'toggle'], fontcolor='blue')
+dot.deri('WebBtnToggleClient', 'WebComponentBootstrapClient')
+
 dot.klass(name='WebImg')
 dot.deri('WebImg','WebComponentBootstrap')
+
+dot.klass(name='WebImgClient', fontcolor='blue')
+dot.deri('WebImgClient', 'WebComponentBootstrapClient')
 
 dot.klass(name='WebChart')
 dot.deri('WebChart','WebComponentBootstrap')
 
+dot.klass(name='WebChartClient', fontcolor='blue')
+dot.deri('WebChartClient','WebComponentBootstrapClient')
+
 dot.klass(name='Web...')
 dot.deri('Web...', 'WebComponentBootstrap')
+
+dot.klass(name='Web...Client', fontcolor='blue')
+dot.deri('Web...Client', 'WebComponentBootstrapClient')
 
 with dot.subgraph() as lev1:
     lev1.attr(rank='same')
     lev1.node('ComponentInf')
     lev1.node('EventInf')
     lev1.node('CommandInf')
+    lev1.node('ClientInf')
 
 with dot.subgraph() as lev2:
     lev2.attr(rank='same')
     lev2.node('Format')
     lev2.node('Action')
+    lev2.node('FormatClient')
+    lev2.node('ActionClient')
     lev2.node('ClassTest')
     lev2.node('WebComponent')
+    lev2.node('WebComponentClient')
+    lev2.node('ClientBase')
 
 with dot.subgraph() as lev3:
     lev3.attr(rank='same')
     lev3.node('FormatBootstrap')
     lev3.node('ActionJquery')
+    lev3.node('FormatBootstrapClient')
+    lev3.node('ActionJqueryClient')
 
 with dot.subgraph() as lev4:
     lev4.attr(rank='same')
     lev4.node('WebComponentBootstrap')
+    lev4.node('WebComponentBootstrapClient')
 
 with dot.subgraph() as lev5:
     lev5.attr(rank='same')
     lev5.node('WebPage')
+    lev5.node('WebPageClient')
     lev5.node('WebTable')
+    lev5.node('WebTableClient')
     lev5.node('WebBtnToggle')
+    lev5.node('WebBtnToggleClient')
     lev5.node('WebImg')
+    lev5.node('WebImgClient')
     lev5.node('WebChart')
+    lev5.node('WebChartClient')
     lev5.node('Web...')
+    lev5.node('Web...Client')
+
 
 dot.render('output/api.gv', view=True)

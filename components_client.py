@@ -87,9 +87,14 @@ TODO: try with eval, just pass the function calling and express in string, then 
 '''
 
 
-class Action(CommandInf, ActionInf, ClientBase):
+class Action(CommandInf, ActionInf):
+
     DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
     DRAW_IMG_FUNC_ARG = ['img', 'height']
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @contextmanager
     def if_w(self):
         params = {}
@@ -123,27 +128,13 @@ class Action(CommandInf, ActionInf, ClientBase):
         finally:
             self._pop_current_context()
 
+    @contextmanager
+    def for_w(self):
+        raise NotImplementedError
+
     def equal(self, right, left=None, force_condition=False):
         params = {'right': right, 'left': left, 'force_condition': force_condition}
         self.func_call(params=params)
-
-    def is_(self, element_name):
-        params = {'element_name': element_name}
-        self.func_call(params=params)
-
-    @contextmanager
-    def assign_w(self):
-        params = {}
-        self.with_call(params)
-        try:
-            yield
-        except Exception as err:
-            raise Exception(err)
-        finally:
-            self._pop_current_context()
-
-    def for_w(self):
-        raise NotImplementedError
 
     def is_js(self):
         raise NotImplementedError
@@ -182,13 +173,41 @@ class Action(CommandInf, ActionInf, ClientBase):
         finally:
             self._pop_current_context()
 
+    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params)
+
+    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params)
+
+    def call_custom_func(self, fname='', fparams={}):
+        params = {'fname': fname, 'fparams': fparams}
+        return self.func_call(params)
+
+    '''
+    def is_(self, element_name):
+        params = {'element_name': element_name}
+        self.func_call(params=params)
+    
+    @contextmanager
+    def assign_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+    
     def has_class(self, class_):
         raise NotImplementedError
 
     def add_class(self, class_):
         params = {'class_': class_}
         return self.func_call(params)
-
+    
     def remove_class(self, class_):
         params = {'class_': class_}
         return self.func_call(params)
@@ -200,6 +219,7 @@ class Action(CommandInf, ActionInf, ClientBase):
     def remove_attrs(self, attrs):
         params = {'attrs', attrs}
         return self.func_call(params)
+    '''
 
     @classmethod
     def on_post(cls):
@@ -221,6 +241,7 @@ class Action(CommandInf, ActionInf, ClientBase):
         return data
         # return {"status": "sucess", 'data': data, 'me': req['me']}
 
+    '''
     @contextmanager
     def each_w(self):
         self.with_call({})
@@ -233,12 +254,6 @@ class Action(CommandInf, ActionInf, ClientBase):
 
     @contextmanager
     def post_w(self, url=None, data=None, success=None):
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {'url':url, 'data':data, 'success':success}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        '''
         data_ = data
         if not isinstance(data, str):
             data_ = '{}'.format(str(data))
@@ -253,14 +268,17 @@ class Action(CommandInf, ActionInf, ClientBase):
             pass
         finally:
             self._pop_current_context()
+    '''
 
     def alert(self, message=''):
         params = {'message': message}
         return self.func_call(params)
 
+    '''
     def execute_list_name(self, action_name):
         params = {'action_name': action_name}
         return self.func_call(params)
+    '''
 
     @contextmanager
     def on_event_w(self, event, filter='', propagation=None):
@@ -280,9 +298,11 @@ class Action(CommandInf, ActionInf, ClientBase):
         finally:
             self._pop_current_context()
 
+    '''
     def stop_event(self, event, filter='', stop=False):
         params = {'event': event, 'filter': filter, 'stop': stop}
         self.func_call(params)
+    '''
 
     def trigger_event(self, event):
         params = {'event': event}
@@ -295,46 +315,16 @@ class Action(CommandInf, ActionInf, ClientBase):
             params = {}
         self.func_call(params)
 
+    '''
     def empty(self):
         params = {}
         self.func_call(params)
-
-    def disable(self, disable):
-        params = {'disable': disable}
-        self.func_call(params)
+    '''
 
     def _example_data(cls):
         raise NotImplementedError
 
-    @classmethod
-    def add_url_rule(cls, app, extend=[]):
-        if extend:
-            for e in extend:
-                if 'endpoint' in e and e['endpoint'] and 'methods' in e and e['methods']:
-                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'],
-                                     methods=e['methods'])
-                elif 'endpoint' in e and e['endpoint']:
-                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
-                elif 'methods' in e and e['methods']:
-                    app.add_url_rule(rule=e['rule'], view_func=e['view_func'], methods=e['methods'])
-                elif not 'rule' in e or not e['rule'] or not 'view_func' in e or not e['view_func']:
-                    raise RuntimeError('add_url_rule extend should have "rule" and "view_func"')
-                else:
-                    url = e['rule']
-                    app.add_url_rule(rule=url, view_func=e['view_func'])
-
-    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
-        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
-        return self.func_call(params)
-
-    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
-        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
-        return self.func_call(params)
-
-    def call_custom_func(self, fname='', fparams={}):
-        params = {'fname': fname, 'fparams': fparams}
-        return self.func_call(params)
-
+    '''
     @property
     def true(self):
         params = {}
@@ -349,10 +339,11 @@ class Action(CommandInf, ActionInf, ClientBase):
     def null(self):
         params = {}
         return self.func_call(params)
-
+    
     def declare_event(self, event, use_clsname=False, selector=None, filter=''):
         params = {'event': event, 'use_clsname': use_clsname, 'selector': selector, 'filter': filter}
         return self.func_call(params)
+    '''
 
     def sync(self, sync=True):
         params = {'sync': sync}
@@ -386,13 +377,412 @@ class Action(CommandInf, ActionInf, ClientBase):
         finally:
             self._pop_current_context()
 
+    def width(self, width=None):
+        params = {'width': width}
+        return self.func_call(params)
+
     def height(self, height=None):
         params = {'height': height}
         return self.func_call(params)
 
+    def color(self, color=None):
+        params = {'color': color}
+        return self.func_call(params)
 
-class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
-    pass
+    def font(self, font=None):
+        params = {'font': font}
+        return self.func_call(params)
+
+    def border(self, border=None):
+        params = {'border': border}
+        return self.func_call(params)
+
+    def disable(self, disable):
+        params = {'disable': disable}
+        self.func_call(params)
+
+    def value(self, value=None):
+        params = {'value': value}
+        return self.func_call(params)
+
+    def attrs(self, attrs=None):
+        params = {'attrs': attrs}
+        return self.func_call(params)
+
+    def classes(self, classes=None):
+        params = {'classes': classes}
+        return self.func_call(params)
+
+    def styles(self, styles=None):
+        params = {'styles': styles}
+        return self.func_call(params)
+
+    def pad(self, pad=None):
+        params = {'pad': pad}
+        return self.func_call(params)
+
+    def margin(self, margin=None):
+        params = {'margin': margin}
+        return self.func_call(params)
+
+    def align(self, align=None):
+        params = {'align': align}
+        return self.func_call(params)
+
+
+class ActionJquery(Action):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @contextmanager
+    def if_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def elif_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def else_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def for_w(self):
+        raise NotImplementedError
+
+    def equal(self, right, left=None, force_condition=False):
+        params = {'right': right, 'left': left, 'force_condition': force_condition}
+        self.func_call(params=params)
+
+    def is_js(self):
+        raise NotImplementedError
+
+    def set_js(self, js_):
+        params = {'js_': js_}
+        self.func_call(params=params)
+
+    def is_condition(self):
+        params = {'cond': cond}
+        self.func_call(params=params)
+
+    def set_condition(self, cond):
+        params = {'cond': cond}
+        self.func_call(params=params)
+
+    @contextmanager
+    def condition_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def cmds_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params)
+
+    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params)
+
+    def call_custom_func(self, fname='', fparams={}):
+        params = {'fname': fname, 'fparams': fparams}
+        return self.func_call(params)
+
+    '''
+    def is_(self, element_name):
+        params = {'element_name': element_name}
+        self.func_call(params=params)
+
+    @contextmanager
+    def assign_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def has_class(self, class_):
+        raise NotImplementedError
+
+    def add_class(self, class_):
+        params = {'class_': class_}
+        return self.func_call(params)
+
+    def remove_class(self, class_):
+        params = {'class_': class_}
+        return self.func_call(params)
+
+    def add_attrs(self, attrs):
+        params = {'attrs': attrs}
+        return self.func_call(params)
+
+    def remove_attrs(self, attrs):
+        params = {'attrs', attrs}
+        return self.func_call(params)
+    '''
+
+    @classmethod
+    def on_post(cls):
+        '''
+        The process function to response the post request from the WebComponent itself
+        TODO: Query data by user model
+
+        :return: jsonify({'status':'success','data': data})
+        '''
+        data = json.loads(request.form.get('data'))
+        if isinstance(data, list):
+            all_is_str = True
+            for d in data:
+                if not isinstance(d, str):
+                    all_is_str = False
+            if all_is_str:
+                data_a = [json.loads(d) for d in data]
+                data = data_a
+        return data
+        # return {"status": "sucess", 'data': data, 'me': req['me']}
+
+    '''
+    @contextmanager
+    def each_w(self):
+        self.with_call({})
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def post_w(self, url=None, data=None, success=None):
+        data_ = data
+        if not isinstance(data, str):
+            data_ = '{}'.format(str(data))
+        url_ = url
+        if not isinstance(url, str):
+            url_ = '"{}"'.format(str(url))
+        params = {'url': str(url), 'data': data_, 'success': success}
+        self.with_call(params)
+        try:
+            yield
+        except:
+            pass
+        finally:
+            self._pop_current_context()
+    '''
+
+    def alert(self, message=''):
+        params = {'message': message}
+        return self.func_call(params)
+
+    '''
+    def execute_list_name(self, action_name):
+        params = {'action_name': action_name}
+        return self.func_call(params)
+    '''
+
+    @contextmanager
+    def on_event_w(self, event, filter='', propagation=None):
+        params = {'event': event, 'filter': filter, 'propagation': propagation}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    '''
+    def stop_event(self, event, filter='', stop=False):
+        params = {'event': event, 'filter': filter, 'stop': stop}
+        self.func_call(params)
+    '''
+
+    def trigger_event(self, event):
+        params = {'event': event}
+        self.func_call(params)
+
+    def val(self, value=None):
+        if value:
+            params = {'value': value}
+        else:
+            params = {}
+        self.func_call(params)
+
+    '''
+    def empty(self):
+        params = {}
+        self.func_call(params)
+    '''
+
+    def _example_data(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def add_url_rule(cls, app, extend=[]):
+        if extend:
+            for e in extend:
+                if 'endpoint' in e and e['endpoint'] and 'methods' in e and e['methods']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'],
+                                     methods=e['methods'])
+                elif 'endpoint' in e and e['endpoint']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
+                elif 'methods' in e and e['methods']:
+                    app.add_url_rule(rule=e['rule'], view_func=e['view_func'], methods=e['methods'])
+                elif not 'rule' in e or not e['rule'] or not 'view_func' in e or not e['view_func']:
+                    raise RuntimeError('add_url_rule extend should have "rule" and "view_func"')
+                else:
+                    url = e['rule']
+                    app.add_url_rule(rule=url, view_func=e['view_func'])
+
+    '''
+    @property
+    def true(self):
+        params = {}
+        return self.func_call(params)
+
+    @property
+    def false(self):
+        params = {}
+        return self.func_call(params)
+
+    @property
+    def null(self):
+        params = {}
+        return self.func_call(params)
+
+    def declare_event(self, event, use_clsname=False, selector=None, filter=''):
+        params = {'event': event, 'use_clsname': use_clsname, 'selector': selector, 'filter': filter}
+        return self.func_call(params)
+    '''
+
+    def sync(self, sync=True):
+        params = {'sync': sync}
+        return self.func_call(params)
+
+    @contextmanager
+    def render_post_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            print("Error: exception err:{}".format(err))
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def render_for_post(self, return_parts=['all'], trigger_event=False):
+        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
+        return self.func_call(params)
+
+    @contextmanager
+    def timeout_w(self, time=None):
+        params = {'time': time}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            print('Error: exception err:{}'.format(err))
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def width(self, width=None):
+        params = {'width': width}
+        return self.func_call(params)
+
+    def height(self, height=None):
+        params = {'height': height}
+        return self.func_call(params)
+
+    def color(self, color=None):
+        params = {'color': color}
+        return self.func_call(params)
+
+    def font(self, font=None):
+        params = {'font': font}
+        return self.func_call(params)
+
+    def border(self, border=None):
+        params = {'border': border}
+        return self.func_call(params)
+
+    def disable(self, disable):
+        params = {'disable': disable}
+        self.func_call(params)
+
+    def value(self, value=None):
+        params = {'value': value}
+        return self.func_call(params)
+
+    def attr(self, attr=None):
+        params = {'attr': attr}
+        return self.func_call(params)
+
+    def classes(self, classes=None):
+        params = {'classes': classes}
+        return self.func_call(params)
+
+    def styles(self, styles=None):
+        params = {'styles': styles}
+        return self.func_call(params)
+
+    def pad(self, pad=None):
+        params = {'pad': pad}
+        return self.func_call(params)
+
+    def margin(self, margin=None):
+        params = {'margin': margin}
+        return self.func_call(params)
+
+    def align(self, align=None):
+        params = {'align': align}
+        return self.func_call(params)
+
+
+class Format(FormatInf):
+
+    # Position
     def pad(self, pad=None):
         params = {'pad': pad}
         return  self.func_call(params=params)
@@ -401,6 +791,12 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
         params = {'margin': margin}
         return self.func_call(params=params)
 
+    def align(self, align=None):
+        params = {'align': align}
+        return self.func_call(params=params)
+    # End position
+
+    # Appearance
     def width(self, width=None):
         params = {'width': width}
         return self.func_call(params=params)
@@ -408,13 +804,6 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
     def height(self, height=None):
         params = {'height': height}
         return self.func_call(params=params)
-
-    def align(self, align=None):
-        params = {'align': align}
-        return self.func_call(params=params)
-
-    def value(self, value=None):
-        raise NotImplementedError
 
     def color(self, color=None):
         params = {'color': color}
@@ -424,9 +813,23 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
         params = {'font': font}
         return self.func_call(params=params)
 
+    def border(self, border=None):
+        params = {'border': border}
+        return self.func_call(params)
+
+    def disable(self, disable=None):
+        params = {'disable': disable}
+        return self.func_call(params)
+    # End appearance
+
+    # Property
+    def value(self, value=None):
+        raise NotImplementedError
+
     def attrs(self, attrs=None):
         raise NotImplementedError
 
+    '''
     def attrs_str(self):
         raise NotImplementedError
 
@@ -435,10 +838,12 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
 
     def remove_att(self, att):
         raise NotImplementedError
+    '''
 
     def classes(self, classes=None):
         raise NotImplementedError
 
+    '''
     def classes_str(self):
         raise NotImplementedError
 
@@ -464,11 +869,11 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
 
     def _get_width_name(self, width):
         raise NotImplementedError
-
+    
     def base_context(self):
         raise NotImplementedError
-
-    def fix_cmd(self, cmd):
+    
+   def fix_cmd(self, cmd):
         raise NotImplementedError
 
     def has_class(self, class_):
@@ -485,19 +890,23 @@ class FormatClient(AppearanceInf, PropertyInf, PositionInf, ClientBase):
 
     def remove_style(self, style):
         raise NotImplementedError
+    '''
 
     def styles(self, style=None):
         raise NotImplementedError
 
+    '''
     def styles_str(self):
         raise NotImplementedError
 
     def border_radius(self, radius=None):
         params = {'radius': radius}
         self.func_call(params)
+    '''
+    #End property
 
 
-class FormatBootstrap(Format, BootstrapInf):
+class FormatBootstrap(Format):
 
     '''
     @staticmethod
@@ -534,112 +943,13 @@ class FormatBootstrap(Format, BootstrapInf):
         return menu
 
 
-class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
+class WebComponent(ComponentInf, ClientBase):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     _context = None
     _cur_context_stack = []
-
-    @classmethod
-    def _set_context(cls, context):
-        WebComponent._context = context
-        WebComponent._cur_context_stack = [WebComponent._context]
-
-    def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
-        """
-        Convert an object call to context
-
-        :param func: function name
-        :param caller_id: caller id
-        :param params: parameters in dict
-        :param sub_context: sub context
-        :return: context in dict
-        """
-
-        def convert_param_obj(params):
-            if isinstance(params, str):
-                print("error: params is instance of _str")
-            for k, v in params.items():
-                if k == 'params':
-                    convert_param_obj(v)
-                if isinstance(v, WebComponent):
-                    params[k] = {'obj_id': v.id()}
-
-        convert_param_obj(params)
-        return {
-            'function': func,
-            'caller_id': caller_id,
-            'params': params,
-            'sub_context': sub_context
-        }
-
-    def _get_clscall_context(self, func, cls, params=None, sub_context=[]):
-        def convert_param_obj(params):
-            if isinstance(params, str):
-                print("error: params is instance of _str")
-            for k, v in params.items():
-                if k == 'params':
-                    convert_param_obj(v)
-                if isinstance(v, WebComponent):
-                    params[k] = {'obj_id': v.id()}
-
-        convert_param_obj(params)
-        return {
-            'function': 'classmethod:' + cls + '.' + func,
-            'params': params,
-            'sub_context': sub_context
-        }
-
-    def __init__(self, page=None, test=False, client=True, **kwargs):
-        self._client = client
-        kwargs['client'] = client
-        super().__init__(test=test, **kwargs)
-        if 'id' in kwargs:
-            self._id = kwargs['id']
-        else:
-            self._id = self.id()
-
-        if 'name' in kwargs:
-            self._name = kwargs['name']
-        else:
-            self._name = self.name()
-
-
-        self._parent = None
-        if 'parent' in kwargs:
-            self._parent = kwargs['parent']
-
-        self._page = page
-        if not page:
-            if isinstance(self, WebPage):
-                self._page = self
-
-        self._children = set()
-        if 'children' in kwargs:
-            self._children = kwargs['children']
-
-        kwargs['name'] = self.name()
-        kwargs['id'] = self.id()
-        if hasattr(self, '_nav_items'):
-            kwargs['nav'] = self._nav_items
-        if self.__class__.__name__.find("WebPage") != 0:
-            kwargs['test'] = test
-        else:
-            kwargs['test'] = False
-
-        if hasattr(self, '_value') and 'value' not in kwargs:
-            kwargs['value'] = self._value
-
-        context = self._get_objcall_context(func=self.type_(), params=kwargs)
-        # self._mycont = self.add_context(context)
-        self._mycont = [context]
-        self.add_context(context)
-        self._components = None
-
-    def set_api(self):
-        if hasattr(self, "app") and self.app:
-            self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
-        else:
-            if current_app:
-                self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
 
     def __enter__(self):
         '''
@@ -705,9 +1015,6 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
     def module(self):
         raise NotImplementedError
 
-    def type_(self):
-        return self.__class__.__name__
-
     def url(self, url=None, js=True):
 
         if not js:
@@ -722,21 +1029,6 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         else:
             params = {'url': url, 'js': js}
             self.func_call(params)
-
-    def url_for(self, context):
-        pass
-
-    def render(self):
-        '''
-        render and return a complete page information in html
-        :return:
-        '''
-        # components = components_factory(self.context())
-        payload = create_payload(self.context())
-        # print('WebPage::render api:{}'.format(self._ap_i))
-        r = post(url=self._api, json=payload)
-        html = extract_data(r.json()['data'])
-        return render_template_string(html)
 
     def render_content(self):
         '''
@@ -765,30 +1057,6 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
     def add_context(self, cont):
         return self._add_context(cont)
 
-    def add_context_list(self, context_list, indent=True):
-        '''
-        for i,v in enumerate(context_list[1:]):
-            context_list[i+1] = self.get_context_indent()*'    ' + context_list[i+1]
-        '''
-        self.context_call(params={'context': ''.join(context_list)})
-
-    '''
-    def add_script_list(self, script_list):
-        raise NotImplementedError
-    '''
-
-    def remove_context(self, cont):
-        self._remove_context(cont)
-
-    @classmethod
-    def _remove_context(cls, cont=None):
-        if not cont:
-            del cls._cur_context_stack[-1]
-        else:
-            for i, v in enumerate(cls._cur_context_stack):
-                if v == cont:
-                    del cls._cur_context_stack[i]
-
     @classmethod
     def _add_context(cls, cont):
         if len(cls._cur_context_stack) == 0:
@@ -798,15 +1066,9 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         return cls._cur_context_stack[-1]
 
     @classmethod
-    def _push_current_context(cls, cont):
-        cls._cur_context_stack.append(cont)
-
-    @classmethod
-    def _pop_current_context(cls):
-        cls._cur_context_stack.pop()
-
-    def scripts(self):
-        raise NotImplementedError
+    def set_context(cls, context):
+        WebComponent._context = context
+        WebComponent._cur_context_stack = [WebComponent._context]
 
     def add_script(self, scripts, indent=True, place=None):
         '''
@@ -816,14 +1078,15 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         params = {'scripts': scripts, 'indent': indent, "place": place}
         return self.func_call(params)
 
-    def add_script_list(self, script_list, indent=True, place=None):
-        '''
-        Add scripts in a list
-        :param ls: scripts in list
-        :return: self.func_call(params)
-        '''
-        params = {'script_list': script_list, 'indent': indent, 'place': place}
+    def replace_scripts(self, stub, scripts):
+        raise NotImplementedError
+
+    def add_script_files(self, files):
+        params = {'files': files}
         return self.func_call(params)
+
+    def get_script_files(self):
+        raise NotImplementedError
 
     def set_script_indent(self, indent):
         '''
@@ -836,23 +1099,202 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
     def get_script_indent(self):
         raise NotImplementedError
 
-    def styles(self):
-        raise NotImplementedError
-
     def add_styles(self, styles):
         raise NotImplementedError
 
-    def add_style(self, styles):
+    def get_styles(self):
         raise NotImplementedError
 
+    def add_style_files(self, files):
+        raise NotImplementedError
+
+    def get_style_files(self):
+        raise NotImplementedError
+
+    @classmethod
+    def add_url_rule(cls, app, extend=[]):
+        if extend:
+            for e in extend:
+                if 'endpoint' in e and e['endpoint'] and 'methods' in e and e['methods']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'],
+                                     methods=e['methods'])
+                elif 'endpoint' in e and e['endpoint']:
+                    app.add_url_rule(rule=e['rule'], endpoint=e['endpoint'], view_func=e['view_func'])
+                elif 'methods' in e and e['methods']:
+                    app.add_url_rule(rule=e['rule'], view_func=e['view_func'], methods=e['methods'])
+                elif not 'rule' in e or not e['rule'] or not 'view_func' in e or not e['view_func']:
+                    raise RuntimeError('add_url_rule extend should have "rule" and "view_func"')
+                else:
+                    url = e['rule']
+                    app.add_url_rule(rule=url, view_func=e['view_func'])
+
+    def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
+        """
+        Convert an object call to context
+
+        :param func: function name
+        :param caller_id: caller id
+        :param params: parameters in dict
+        :param sub_context: sub context
+        :return: context in dict
+        """
+
+        def convert_param_obj(params):
+            if isinstance(params, str):
+                print("error: params is instance of _str")
+            for k, v in params.items():
+                if k == 'params':
+                    convert_param_obj(v)
+                if isinstance(v, WebComponent):
+                    params[k] = {'obj_id': v.id()}
+
+        convert_param_obj(params)
+        return {
+            'function': func,
+            'caller_id': caller_id,
+            'params': params,
+            'sub_context': sub_context
+        }
+
+    def _get_clscall_context(self, func, cls, params=None, sub_context=[]):
+        def convert_param_obj(params):
+            if isinstance(params, str):
+                print("error: params is instance of _str")
+            for k, v in params.items():
+                if k == 'params':
+                    convert_param_obj(v)
+                if isinstance(v, WebComponent):
+                    params[k] = {'obj_id': v.id()}
+
+        convert_param_obj(params)
+        return {
+            'function': 'classmethod:' + cls + '.' + func,
+            'params': params,
+            'sub_context': sub_context
+        }
+
+    def __init__(self, page=None, test=False, client=True, **kwargs):
+        self._client = client
+        kwargs['client'] = client
+        super().__init__(**kwargs)
+        if 'id' in kwargs:
+            self._id = kwargs['id']
+        else:
+            self._id = self.id()
+
+        if 'name' in kwargs:
+            self._name = kwargs['name']
+        else:
+            self._name = self.name()
+
+
+        self._parent = None
+        if 'parent' in kwargs:
+            self._parent = kwargs['parent']
+
+        self._page = page
+        if not page:
+            if isinstance(self, WebPage):
+                self._page = self
+
+        self._children = set()
+        if 'children' in kwargs:
+            self._children = kwargs['children']
+
+        kwargs['name'] = self.name()
+        kwargs['id'] = self.id()
+        if hasattr(self, '_nav_items'):
+            kwargs['nav'] = self._nav_items
+        if self.__class__.__name__.find("WebPage") != 0:
+            kwargs['test'] = test
+        else:
+            kwargs['test'] = False
+
+        if hasattr(self, '_value') and 'value' not in kwargs:
+            kwargs['value'] = self._value
+
+        context = self._get_objcall_context(func=self.type_(), params=kwargs)
+        # self._mycont = self.add_context(context)
+        self._mycont = [context]
+        self.add_context(context)
+        self._components = None
+
+
+    def set_api(self):
+        if hasattr(self, "app") and self.app:
+            self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
+        else:
+            if current_app:
+                self._api = current_app.config['API_URL'] + APIs['render'].format('v1.0')
+
+    def type_(self):
+        return self.__class__.__name__
+
+    '''
+    def url_for(self, context):
+        pass
+    '''
+
+    def render(self):
+        '''
+        render and return a complete page information in html
+        :return:
+        '''
+        # components = components_factory(self.context())
+        payload = create_payload(self.context())
+        # print('WebPage::render api:{}'.format(self._ap_i))
+        r = post(url=self._api, json=payload)
+        html = extract_data(r.json()['data'])
+        return render_template_string(html)
+
+    '''
+    def add_context_list(self, context_list, indent=True):
+        self.context_call(params={'context': ''.join(context_list)})
+    '''
+
+    '''
+    def add_script_list(self, script_list):
+        raise NotImplementedError
+    '''
+
+    '''
+    def remove_context(self, cont):
+        self._remove_context(cont)
+
+    @classmethod
+    def _remove_context(cls, cont=None):
+        if not cont:
+            del cls._cur_context_stack[-1]
+        else:
+            for i, v in enumerate(cls._cur_context_stack):
+                if v == cont:
+                    del cls._cur_context_stack[i]
+    '''
+
+
+    @classmethod
+    def _push_current_context(cls, cont):
+        cls._cur_context_stack.append(cont)
+
+    @classmethod
+    def _pop_current_context(cls):
+        cls._cur_context_stack.pop()
+
+    '''
+    def scripts(self):
+        raise NotImplementedError
+    '''
+    '''
+    def add_script_list(self, script_list, indent=True, place=None):
+        
+        params = {'script_list': script_list, 'indent': indent, 'place': place}
+        return self.func_call(params)
+
+    def styles(self):
+        raise NotImplementedError
+        
     @contextmanager
     def cmds(self):
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(), params={'function': inspect.stack()[0][3], 'params': {}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        '''
         self.with_call({})
         try:
             yield
@@ -861,30 +1303,13 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         finally:
             self._pop_current_context()
 
+        
     def add__style(self, styles):
         raise NotImplementedError
-
+        
     def global_styles(self):
         raise NotImplementedError
-
-    def add_script_files(self, files):
-        params = {'files': files}
-        return self.func_call(params)
-
-    def add_style_files(self, files):
-        raise NotImplementedError
-
-    def get_style(self):
-        raise NotImplementedError
-
-    def get_script_files(self):
-        raise NotImplementedError
-
-    def get_style_files(self):
-        raise NotImplementedError
-
-    def replace_scripts(self, stub, scripts):
-        raise NotImplementedError
+    '''
 
     '''
     @classmethod
@@ -898,15 +1323,10 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
         return render_template_string(html)
     '''
 
+    '''
     @contextmanager
     def var_w(self, name='data'):
-        '''
-        context = self._get_objcall_context(func='with', caller_id=self.id(),
-                                            params={'function': inspect.stack()[0][3], 'params': {'name':name}})
-        context['sub_context'] = []
-        self.add_context(context)
-        self._push_current_context(context['sub_context'])
-        '''
+       
         params = {'name': name}
         self.with_call(params)
         try:
@@ -922,6 +1342,7 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
     def gvar_w(self, name='data'):
         raise NotImplementedError
 
+        
     def get_data(self):
 
         _model = None
@@ -940,12 +1361,10 @@ class WebComponent(ComponentInf, ClientInf, ClassTest, ClientBase):
                 return self._example_data()
             else:
                 return data
-
+        
     def events_default_action(self, req):
         pass
-
-
-class WebComponentClient(WebComponent, Action, FormatBootstrap):
+    '''
 
     BASE_VAL_FUNC_NAME = 'ooweb_base_val'
     BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']
@@ -953,42 +1372,25 @@ class WebComponentClient(WebComponent, Action, FormatBootstrap):
     VAL_FUNC_NAME = 'ooweb_val'
     VAL_FUNC_PARAMS = BASE_VAL_FUNC_PARAMS
 
+    '''
     def has_class(self, class_):
         raise NotImplementedError
 
     def is_width(self, width):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
-        context['sub_context'] = []
-        self.add_context(context)
-        '''
+       
         params = {'width': width}
         return self.func_call(params)
 
     def remove_width(self, width):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
-        context['sub_context'] = []
-        self.add_context(context)
-        '''
+       
         params = {'width': width}
         return self.func_call(params)
 
     def set_width(self, width):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'width': width})
-        context['sub_context'] = []
-        self.add_context(context)
-        '''
         params = {'width': width}
         return self.func_call(params)
 
     def value(self, value):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={'value': value})
-        context['sub_context'] = []
-        self.add_context(context)
-        '''
         params = {'value': value}
         return self.func_call(params)
 
@@ -996,6 +1398,7 @@ class WebComponentClient(WebComponent, Action, FormatBootstrap):
         params = {'value': value}
         return self.func_call(params)
 
+        
     def is_js_kw(self):
         pass
 
@@ -1003,69 +1406,125 @@ class WebComponentClient(WebComponent, Action, FormatBootstrap):
         if (not hasattr(self, '_value')) or (not self._value):
             self._value = self.__class__.__name__ + 'Test'
 
-    @classmethod
-    def _test_request_page(cls):
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    if test_cls.__name__.find('OOChart') == 0:
-                        with c1.add_child(test_cls(
-                                parent=page, value=page_name, name=name_, height='500px', width='100%')) as test:
-                            pass
-                    elif test_cls.__name__.find('WebNav') != 0:
-                        with c1.add_child(test_cls(
-                                parent=page, value=page_name, name=name_, var_name='var_' + name_)) as test:
-                            pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        page.default_events()
-
-        def action1(self, req):
-            if not hasattr(self, 'test_request_data'):
-                req['data']['text'] = name_ + '_testing'
-                del req['data']['html']
-                del req['data']['val']
-            else:
-                req['data'] = {'data': self.test_request_data()}
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name_].action = types.MethodType(action1, page._components[name_])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        # Create a testing page containing the component tested
-
-        html = ''
-        page = cls._test_request_page()
-        html = page.render()
-
-        return render_template_string(html)
-    '''
-
     def action(self, req):
         print('Got request')
         if req:
             print('     req["me"]:{}'.format(req['me']))
+    
+    '''
+
+
+class WebComponentBootstrap(WebComponent,
+                            EventInf, AppearanceInf, PositionInf, PropertyInf,
+                            ClassTest, ClientBase):
+
+    def _derive_event_members(self, **kwargs):
+        action = ActionJquery(**kwargs)
+        ActionClass = action.__class__
+
+        EventInfFunctions = inspect.getmembers(ActionInf, predicate=inspect.isfunction)
+        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
+
+        self._action = action
+
+        # Derive all EventInf function from ActionJquery
+        for event_item in EventInfFunctions:
+            if event_item[0] == '__init__':
+                continue
+            for action_item in ActionFunctions:
+                if event_item[0] == action_item[0]:
+                    setattr(self.__class__, event_item[0], action_item[1])
+        # End EventInf
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._derive_event_members(**kwargs)
+        self._format = FormatBootstrap(**kwargs)
+
+    def on_event_w(self, event, filter='', propagation=None):
+        raise NotImplementedError('Error: WebComponentBootstrap.on_event_w is a dumy function '
+                                  'and should be replaced by Action.on_event_w!')
+
+    def render_post_w(self):
+        raise NotImplementedError('Error: WebComponentBootstrap.render_post_w is a dumy function '
+                                  'and should be replaced by Action.render_post_w!')
+
+    def render_for_post(self):
+        raise NotImplementedError('Error: WebComponentBootstrap.render_for_post is a dumy function '
+                                  'and should be replaced by Action.render_for_post!')
+
+    def trigger_event(self, event, filter='', propagation=None):
+        raise NotImplementedError('Error: WebComponentBootstrap.trigger_event is a dumy function '
+                                  'and should be replaced by Action.trigger_event!')
+
+    def sync(self, sync=True):
+        raise NotImplementedError('Error: WebComponentBootstrap.sync is a dumy function '
+                                  'and should be replaced by Action.sync!')
+
+    def timeout_w(self, time):
+        raise NotImplementedError('Error: WebComponentBootstrap.timeout_w is a dumy function '
+                                  'and should be replaced by Action.timeout_w!')
+
+    # Appearance members
+    def width(self, width):
+        params = {'width':width}
+        return self.func_call(params=params)
+
+    def height(self, height):
+        params = {'height':height}
+        return self.func_call(params=params)
+
+    def color(self, color):
+        params = {'color':color}
+        return self.func_call(params=params)
+
+    def font(self, font):
+        params = {'font':font}
+        return self.func_call(params=params)
+
+    def border(self, border):
+        params = {'border':border}
+        return self.func_call(params=params)
+
+    def disable(self, disable):
+        params = {'disable': diable}
+        return self.func_call(params=params)
+
+    # End appearance
+
+    # Position
+    def pad(self, pad):
+        params = {'pad': pad}
+        return self.func_call(params=params)
+
+    def margin(self, margin):
+        params = {'margin':margin}
+        return self.func_call(params=params)
+
+    def align(self, align):
+        params = {'align': align}
+        return self.func_call(params=params)
+
+    # End position
+
+    # Property
+    def value(self, value):
+        params = {'value': value}
+        return self.func_call(params=params)
+
+    def attrs(self, attrs):
+        params = {'attrs': attrs}
+        return self.func_call(params=params)
+
+    def classes(self, classes):
+        params = {'classes': classes}
+        return self.func_call(params=params)
+
+    def styles(self, styles):
+        params = {'styles': styles}
+        return self.func_call(params=params)
+
+    # End property
 
 
 from dominate import tags
@@ -1074,7 +1533,7 @@ from flask_nav.elements import *
 from flask_bootstrap.nav import BootstrapRenderer, sha1
 
 
-class WebNav(WebComponentClient):
+class WebNav(WebComponentBootstrap):
     BASE_TEMPLATE = \
         '''
           {% extends 'bootstrap/base.html' %}
@@ -1284,46 +1743,8 @@ class WebNav(WebComponentClient):
             source=cls.BASE_TEMPLATE,
         )
 
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET', 'POST']):
 
-        # current_app.add_url_rule('/calendar/tmpls/week', view_func=cls.week)
-        name = 'test_webnav'
-        btn_name = 'test_btn'
-
-        def on_post():
-            req = WebPage.on_post()
-            for r in req:
-                if r['me'] == name:
-                    r['data'] = name
-                elif r['me'] == btn_name:
-                    r['data'] = btn_name
-            return jsonify({'status': 'success', 'data': req})
-
-        class Page(WebPage):
-            URL = '/'+name
-
-            def type_(self):
-                return 'WebPage'
-
-        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
-        with Page() as page:
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(WebBtn(name=btn_name, value='测试')) as btn:
-                        pass
-
-        with btn.on_event_w('click'):
-            with page.render_post_w():
-                btn.render_for_post()
-
-        html = page.render()
-        return render_template_string(html)
-    '''
-
-
-class WebPage(WebComponentClient):
+class WebPage(WebComponentBootstrap):
 
     PAGE = None
 
@@ -1345,8 +1766,8 @@ class WebPage(WebComponentClient):
 
     def __init__(self, app=None,page_name=None, url_prefix=None, endpoint=None,
                  test=False, **kwargs):
-        self._set_context([])
-        self._root_class = WebComponentClient
+        self.set_context([])
+        self._root_class = WebComponentBootstrap
         if 'url' in kwargs:
             self._url = kwargs['url']
         else:
@@ -1357,7 +1778,7 @@ class WebPage(WebComponentClient):
             self.app = app
         if not hasattr(self, 'app'):
             self.app = current_app
-        super().__init__(test=test, **kwargs)
+        super().__init__(**kwargs)
         self.set_api()
 
         def place(self):
@@ -1367,7 +1788,7 @@ class WebPage(WebComponentClient):
         self.place = types.MethodType(place, self)
         self._components = {}
         self.rendered = False
-
+    '''
     def do_post(self):
         req_ = self.on_post()
 
@@ -1377,6 +1798,7 @@ class WebPage(WebComponentClient):
                     self._components[name].action(req=r)
 
         return jsonify({'status': 'success', 'data': req_})
+    '''
 
     def init_api(self,
                  app,page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
@@ -1515,19 +1937,19 @@ class WebPage(WebComponentClient):
         '''
 
 
-class WebA(WebComponentClient):
+class WebA(WebComponentBootstrap):
     pass
 
 
-class WebRow(WebComponentClient):
+class WebRow(WebComponentBootstrap):
     pass
 
 
-class WebColumn(WebComponentClient):
+class WebColumn(WebComponentBootstrap):
     pass
 
 
-class WebHead1(WebComponentClient):
+class WebHead1(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webhead_val'
 
 
@@ -1536,9 +1958,7 @@ class WebHead2(WebHead1):
 
 
 class WebHead3(WebHead1):
-
-    def __enter__(self):
-        return super().__enter__()
+    pass
 
 
 class WebHead4(WebHead1):
@@ -1553,74 +1973,12 @@ class WebHead6(WebHead1):
     pass
 
 
-class WebField(WebComponentClient):
+class WebField(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webfield_val'
-    VAL_FUNC_PARAMS = WebComponentClient.BASE_VAL_FUNC_PARAMS
+    VAL_FUNC_PARAMS = WebComponentBootstrap.BASE_VAL_FUNC_PARAMS
 
 
-    @classmethod
-    def _test_request_page(cls):
-        name2 = 'test2'
-        name1 = 'test1'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    if cls.__name__.find('OOChart') == 0:
-                        with c1.add_child(globals()[cls.__name__](
-                                parent=self, value="WebHead", name=name_, height='500px', width='100%'
-                        )) as test:
-                            pass
-                    else:
-                        with c1.add_child(globals()[cls.__name__](parent=self, value=name_, name=name1)) as test:
-                            pass
-            with self.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c2:
-                    with c2.add_child(WebField(name=name2)) as test2:
-                        with test2.add_child(WebHead1(value='Test')) as test2_head:
-                            pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test1 = self._components[name1]
-            test2 = self._components[name2]
-            with self.render_post_w():
-                test1.render_for_post()
-                test2.render_for_post()
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            req['data'] = {'val': name_ + '_testing'}
-        def action2(self, req):
-            req['data'] = {'val': 'Reset by on_post'}
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name1].action = types.MethodType(action1, page._components[name1])
-            page._components[name2].action = types.MethodType(action2, page._components[name2])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-
-
-class WebImg(WebComponentClient):
+class WebImg(WebComponentBootstrap):
 
     VAL_FUNC_NAME = "web_img_val"
     VAL_FUNC_PARAMS = ['that', 'data']
@@ -1634,48 +1992,8 @@ class WebImg(WebComponentClient):
     def events_action_for_class_test(self, req):
         req['data']['oovalue'] = url_for('static', filename='img/demo.jpg')
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        name = 'webimg'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
 
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=self, name=name,
-                                                              value='img/demo.jpg')) as test:
-                        pass
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        page.default_events()
-
-        def action1(self, req):
-            req['data'] = url_for('static', filename='img/demo.jpg')
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name].action = types.MethodType(action1, page._components[name])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
-
-class WebBtnToggle(WebBtnToggleTest, WebComponentClient):
+class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
 
     def toggle(self):
         '''
@@ -1686,14 +2004,14 @@ class WebBtnToggle(WebBtnToggleTest, WebComponentClient):
         return self.func_call(params)
 
 
-class WebBtnGroup(WebComponentClient):
+class WebBtnGroup(WebComponentBootstrap):
     pass
 
 
-class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentClient):
+class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentBootstrap):
     pass
 
-class WebBtnToolbar(WebComponentClient):
+class WebBtnToolbar(WebComponentBootstrap):
 
     '''
     @classmethod
@@ -1717,8 +2035,9 @@ class WebBtnToolbar(WebComponentClient):
         return json.dumps({"status": "sucess"}), 201
 
 
-class WebBtn(WebBtnTest, WebComponentClient):
-
+class WebBtn(WebBtnTest, WebComponentBootstrap):
+    pass
+    '''
     @classmethod
     def on_post(cls):
         r = super().on_post()
@@ -1728,124 +2047,7 @@ class WebBtn(WebBtnTest, WebComponentClient):
     @classmethod
     def test_result(cls):
         return cls.on_post()
-
-    @classmethod
-    def _test_request_page(cls):
-        name1 = 'webbtn1'
-        name2 = 'webbtn2'
-        name3 = 'webbtn3'
-        name4 = 'webbtn4'
-        dict_btn_name = 'dict_btn'
-        btn_is_name = 'is_btn'
-        nest_if_btn_name = 'nest_if_btn'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebBtn(styles={"border-top-left-radius": "10px"}, test=True, name=name1)) as btn1:
-                pass
-            with self.add_child(WebBtn(value='Disable button', name=name2)) as btn2:
-                pass
-            with self.add_child(WebBtn(value='Enable button', name=name3)) as btn3:
-                pass
-            with self.add_child(WebBtn(value='Test custom function', name=name4)) as btn4:
-                pass
-            with self.add_child(WebBtn(value='Test dict', name=dict_btn_name)) as dict_btn:
-                pass
-            with self.add_child(WebBtn(value='Test "is" method', name=btn_is_name)) as is_btn:
-                with is_btn.on_event_w('click'):
-                    with LVar(parent=page, var_name='target') as target:
-                        target.add_script("$(event.target)", indent=False)
-                    with is_btn.if_w():
-                        with is_btn.condition_w():
-                            target.is_('button')
-                    with is_btn.cmds_w():
-                        target.alert('"is methods works!"')
-            with self.add_child(WebBtn(value='Test nest if ', name=nest_if_btn_name)) as nest_if_btn:
-                with nest_if_btn.on_event_w('click'):
-                    with LVar(parent=self, var_name='target2') as target2:
-                        target2.add_script("$(event.target)", indent=False)
-                    with nest_if_btn.if_w():
-                        with nest_if_btn.condition_w():
-                            target2.is_('button')
-                    with nest_if_btn.cmds_w():
-                        with nest_if_btn.if_w():
-                            with nest_if_btn.condition_w():
-                                target2.equal(right='"test"', force_condition=True)
-                            with nest_if_btn.cmds_w():
-                                target2.alert('"target is test!"')
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            btn1 = self._components[name1]
-            btn2 = self._components[name2]
-            btn3 = self._components[name3]
-            btn4 = self._components[name4]
-            dict_btn = self._components[dict_btn_name]
-            nest_if_btn = self._components[nest_if_btn_name]
-
-            with btn1.on_event_w(event="click"):
-                btn1.alert("'Button ' + $(event.currentTarget).attr('id') + ' is clicked!' ")
-            with btn2.on_event_w('click'):
-                btn1.disable(disable=True)
-                # Expect btn1 is enabled by clicking btn3
-            with btn3.on_event_w('click'):
-                btn1.disable(disable=False)
-            # Test custom function
-            custom_func = [
-                "alert('custom_func works!');\n",
-            ]
-            btn4.declare_custom_func('test_custom_func', fparams=['id'], fbody=custom_func)
-            with btn4.on_event_w('click'):
-                btn4.call_custom_func('test_custom_func', fparams={'id': '"{}"'.format(btn4.id())})
-
-            with nest_if_btn.on_event_w('click'):
-                with LVar(parent=self, var_name='target2') as target2:
-                    target2.add_script("$(event.target)", indent=False)
-                with nest_if_btn.if_w():
-                    with nest_if_btn.condition_w():
-                        target2.is_('button')
-                with nest_if_btn.cmds_w():
-                    with nest_if_btn.if_w():
-                        with nest_if_btn.condition_w():
-                            target2.equal(right='"test"', force_condition=True)
-                        with nest_if_btn.cmds_w():
-                            target2.alert('"target is test!"')
-
-            with dict_btn.on_event_w('click'):
-                with OODict(parent=self, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict') as dict:
-                    pass
-                with dict.update_w(key='key_updated'):
-                    dict.add_script('"val_updated"', indent=False)
-                self.alert(
-                    '"Test dict: { key1:" + test_dict.key1 + ",key_updated: " + test_dict.key_updated + " }"')
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            self.alert("'Button ' + $(event.currentTarget).attr('id') + ' is clicked!' ")
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name1].action = types.MethodType(action1, page._components[name1])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
+    '''
 
 
 class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
@@ -1895,63 +2097,6 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
         return super().test_request(methods=methods)
     '''
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    if test_cls.__name__.find('OOChart') == 0:
-                        with c1.add_child(test_cls(
-                                parent=page, value=page_name, name=name_, height='500px', width='100%')) as test:
-                            pass
-                    elif test_cls.__name__.find('WebNav') != 0:
-                        with c1.add_child(test_cls(name=name_,
-                                                   items=[
-                                                       {'label': '测试1', 'checked': ''},
-                                                       {'label': '测试测试测试2'},
-                                                       {'label': '测试3'}]
-                                                   )) as test:
-                            pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            with self.render_post_w():
-                [element.render_for_post() for element in self._components.values()]
-
-            with self._components[name_].on_event_w('click'):
-                page.alert('"Click!"')
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            print('Radio  value:{}'.format(req['data']))
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name_].action = types.MethodType(action1, page._components[name_])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
 
 class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
 
@@ -1960,7 +2105,7 @@ class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
         self.func_call(params)
 
 
-class WebQuickForm(WebComponentClient):
+class WebQuickForm(WebComponentBootstrap):
     """
     QuickForm packages FlaskForm
     """
@@ -2018,73 +2163,32 @@ class WebQuickForm(WebComponentClient):
 
             """
 
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET', 'POST']):
-        from flask_wtf import FlaskForm
-        from wtforms import StringField, PasswordField, SubmitField, SelectField
-        from wtforms.fields.html5 import DateTimeLocalField, DateField
-        from wtforms.validators import DataRequired, InputRequired, Length, Email, Required, Length, Regexp, EqualTo
 
-        name = 'quickform'
-
-        def on_post():
-            return
-
-        class Page(WebPage):
-            URL = '/{}_test'.format(name)
-
-        Page.init_page(app=current_app, endpoint=cls.__name__ + '_test', on_post=on_post)
-
-        class LoginForm(FlaskForm):
-            email = StringField(u'邮箱', validators=[
-                DataRequired(message=u'邮箱不能为空'), Length(1, 64),
-                Email(message=u'请输入有效的邮箱地址，比如：username@domain.com')
-            ]
-                                )
-            password = PasswordField(u'密码', validators=[DataRequired(message=u'密码不能为空')])
-
-            login_submit = SubmitField(u'登录')
-
-        login_form = LoginForm(request.form)
-
-        if request.method == 'POST' and login_form.validate_on_submit():
-            print("login submit")
-            return "login submit"
-        else:
-            # border_radius = {"tl":"10px", "tr":"20px", "bl":"30px", "br":"40px"}
-            with Page(test=True) as page:
-                login_tempalte = cls.PAGE_TEMPLATE
-
-                return render_template_string(login_tempalte, form=login_form)
-    '''
-
-
-class WebFormGroup(WebComponentClient):
+class WebFormGroup(WebComponentBootstrap):
     pass
 
 
-class WebInputGroup(WebComponentClient):
+class WebInputGroup(WebComponentBootstrap):
     pass
 
 
-class WebInput(WebComponentClient):
+class WebInput(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webinput_val'
 
 
-class WebInputGroup(WebComponentClient):
+class WebInputGroup(WebComponentBootstrap):
     pass
 
 
-class WebFormInline(WebComponentClient):
+class WebFormInline(WebComponentBootstrap):
     pass
 
 
-class WebSelect(WebSelectTest, WebComponentClient):
+class WebSelect(WebSelectTest, WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webselect_val'
-    VAL_FUNC_PARAMS = WebComponentClient.VAL_FUNC_PARAMS
+    VAL_FUNC_PARAMS = WebComponentBootstrap.VAL_FUNC_PARAMS
 
     '''
     @classmethod
@@ -2113,22 +2217,23 @@ class WebSelect2(WebSelect):
     VAL_FUNC_NAME = 'webselect2_val'
 
 
-class WebSpan(WebComponentClient):
+class WebSpan(WebComponentBootstrap):
     pass
 
 
-class WebB(WebComponentClient):
-    pass
-
-class WebBr(WebComponentClient):
+class WebB(WebComponentBootstrap):
     pass
 
 
-class WebHr(WebComponentClient):
+class WebBr(WebComponentBootstrap):
     pass
 
 
-class WebUl(WebUlTest, WebComponentClient):
+class WebHr(WebComponentBootstrap):
+    pass
+
+
+class WebUl(WebUlTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webul_val'
 
 
@@ -2136,123 +2241,10 @@ class WebDatalist(WebDatalistTest, WebSelect):
 
     VAL_FUNC_NAME = 'webdatalist_val'
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        INPUT_NAME = 'dataselect_input_name'
-        TEST_ID = 'dataselect_id'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-        options = [{'text': 'option1'},
-                   {'text': 'option2'},
-                   {'selected': True, 'text': 'option3'}]
 
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
-                        with input.add_child(
-                                globals()[cls.__name__](parent=page, name=name_,
-                                                        id=TEST_ID, options=options)) as test:
-                            pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        page.default_events()
-
-        def dataselect_action(self, req):
-            print('Got testing data: {}'.format(req['data']))
-            req['data'] = {'options': options}
-
-        def dataselect_input_action(self, req):
-            print('Got testing input data: {}'.format(req['data']))
-            input_text = req['data']['val']
-            for o in options:
-                if 'selected' in o:
-                    del o['selected']
-            options.append({'text': input_text, 'selected': True})
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[INPUT_NAME].action = types.MethodType(dataselect_input_action, page._components[INPUT_NAME])
-            page._components[name_].action = types.MethodType(dataselect_action, page._components[name_])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
-
-class WebDiv(WebComponentClient):
+class WebDiv(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webdiv_val'
-
-    @classmethod
-    def _test_request_page(cls):
-        name = 'test_div'
-        name2 = 'test2'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=page, value='Test div', name=name,
-                                                              attrs={'data-test': 'data-value'})) as test:
-                        pass
-                with self.add_child(WebRow()) as r2:
-                    with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c2:
-                        with c2.add_child(WebDiv(name=name2, height='200px',
-                                                 styles={'border': '2px solid black', 'border-radius': '20px'})) as test2:
-                            pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            with self.render_post_w():
-                self._components[name].render_for_post()
-                self._components[name2].render_for_post()
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def name_action(self, req):
-            print('Got test div:{}'.format(req['data']))
-            req['data'] = {'attr': {'data-test': 'data-value-change'}}
-
-        def name2_action(self, req):
-            req['data'] = {'style': {'border': '2px solid blue', 'height': '300px'}}
-            #pass
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name].action = types.MethodType(name_action, page._components[name])
-            page._components[name2].action = types.MethodType(name2_action, page._components[name2])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
 
 
 class WebLabel(WebDiv):
@@ -2267,56 +2259,6 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
         params = {'checked': checked}
         self.func_call(params)
 
-    '''
-    @classmethod
-    def _test_request_page(cls, methods=['GET']):
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    with c1.add_child(test_cls(value='测试', name=name_)) as test:
-                        pass
-            test.check(True)
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[name_]
-            with self.render_post_w():
-                test_component.render_for_post()
-            with self._components[name_].on_event_w('change'):
-                with Var(parent=self, var_name="data") as data:
-                    test_component.val()
-                self.alert(' data + " clicked !"')
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            print('Got WebCheck class test request:{}'.format(req))
-            html = req['data']['html']
-            req['data'] = {'text': 'name from post', 'html':html}
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name_].action = types.MethodType(action1, page._components[name_])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
 
 class OODatePickerBase:
     
@@ -2462,87 +2404,6 @@ class OODatePickerSimple(OODatePickerSimpleTest, WebInputGroup, OODatePickerBase
         params = {'btn_only': btn_only, 'disable': disable}
         self.func_call(params)
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        NAME = 'oodatepicker_simle'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with page.add_child(globals()[cls.__name__](name=NAME)) as test1:
-                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[NAME]
-            with test_component.on_event_w('change'):
-                with self.render_post_w():
-                    test_component.render_for_post()
-
-            with self.render_post_w():
-                test_component.render_for_post(trigger_event=False)
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            lang = req['data']['lang']
-            format = None
-            if req['data']['select'] == '周':
-                start = None if not req['data']['viewDate'] else req['data']['viewDate'].split('T')[0]
-                if start:
-                    # USE cls FORMATS here
-                    format = cls.FORMATS[lang]['week']['to_format']
-                    dt_ = dt.datetime.strptime(start, "%Y-%m-%d")
-                    dt_ = dt_.timestamp()
-                else:
-                    dt_ = dt.datetime.today().timestamp()
-                req['data']['date'] = int(dt_)
-            elif req['data']['select'] == '日':
-                start = None if not req['data']['date'] else req['data']['date']
-                if start:
-                    if lang == 'zh':
-                        format = cls.DAY_FORMAT_ZH[1]
-                    else:
-                        format = cls.DAY_FORMAT_EN[1]
-                    dt_ = dt.datetime.strptime(start, format).timestamp()
-                else:
-                    dt_ = dt.datetime.today().timestamp()
-                req['data']['date'] = int(dt_)
-            else:
-                start = None if not req['data']['date'] else req['data']['date']
-                if start:
-                    if lang == 'zh':
-                        format = cls.MONTH_FORMAT_ZH[1]
-                    else:
-                        format = cls.MONTH_FORMAT_EN[1]
-                    dt_ = dt.datetime.strptime(start, format).timestamp()
-                else:
-                    dt_ = dt.datetime.today().timestamp()
-                req['data']['date'] = int(dt_)
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[NAME].action = types.MethodType(action1, page._components[NAME])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
 
 class OODialog(WebDiv):
 
@@ -2554,90 +2415,6 @@ class OODialog(WebDiv):
         </div>
         </div>
     """
-
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET', 'POST']):
-
-        from flask_wtf import FlaskForm
-        from wtforms import StringField, PasswordField, SubmitField, SelectField
-        from wtforms.fields.html5 import DateTimeLocalField, DateField
-        from wtforms.validators import DataRequired, InputRequired, Length, Email, Required, Length, Regexp, EqualTo
-
-        BTN_NAME = 'btn'
-        DIALOG_NAME = 'dialog'
-        DIALOG_ID = 'dialog'
-
-        page_name = 'test_' + cls.__name__
-        url_prefix = '/' + page_name
-
-        def on_post():
-            req = WebPage.on_post()
-            dt = None
-            for r in req:
-                if r['me'] == BTN_NAME:
-                    pass
-                elif r['me'] == DIALOG_NAME:
-                    pass
-
-            return jsonify({'status': 'success', 'data': req})
-
-
-        class TestForm(FlaskForm):
-            email = StringField(u'邮箱', validators=[
-                DataRequired(message=u'邮箱不能为空'), Length(1, 64),
-                Email(message=u'请输入有效的邮箱地址，比如：username@domain.com')
-            ]
-                                )
-            password = PasswordField(u'密码', validators=[DataRequired(message=u'密码不能为空')])
-
-            login_submit = SubmitField(u'登录')
-
-        form_html="""
-        <div class="row">
-        <div class="col-md-8  col-md-offset-1">
-        {% import "bootstrap/wtf.html" as wtf %}
-        {{ wtf.quick_form(form) }}
-        </div>
-        </div>
-        """
-        login_form = TestForm(request.form)
-        login_form_html = render_template_string(form_html, form=login_form)
-        if request.method == 'POST' and login_form.validate_on_submit():
-            print("login submit")
-            return redirect(str(request.url_rule) + '#{}'.format(DIALOG_ID))
-        else:
-            page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                           default_url=page_name + '_result', nav=None,
-                           value=page_name, container_classes='container')
-            page.page_name = page_name
-            page.view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-            page.url_prefix = url_prefix
-
-            def place(self):
-                pass
-            page.place = types.MethodType(place, page)
-
-            def default_events(self):
-                pass
-            page.default_events = types.MethodType(default_events, page)
-
-
-            with page.add_child(OODialog(name=DIALOG_NAME,
-                                         id=DIALOG_ID, dialog_header="登录",
-                                         dialog_body=login_form_html)) as dialog:
-                pass
-            with page.add_child(WebBtn(name=BTN_NAME,
-                                       value='测试',
-                                       attrs={'data-toggle': 'modal', 'data-target': '#{}'.format(dialog.id())})) as test1:
-                pass
-
-            page.init_api(app=current_app, on_post=cls.test_request)
-
-            html = page.render()
-            # print(pprint.pformat(html))
-            return render_template_string(html)
-    '''
 
 
 class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
@@ -2739,60 +2516,6 @@ class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
                 dt_ = dt.datetime.today().timestamp()
             _data['date'] = int(dt_)
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        NAME = 'oodatepicker_icon'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with page.add_child(globals()[cls.__name__](name=NAME)) as test1:
-                pass
-            test1.call_custom_func(fname=test1.start_func_name,
-                                   fparams={'that': '$("#{}")'.format(test1.id()),
-                                            'type': '"{}"'.format(test1.VIEWS['week'])})
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[NAME]
-            with test_component.on_event_w('change'):
-                with self.render_post_w():
-                    test_component.render_for_post()
-
-            with self.render_post_w():
-                test_component.render_for_post(trigger_event=False)
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            if req['data']['date']:
-                dt_range_ = cls.get_dates(req['data'])
-                print('OODatePickerIcon testing: got dates: {} ~ {}'.format(pprint.pformat(dt_range_[0]),
-                                                                            pprint.pformat(dt_range_[1])))
-                self.get_ret_stamp(req['data'])
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[NAME].action = types.MethodType(action1, page._components[NAME])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
 
 class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
 
@@ -2805,84 +2528,9 @@ class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
         kwargs['language'] = language
         kwargs['place_holders'] = place_holders
         super().__init__(**kwargs)
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        NAME = 'oodatepicker_range'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with page.add_child(globals()[cls.__name__](name=NAME)) as test1:
-                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[NAME]
-            with test_component.on_event_w('change'):
-                with self.render_post_w():
-                    test_component.render_for_post()
-
-            with self.render_post_w():
-                test_component.render_for_post(trigger_event=False)
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            lang = req['data']['lang']
-            format = None
-            start = None
-            end = None
-            if req['data']['select'] == '周':
-                format = cls.FORMATS[lang]['week']['from_format']
-            elif req['data']['select'] == '日':
-                format = cls.FORMATS[lang]['day']['from_format']
-            else:
-                format = cls.FORMATS[lang]['month']['from_format']
-
-            start = None if not req['data']['start'] else req['data']['start']
-            if not start:
-                # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
-                start = dt.datetime.strptime('2020-1-1', '%Y-%m-%d')
-            else:
-                start = dt.datetime.strptime(start, format)
-
-            end = None if not req['data']['end'] else req['data']['end']
-            if not end:
-                # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
-                end = dt.datetime.strptime('2020-12-31', '%Y-%m-%d')
-            else:
-                end = dt.datetime.strptime(end, format)
-
-            req['data']['start'] = int(start.timestamp())
-            req['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
-            req['data']['end'] = int(end.timestamp())
-            req['data']['end_viewDate'] = end.strftime("%Y-%m-%dT")
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[NAME].action = types.MethodType(action1, page._components[NAME])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
 
 
-class WebSvg(WebComponentClient):
+class WebSvg(WebComponentBootstrap):
 
     def id(self, _id=None):
         if not _id:
@@ -2893,7 +2541,7 @@ class WebSvg(WebComponentClient):
             self._id = _id
 
 
-class OOChatClient(WebComponentClient):
+class OOChatClient(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'oochatclient_val'
     INIT_FUNC_NAME = 'oochatclient_init'
@@ -2931,49 +2579,6 @@ class OOChatClient(WebComponentClient):
         send_input_name = cls.OOCHAT_SEND_INPUT + myname
         send_btn_name = cls.OOCHAT_SEND_BTN + myname
         return body_name, send_input_name, send_btn_name
-
-
-    @classmethod
-    def _test_request_page(cls):
-        NAMESPACE = '/test_namespace'
-        SERVER_DATA = 'server_data'
-        NAME = 'test'
-        USER_NAME = '用户' + str(random.randint(1, 100))
-        BODY, INPUT, SEND_BTN = OOChatClient.get_names(myname=NAME)
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=self, name=NAME, socket_namespace=NAMESPACE,
-                                                              user_name=USER_NAME,
-                                                              radius='10px 10px 10px 10px')) as chat_test:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            pass
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
 
 
 from flask_socketio import *
@@ -3334,52 +2939,6 @@ class ServerChatNM(OOWebChatNM):
 class OOChatServer(OOChatClient):
 
     VAL_FUNC_NAME = 'oochatserver_val'
-
-
-    @classmethod
-    def _test_request_page(cls):
-        NAMESPACE = '/test_namespace'
-        SERVER_DATA = 'server_data'
-        NAME = '客服'
-        USER_NAME = '客服'
-        PANEL_NAME = 'chat'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn()) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=self, name=NAME,
-                                                              user_name=USER_NAME, socket_namespace=NAMESPACE,
-                                                              radius='10px 10px 10px 10px')) as chat_test:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        current_app.socketio.on_namespace(ServerChatNM(server_obj=None, socket_namespace=NAMESPACE))
-
-        def default_events(self):
-            pass
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
 
 
 class OOChartNVD3(WebSvg):
@@ -4480,71 +4039,6 @@ class OOGeneralSelector(OOGeneralSelectorTest, WebBtnGroup):
             'option': {'name': '', 'href': '#'}
         }
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        name1 = 'gs1'
-        name2 = 'gs2'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(
-                            globals()[cls.__name__](test=True, styles={'display': 'flex'}, name=name1)) as gs1:
-                        pass
-
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            gs1 = self._components[name1]
-            with gs1.on_event_w('change'):
-                with self.render_post_w():
-                    gs1.render_for_post()
-
-            with self.render_post_w():
-                gs1.render_for_post()
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-            if 'data' not in req:
-                req['data'] = OOGeneralSelector._example_data()
-            for d in req['data']:
-                if not d['options']:
-                    option1 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
-                    option1['name'] = d['name'] + '_option1'
-                    option2 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
-                    option2['name'] = d['name'] + '_option2'
-                    d['options'].append(option1)
-                    d['options'].append(option2)
-
-                    d['name'] = option1['name']
-                    d['select'] = option1['name']
-                else:
-                    d['name'] = d['select']
-
-        page._components[name1].action = types.MethodType(action1, page._components[name1])
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-
     @classmethod
     def test_result(cls):
         r = request.form['test']
@@ -5100,89 +4594,6 @@ class OOCalendar(OOCalendarTest, WebDiv):
             r['data'] = cls._event_list()
 
         return r
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        NAME = 'calendar'
-        TITLE = 'title'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with page.add_child(WebRow()) as r0:
-                with r0.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c0:
-                    with c0.add_child(WebHead2(name=TITLE)) as title:
-                        pass
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                    with c1.add_child(OOCalendarBar()) as bar:
-                        pass
-            with page.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'],
-                                            styles={'margin-left': "20px", 'margin-right': '20px'})) as c2:
-                    with c2.add_child(globals()[cls.__name__](name=NAME)) as calendar:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            with self.render_post_w():
-                self._components[NAME].render_for_post()
-                self._components[TITLE].render_for_post()
-            with self._components[NAME].on_event_w('change'):
-                self._components[NAME].alert('"Calendar changed!"')
-                with self.render_post_w():
-                    self._components[NAME].render_for_post()
-                    self._components[TITLE].render_for_post()
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def do_post(self):
-            req_ = WebPage.on_post()
-            title_ = '时间标题'
-            for r in req_:
-                if r['me'] == NAME:
-
-                    start_ = dt.datetime.fromtimestamp(int(r['data']['start']) / 1000)
-                    end_ = dt.datetime.fromtimestamp(int(r['data']['end']) / 1000)
-                    title_ = r['data']['title']
-                    view_ = r['data']['view']
-                    r['data']['hierarchy'] = "test_hierarchy"
-
-                elif r['me'] == TITLE:
-                    r['data'] = {'text':title_}
-
-                elif r['me'].find(OOCalendar.ME_PRE) == 0:
-
-                    # Return data directly, for the OOCalendar builtin requests,
-                    #   needn't {'me':xxx, 'data':xxx} anymore
-                    req_ = OOCalendar.on_post(r)
-                    break
-
-            return jsonify({'status': 'success', 'data': req_})
-
-        page.do_post = types.MethodType(do_post, page)
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
 
 
 class OOCalendarBar(WebDiv):
@@ -5195,90 +4606,13 @@ class WebTabItem(WebDiv):
 
 class WebTab(WebTabTest, WebUl):
     pass
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        tab_name = 'tab_test'
-        tab_contain_name = 'tab_contain_test'
-        tab_item1_name = 'tab_item1'
-        tab_item2_name = 'tab_item2'
-        tab_item3_name = 'tab_item3'
-        tab_contain1_name = 'tab_contain1'
-        tab_contain2_name = 'tab_contain2'
-        tab_contain3_name = 'tab_contain3'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                    with c1.add_child(globals()[cls.__name__](parent=page, name=tab_name, ul_list=[
-                        {'name': tab_item1_name, 'href': '#' + tab_item1_name},
-                        {'name': tab_item2_name, 'href': '#' + tab_item2_name},
-                        {'name': tab_item3_name, 'href': '#' + tab_item3_name, 'active': True},
-                    ])) as test:
-                        pass
-                    with c1.add_child(WebTabContain(parent=page, name=tab_contain_name)) as contain:
-                        with contain.add_child(WebTabItem(id=tab_item1_name, name=tab_item1_name)) as item1:
-                            with item1.add_child(WebHead3(name=tab_contain1_name, value=tab_contain1_name)) as contain1:
-                                pass
-                        with contain.add_child(WebTabItem(id=tab_item2_name, name=tab_item2_name)) as item2:
-                            with item2.add_child(WebHead3(name=tab_contain2_name, value=tab_contain2_name)) as contain2:
-                                pass
-                        with contain.add_child(WebTabItem(id=tab_item3_name, name=tab_item3_name, ootype=['active'])) as item3:
-                            with item3.add_child(WebHead3(name=tab_contain3_name, value=tab_contain3_name)) as contain3:
-                                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[tab_name]
-            test_contain_component = self._components[tab_contain_name]
-            with self.render_post_w():
-                test_component.render_for_post()
-                test_contain_component.render_for_post()
-            with test_component.on_event_w(event='active_change'):
-                with page.render_post_w():
-                    test_component.render_for_post()
-                    test_contain_component.render_for_post()
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def tab_action(self, req):
-            print('Got tab active item: {}'.format(req['data']))
-            req['data'] = tab_item2_name
-        def tab_contain_action(self, req):
-            print('Got tab contain active page: {}'.format(req['data']))
-            req['data'] = tab_item2_name
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[tab_name].action = types.MethodType(tab_action, page._components[tab_name])
-            page._components[tab_contain_name].action = types.MethodType(tab_contain_action, page._components[tab_contain_name])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
 
 
 class WebTabContain(WebDiv):
     pass
 
 
-class WebTable(WebComponentClient):
+class WebTable(WebComponentBootstrap):
     '''
     WebTable generates a html table from a data including schema and records.
     schema leads to table heads and records lead to table body.
@@ -5572,47 +4906,6 @@ class WebTable(WebComponentClient):
 
         return html
 
-    @classmethod
-    def _test_request_page(cls):
-        name = 'webtable_test'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset, height="400px")) as c1:
-                    with c1.add_child(globals()[cls.__name__](
-                            name=name, mytype=['striped', 'hover', 'borderless', 'responsive'])) as test:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        page.default_events()
-
-        def action1(self, req):
-            data = OOTable.model.query("test")
-            html = ''.join(cls.html(data=data))
-            req['data'] = {'html': html}
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name].action = types.MethodType(action1, page._components[name])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-
 
 class OOTable(WebTable):
     SETTING = {}
@@ -5852,130 +5145,6 @@ class OOTable(WebTable):
         self.declare_custom_global_func(fname=self.ON_CLICK_ROW_FUNC_NAME, fparams=self.ON_CLICK_ROW_FUNC_ARGS, fbody=self.ON_CLICK_ROW_FUNC_BODY)
         return self
 
-    @classmethod
-    def _test_request_page(cls):
-        IMG_TABLE_NAME = 'img_table'
-        CHART_TABLE_NAME = 'chart_table'
-        TABLE_NAME = 'test_table'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=default_width, offset=default_offset)) as c2:
-                    with c2.add_child(WebInput(value='')) as input:
-                        pass
-
-            with self.add_child(WebRow()) as r0:
-                with r0.add_child(WebColumn(width=default_width, offset=default_offset)) as c5:
-                    with c5.add_child(OOTable(name=CHART_TABLE_NAME,
-                                              mytype=['striped', 'hover', 'borderless', 'responsive'],
-                                              classes=['cell-border']
-                                              )) as chart_table:
-                        pass
-
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset)) as c1:
-                    with c1.add_child(
-                            globals()[cls.__name__](name=TABLE_NAME,
-                                                    mytype=['striped', 'hover', 'responsive'])) as test:
-                        customer_search = []
-                        customer_search.append('var filter = $("#{}").val();\n'.format(input.id()))
-                        customer_search.append('if (! filter || data[0] === filter){\n')
-                        customer_search.append('    return true;\n')
-                        customer_search.append('}else{\n')
-                        customer_search.append('    return false;\n')
-                        customer_search.append('};\n')
-                        test.customer_search(customer_search)
-
-            with self.add_child(WebBr()):
-                pass
-
-            with page.add_child(WebRow()) as r4:
-                with r4.add_child(WebColumn(width=default_width, offset=default_offset)) as c4:
-                    with c4.add_child(
-                            OOTable(name=IMG_TABLE_NAME, mytype=['striped', 'hover', 'responsive'])) as image_table:
-                        image_table.declare_custom_global_func(fname=image_table.ON_EXPAND_ROW_FUNC_NAME,
-                                                               fparams=image_table.ON_EXPAND_ROW_FUNC_ARGS,
-                                                               fbody=image_table.ON_EXPAND_ROW_FUNC_BODY)
-                        image_table.declare_custom_global_func(fname=image_table.ON_CLICK_ROW_FUNC_NAME,
-                                                               fparams=image_table.ON_CLICK_ROW_FUNC_ARGS,
-                                                               fbody=image_table.ON_CLICK_ROW_FUNC_BODY)
-
-            with page.add_child(WebBr()):
-                pass
-
-            with page.add_child(WebBr()):
-                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test = self._components[TABLE_NAME]
-            image_table = self._components[IMG_TABLE_NAME]
-            chart_table = self._components[CHART_TABLE_NAME]
-
-            with test.on_event_w('click_row'):
-                test.call_custom_func(fname=test.ROW_CHILD_FUNC_NAME,
-                                      fparams={'tr': 'that', 'table_id': '"{}"'.format(test.id())})
-
-            with self.render_post_w():
-                test.render_for_post()
-                image_table.render_for_post()
-                chart_table.render_for_post()
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def img_table_action(self, req):
-            if 'data' in req and 'row_info' in req['data']:
-                row_info = req['data']['row_info']
-                row_index = req['data']['row_index']
-                details = 'details'
-                html_details = "<td style='border-top:0px'><textarea readonly='readonly'>" + details + "</textarea></td>"
-                req['data']['details'] = html_details
-            else:
-                # table = OOTable(value={'model': cls.model, 'query': {'test': 'img'}})
-                data = OOTable.model.query('img')
-                html = ''.join(OOTable.html(data=data))
-                # setting = table.get_data(setting_only=True)
-                req['data'] = {'html': html, 'setting': data['setting']}
-
-        def chart_table_action(self, req):
-            data = OOTable.model.query('chart')
-            # table = OOTable(value={'model': cls.model, 'query': {'test': 'chart'}})
-            html = ''.join(OOTable.html(data=data))
-            # setting = OOTable.get_data(setting_only=True)
-            req['data'] = {'html': html, 'setting': data['setting'],
-                           'remove_class': ['borderless', 'table-borderless'],
-                           'add_class': ['cell-border']}
-
-        def test_table_action(self, req):
-            data = OOTable.model.query("test")
-            html = ''.join(OOTable.html(data=data))
-            # setting = table.get_data(setting_only=True)
-            req['data'] = {'html': html, 'setting': data['setting']}
-
-        page._components[IMG_TABLE_NAME].action = types.MethodType(img_table_action, page)
-        page._components[CHART_TABLE_NAME].action = types.MethodType(chart_table_action, page)
-        page._components[TABLE_NAME].action = types.MethodType(test_table_action, page)
-
-        page.init_api(app=current_app, on_post=page.do_post)
-        return page
-
 
 class OOTagGroup(WebTable):
     SETTING = {
@@ -6041,81 +5210,8 @@ class OOTagGroup(WebTable):
         params = {'check': check}
         return self.func_call(params)
 
-    @classmethod
-    def _test_request_page(cls):
-        name = 'ootaggroup_test'
-        name_btn = 'check_button'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
 
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=default_width, offset=default_offset)) as c1:
-                    with c1.add_child(globals()[cls.__name__](name=name, mytype=['striped', 'hover', 'borderless',
-                                                                                   'responsive'])) as test:
-                        pass
-            with self.add_child(WebRow()) as r2:
-                with r2.add_child(WebColumn(width=default_width, offset=default_offset)) as c2:
-                    with c2.add_child(WebBtn(name=name_btn, value='Check all')) as check_btn:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            test_component = self._components[name]
-            check_btn = self._components[name_btn]
-            with self.render_post_w():
-                test_component.render_for_post()
-
-            with test_component.on_event_w('click'):
-                with LVar(parent=self, var_name='val') as val:
-                    test_component.val(val={'checked': '"checked"'})
-                self.alert(str(val))
-                with page.render_post_w():
-                    test_component.render_for_post(trigger_event=False)
-
-            with check_btn.on_event_w('click'):
-                test_component.check(True)
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        def action1(self, req):
-
-            if not req['data']:
-                data = cls._example_data()
-                html = "'{}'".format(''.join(cls.html(data=data)))
-                html = html.replace("'", '"')
-                html = html.replace("\n", '')
-                html = "'" + html[1:-2] + "'"
-                checked = True
-                req['data'] = {'html': html, 'checked': checked}
-            else:
-                checked = req['data'].split(' ')
-                checked = [t for t in checked if t]
-                checked.pop()
-                req['data'] = {'checked': checked}
-
-        html = ''
-        if name_.find('WebNav') != 0:
-            page._components[name].action = types.MethodType(action1, page._components[name])
-            page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-
-
-class Var(WebComponentClient):
+class Var(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'var_val'
 
@@ -6134,74 +5230,9 @@ class LVar(Var):
 
 
 class GVar(GVarTest, Var):
+    pass
 
-    '''
-    @classmethod
-    def _test_request_page(cls):
-        gv_name = 'gvar'
-        btn_name = 'btn'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebHead1(value='Test GVar and js values')) as head1:
-                pass
-            with self.add_child(WebHead3(value='var test = false;')) as head3:
-                pass
-            with self.add_child(GVar(parent=page, var_name='test', name=gv_name)) as gv:
-                gv.false
-            with self.add_child(WebBtn(value='Test GVar assign', name=btn_name)) as btn:
-                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            btn = self._components[btn_name]
-            gv = self._components[gv_name]
-            with btn.on_event_w('click'):
-                with gv.assign_w():
-                    gv.true
-                self.alert('"GVar value should be true, real:"+test')
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-    '''
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        with WebPage(test=True) as page:
-            with page.add_child(WebHead1(value='Test GVar and js values')) as head1:
-                pass
-            with page.add_child(WebHead3(value='var test = false;')) as head3:
-                pass
-            with page.add_child(GVar(parent=page, var_name='test')) as gv:
-                gv.false
-            with page.add_child(WebBtn(value='Test GVar assign')) as btn:
-                pass
-
-        with btn.on_event_w('click'):
-            with gv.assign_w():
-                gv.true
-            btn.alert('"GVar value should be true, real:"+test')
-    '''
-
-
-class OOList(OOListTest, ListInf, WebComponentClient):
+class OOList(OOListTest, ListInf, WebComponentBootstrap):
 
     @contextmanager
     def append_w(self):
@@ -6215,72 +5246,6 @@ class OOList(OOListTest, ListInf, WebComponentClient):
         finally:
             self._pop_current_context()
 
-    @classmethod
-    def _test_request_page(cls):
-        btn_name = 'btn'
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(WebBtn(value='test', name=btn_name)) as btn1:
-                        pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            btn1 = self._components[btn_name]
-            with btn1.on_event_w('click'):
-                with LVar(parent=btn1, var_name='data') as data:
-                    with OOList(parent=data) as list_data:
-                        with list_data.append_w():
-                            btn1.val()
-                        with list_data.append_w():
-                            btn1.val()
-                self.alert("'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
-
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        with WebPage() as page:
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
-                    with c1.add_child(WebBtn(value='test')) as btn1:
-                        pass
-
-        with btn1.on_event_w('click'):
-            with LVar(parent=btn1) as data:
-                with OOList(parent=data) as list_data:
-                    with list_data.append():
-                        btn1.val()
-                    with list_data.append():
-                        btn1.val()
-            btn1.alert("data.join(' ')")
-
-        html = page.render()
-        return render_template_string(html)
-    '''
-
     def __init__(self, parent, var_name=None, **kwargs):
         kwargs['parent'] = parent
         kwargs['var_name'] = var_name
@@ -6291,7 +5256,7 @@ class OOList(OOListTest, ListInf, WebComponentClient):
         return self._var_name
 
 
-class OODict(OODictTest, DictInf, WebComponentClient):
+class OODict(OODictTest, DictInf, WebComponentBootstrap):
 
     def __init__(self, parent, var_name=None, **kwargs):
         kwargs['parent'] = parent
@@ -6312,57 +5277,6 @@ class OODict(OODictTest, DictInf, WebComponentClient):
             raise Exception(err)
         finally:
             self._pop_current_context()
-
-    @classmethod
-    def _test_request_page(cls):
-        btn_name1 = 'btn1'
-        btn_name2 = 'btn2'
-
-        name_ = cls.__name__
-        page_name = 'test_' + name_
-        url_prefix = '/{}'.format(page_name)
-        view_config = {'API_URL': 'http://localhost:8090', 'SECRET_KEY': 'ooweb_client secret key'}
-        page = WebPage(page_name=page_name, url_prefix=url_prefix, endpoint=page_name,
-                       default_url=page_name + '_result', nav=None,
-                       value=page_name, container_classes='container')
-        page.page_name = page_name
-        page.url_prefix = url_prefix
-        page.view_config = view_config
-        default_width = ['md8', 'lg8']
-        default_offset = ['mdo2', 'lgo2']
-        test_cls = globals()[cls.__name__]
-
-        def place(self):
-            with self.add_child(WebBtn(value='Test dict', name=btn_name1)) as btn1:
-                pass
-            with self.add_child(WebBtn(value='Test dict update', name=btn_name2)) as btn2:
-                pass
-
-        page.place = types.MethodType(place, page)
-        page.place()
-
-        def default_events(self):
-            btn1 = self._components[btn_name1]
-            btn2 = self._components[btn_name2]
-            with btn1.on_event_w('click'):
-                with OODict(parent=self, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict') as dict:
-                    pass
-                btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
-
-            with btn2.on_event_w("click"):
-                with OODict(parent=self, dict={'key1': '"val1"', 'key2': '"val2"'},
-                            var_name='test_dict_update') as dict_update:
-                    pass
-                with dict_update.update_w(key='key2'):
-                    dict_update.add_script('"val_updated"', indent=False)
-                btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
-
-        page.default_events = types.MethodType(default_events, page)
-        page.default_events()
-
-        page.init_api(app=current_app, on_post=page.do_post)
-
-        return page
 
     '''
     @classmethod

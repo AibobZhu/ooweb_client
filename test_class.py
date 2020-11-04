@@ -40,12 +40,12 @@ class ClassTest():
                     )) as test:
                         pass
                 else:
-                    with c1.add_child(testing_class(parent=page, name=name_, oovalue=name_)) as test:
+                    with c1.add_child(testing_class(parent=c1, name=name_, oovalue=name_)) as test:
                         pass
 
     def on_post_for_class_test(self):
         name = self.name()
-        req = self._page.on_post()
+        req = self._page._action.on_post()
         for r in req:
             if r['me'] == name:
                 self.events_action_for_class_test(req=r)
@@ -66,6 +66,7 @@ class ClassTest():
         page = self._page
         if (not hasattr(self, '_PAGE_CLASS')) or (hasattr(self, '_PAGE_CLASS') and self._PAGE_CLASS is None):
             page = self
+
             with page.render_post_w():
                 for name, component in page._components.items():
                     component.render_for_post()
@@ -92,9 +93,7 @@ class ClassTest():
 
         return cls._SUBCLASSES
 
-    def __init__(self, test=False, client=False, **kwargs):
-        super().__init__(**kwargs)
-        self._test = test
+    def __init__(self, client=False, **kwargs):
         self.custom_test_init()
 
     def custom_test_init(self):
@@ -190,10 +189,10 @@ class OOListTest(ClassTest):
             with btn.add_child(LVar(parent=btn, name='lvar', var_name='data')) as data:
                 with data.add_child(OOList(parent=data, name='OOList')) as list_data:
                     with list_data.append_w():
-                        list_data.add_script('"value1"', indent=False)
+                        list_data.add_scripts('"value1"', indent=False)
                     with list_data.append_w():
-                        list_data.add_script('"value2"', indent=False)
-                list_data.add_script(';\n')
+                        list_data.add_scripts('"value2"', indent=False)
+                list_data.add_scripts(';\n')
                 page.alert(
                     "'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
 
@@ -221,7 +220,7 @@ class OODictTest(ClassTest):
             with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict_update') as dict_update:
                 pass
             with dict_update.update_w(key='key2'):
-                dict_update.add_script('"val_updated";\n', indent=False)
+                dict_update.add_scripts('"val_updated";\n', indent=False)
             btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
 
     def events_trigger_for_class_test(self):
@@ -263,7 +262,7 @@ class WebBtnRadioTest(ClassTest):
                        '测试3'))
             with LVar(parent=radio, var_name='click_val') as val:
                 radio.val()
-                radio.add_script('\n')
+                radio.add_scripts('\n')
                 radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
                 with page.render_post_w():
                     radio.render_for_post()
@@ -1144,12 +1143,12 @@ def test_home(app, PageClass, RootClass):
                     url_result = 'test_' + name + '_result'
                     app.add_url_rule('/' + url_result, endpoint=url_result, view_func=subclass['test_result'],
                                      methods=['POST'])
-                    with c3.add_child(WebBtn(name=name, value=name, width='260px',
+                    with c3.add_child(WebBtn(name=name, value=name, width='280px',
                                              styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
                         class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
         for class_obj in class_objs:
             with class_obj['obj'].on_event_w('click'):
-                self.add_script('location="/{}";'.format(class_obj['test_request_url']))
+                self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
 
         if not hasattr(self, '_nav_items'):
             self._nav_items = {}
