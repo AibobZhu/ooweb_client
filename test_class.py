@@ -1056,7 +1056,7 @@ class WebTableTest(ClassTest):
                 )
             )
 
-        return cls.html(data)
+        return ''.join(cls.html(data))
 
     def place_components_for_class_test(self, **kwargs):
         page = self
@@ -1129,7 +1129,7 @@ class OOTableTest(ClassTest):
                 'colReorder': False,
                 'columnDefs': [],
             }
-            return {'html': jsonify(cls.html({'schema': schema, 'records': records})), 'setting': setting}
+            return {'html': ''.join(cls.html({'schema': schema, 'records': records})), 'setting': setting}
 
         def example_data_chart():
             schema = [
@@ -1155,14 +1155,14 @@ class OOTableTest(ClassTest):
                 'colReorder': False,
                 'columnDefs': []
             }
-            return {'html': jsonify(cls.html({'schema': schema, 'records': records})), 'setting': setting}
+            return {'html': ''.join(cls.html({'schema': schema, 'records': records})), 'setting': setting}
 
         if type == 'img':
             return example_data_img()
         elif type == 'chart':
             return example_data_chart()
         else:
-            data = {'html': jsonify(super().example_data(schema_only=schema_only))}
+            data = {'html': super().example_data(schema_only=schema_only)}
             data['setting'] = {
                 'scrollY': '600px',
                 'scrollX': True,
@@ -1210,7 +1210,7 @@ class OOTableTest(ClassTest):
         for r in req:
             if r['me'] == self.testing_cls_name:
                 print('Got OOTable request data: {}'.format(r['data']))
-                r['data'] = self.example_data()
+                r['data'] = self.example_data(type='chart')
 
         return jsonify({'status': 'success', 'data': req})
 
