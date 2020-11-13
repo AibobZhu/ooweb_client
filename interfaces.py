@@ -43,6 +43,10 @@ class PositionInf(metaclass=abc.ABCMeta):
     def align(self, align):
         pass
 
+    @abc.abstractmethod
+    def offset(self, offset):
+        pass
+
 
 class PropertyInf(metaclass=abc.ABCMeta):
 
@@ -72,15 +76,15 @@ class EventInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def render_post_w(self):
+    def render_post_w(self, post_async=True):
         pass
 
     @abc.abstractmethod
-    def render_for_post(self):
+    def render_for_post(self, trigger_event=False, return_parts=["all"]):
         pass
 
     @abc.abstractmethod
-    def trigger_event(self, event, filter='', propagation=None):
+    def trigger_event(self, evente):
         pass
 
     @abc.abstractmethod
@@ -206,12 +210,6 @@ class ComponentInf(metaclass=abc.ABCMeta):
     def url(self, url=None, js=True):
         pass
 
-    '''
-    @abc.abstractmethod
-    def type_(self):
-        pass
-    '''
-
     @abc.abstractmethod
     def render_content(self):
         pass
@@ -235,18 +233,6 @@ class ComponentInf(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_context_indent(self):
         pass
-
-    '''
-    @abc.abstractmethod
-    def add_context_list(self,context_list):
-        pass
-    '''
-
-    '''
-    @abc.abstractmethod
-    def scripts(self):
-        pass
-    '''
 
     @abc.abstractmethod
     def add_scripts(self, scripts, indent=True, place=None):
@@ -293,22 +279,6 @@ class ComponentInf(metaclass=abc.ABCMeta):
     def add_url_rule(cls, app, extend=[]):
         pass
 
-    '''
-    @abc.abstractmethod
-    def add_script_list(self, script_list, place=None):
-        pass
-
-    def data_format(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_data(self):
-        pass
-
-    @abc.abstractmethod
-    def events_default_action(self, req):
-        return super().events_default_action(req=req)
-    '''
     @abc.abstractmethod
     def render(self):
         pass

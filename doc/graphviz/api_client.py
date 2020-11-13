@@ -80,31 +80,10 @@ dot.deri('ActionInf', 'EventInf')
 dot.deri('ActionInf', 'PositionInf')
 dot.deri('ActionInf', 'PropertyInf')
 
-dot.klass(name='Action',attrs=['_js', '_condition'])
-dot.impl('Action', 'ActionInf')
-dot.impl('Action', 'CommandInf')
-
-dot.klass(name='ActionJquery', attrs=['_component'])
-dot.deri('ActionJquery','Action')
-
 dot.inf(name='FormatInf')
 dot.deri('FormatInf', 'AppearanceInf')
 dot.deri('FormatInf', 'PositionInf')
 dot.deri('FormatInf', 'PropertyInf')
-
-dot.klass(name='Format', attrs=['UNITS', '_attrs', '_styles', '_classes', '_value',
-                                '_width', '_height', '_color', '_font', '_border', '_disable',
-                                '_pad', '_margin', '_align',
-                                ])
-dot.impl('Format', 'FormatInf')
-
-dot.klass(name='FormatBootstrap', attrs=[ '_component',
-        'COL_NAME', 'COL_OFFSET_NAME', 'ALIGN', '-----------------------',
-        '_ALIGN', '_WIDTH'
-    ], methods=[
-        'check_col_name', 'check_align', 'offset', 'get_width_name', 'get_offset_name'
-    ])
-dot.deri('FormatBootstrap','Format')
 
 dot.klass(name='WebComponent', attrs=[
         '_id', '_name', '_context', '_scripts', '_script_indent', '_styles',
@@ -123,13 +102,9 @@ dot.klass(name='ClassTest', methods=[
 
 dot.klass('WebComponentBootstrap')
 dot.deri('WebComponentBootstrap', 'WebComponent')
-dot.comp('WebComponentBootstrap', 'ActionJquery')
-dot.comp('WebComponentBootstrap', 'FormatBootstrap')
-dot.impl('WebComponentBootstrap', 'AppearanceInf')
-dot.impl('WebComponentBootstrap', 'EventInf')
-dot.impl('WebComponentBootstrap', 'PositionInf')
-dot.impl('WebComponentBootstrap', 'PropertyInf')
-dot.deri('WebComponentBootstrap', 'ClassTest')
+dot.impl('WebComponentBootstrap', 'ActionInf')
+dot.impl('WebComponentBootstrap', 'FormatInf')
+dot.impl('WebComponentBootstrap', 'CommandInf')
 
 dot.klass(name='WebPage')
 dot.deri('WebPage','WebComponentBootstrap')
@@ -157,15 +132,11 @@ with dot.subgraph() as lev1:
 
 with dot.subgraph() as lev2:
     lev2.attr(rank='same')
-    lev2.node('Format')
-    lev2.node('Action')
     lev2.node('ClassTest')
     lev2.node('WebComponent')
 
 with dot.subgraph() as lev3:
     lev3.attr(rank='same')
-    lev3.node('FormatBootstrap')
-    lev3.node('ActionJquery')
 
 with dot.subgraph() as lev4:
     lev4.attr(rank='same')
@@ -180,4 +151,4 @@ with dot.subgraph() as lev5:
     lev5.node('WebChart')
     lev5.node('Web...')
 
-dot.render('output/api.gv', view=True)
+dot.render('output/api_client.gv', view=True)

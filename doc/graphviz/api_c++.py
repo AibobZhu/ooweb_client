@@ -32,7 +32,7 @@ margin is same with pad
 align(horizon='left'/'center'/'right', vertical='top'/'center'/'bottom')
 '''
 dot.inf(name='PositionInf', methods=[
-    'pad', 'margin', 'align'
+    'pad', 'margin', 'align', 'offset'
 ])
 
 '''

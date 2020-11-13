@@ -1,8 +1,11 @@
 import os, datetime
 from flask_sqlalchemy import SQLAlchemy
-from flask import render_template_string, current_app, jsonify
+from flask import render_template_string, current_app, jsonify, url_for
 import types
 import copy
+import pprint
+import random
+from share import randDatetimeRange, _getStr
 
 class MinXin:
 
@@ -23,15 +26,16 @@ class ClassTest():
         This function is used by being assigned to a WebPage object's place_components
         """
         page = self
-        assert 'testing_class' in kwargs
-        testing_class = kwargs['testing_class']
-        class_name = testing_class.__name__
+
+        testing_class = page.testing_class
+        class_name = testing_class.testing_cls_name
         name_ = class_name
 
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         default_width = ['md6', 'lg6']
         default_offset = ['mdo3', 'mdo3']
+        page._url = '/test_' + testing_class.__name__ + '_request'
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
                 if class_name.find('OOChart') == 0:
@@ -40,12 +44,18 @@ class ClassTest():
                     )) as test:
                         pass
                 else:
-                    with c1.add_child(testing_class(parent=c1, name=name_, oovalue=name_)) as test:
+                    with c1.add_child(testing_class(parent=c1,
+                                                    name=name_,
+                                                    oovalue=name_,
+                                                    url='/'+testing_class.__name__+'_test')) as test:
                         pass
 
     def on_post_for_class_test(self):
         name = self.name()
-        req = self._page._action.on_post()
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
         for r in req:
             if r['me'] == name:
                 self.events_action_for_class_test(req=r)
@@ -61,22 +71,26 @@ class ClassTest():
         else:
             req['data'] = {'data': cls.test_request_data()}
 
-    def events_trigger_for_class_test(self):
+    def events_trigger_for_class_test(self, **kwargs):
         print('class {} events_trigger'.format(self.__class__.__name__))
         page = self._page
         if (not hasattr(self, '_PAGE_CLASS')) or (hasattr(self, '_PAGE_CLASS') and self._PAGE_CLASS is None):
             page = self
 
-            with page.render_post_w():
-                for name, component in page._components.items():
-                    component.render_for_post()
-            return
+        with page.render_post_w():
+            for name, component in page._components.items():
+                if name == 'WebHead1':
+                    print('Find WebHead1, url:{}'.format(component.url(js=False)))
+                component.render_for_post()
+        return
 
         '''
         Do custom event trigger here or replace below
         '''
+        '''
         with page.render_post_w():
             self.render_for_post()
+        '''
 
     @classmethod
     def get_sub_classes(cls, root_class):
@@ -124,16 +138,13 @@ class ClassTest():
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
-        class_name = cls.__name__
-
         PageClass = cls._PAGE_CLASS
-        page = PageClass(app=current_app, url='/' + cls.__name__ + '_test')
+        page = PageClass(app=current_app, url='/test_' + cls.__name__ + '_request')
+        page.testing_class = cls
+        page.place_components = types.MethodType(cls.place_components_for_class_test, page)
+        page.place_components()
 
-        page.place_components = types.MethodType(
-            cls.place_components_for_class_test, page)
-        page.place_components(testing_class=cls)
-
-        this_obj = page._components[class_name]
+        this_obj = page._components[cls.testing_cls_name]
         page.events_trigger = types.MethodType(this_obj.__class__.events_trigger_for_class_test, page)
         this_obj.on_post_for_class_test = types.MethodType(this_obj.__class__.on_post_for_class_test, this_obj )
         page.init_on_post(app=current_app,
@@ -231,10 +242,8 @@ class WebBtnRadioTest(ClassTest):
 
     def place_components_for_class_test(self, **kwargs):
         page = self
+        name = page.testing_class.testing_cls_name
         WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
-
-        assert 'testing_class' in kwargs
-        name = kwargs['testing_class'].__name__
 
         with page.add_child(WebBtnRadio(name=name, mytype=['inline'],
                                         items=[{'label': '测试1', 'checked': ''},
@@ -275,7 +284,7 @@ class WebBtnGroupVerticalTest(ClassTest):
 
     def place_components_for_class_test(self, **kwargs):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         WebBtnGroupVertical = page._SUBCLASSES['WebBtnGroupVertical']['class']
         WebBtnDropdown = page._SUBCLASSES['WebBtnDropdown']['class']
 
@@ -288,9 +297,9 @@ class WebBtnGroupVerticalTest(ClassTest):
 
 class WebBtnDropdownTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         WebBtnDropdown = page._SUBCLASSES['WebBtnDropdown']['class']
         WebBtn = page._SUBCLASSES['WebBtn']['class']
         name = this_class.__name__
@@ -337,6 +346,10 @@ class WebBtnDropdownTest(ClassTest):
             options = [{'name': 'op1, changed by change button', 'href': '#'}]
             test_obj.set_options(options=options)
             test_obj.val('"menu items/options are changed by change button"')
+
+        with test_obj.on_event_w('change'):
+            with page.render_post_w():
+                test_obj.render_for_post()
 
 
 class WebBtnTest(ClassTest):
@@ -407,9 +420,9 @@ class WebSelectTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post()
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         name_ = this_class.__name__
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
@@ -424,9 +437,9 @@ class WebSelectTest(ClassTest):
 
 class WebDatalistTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         TEST_ID = 'test_id'
         INPUT_NAME = 'test_input'
         name_ = this_class.__name__
@@ -465,9 +478,9 @@ class WebDatalistTest(ClassTest):
 
 class WebUlTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        cls = kwargs['testing_class']
+        cls = page.testing_class
         name = cls.__name__
         item1 = 'item1'
         item2 = 'item2'
@@ -491,9 +504,9 @@ class WebUlTest(ClassTest):
 
 class OOGeneralSelectorTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        testing_class = kwargs['testing_class']
+        testing_class = page.testing_class
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         WebBr = page._SUBCLASSES['WebBr']['class']
@@ -502,7 +515,7 @@ class OOGeneralSelectorTest(ClassTest):
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                 with c1.add_child(
-                        testing_class(styles={'display': 'flex'}, name=testing_class.__name__)) as gs1:
+                        testing_class(styles={'display': 'flex'}, name=testing_class.testing_cls_name)) as gs1:
                     pass
         with page.add_child(WebBr()) as br1:
             pass
@@ -542,9 +555,9 @@ class OOGeneralSelectorTest(ClassTest):
         for d in r['data']:
             if not d['options']:
                 option1 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
-                option1['name'] = d['name'] + '_option1'
+                option1['name'] = d['name'] + '_option1' if 'name' in d else d['select'] + 'option1'
                 option2 = copy.deepcopy(OOGeneralSelector.data_format()['option'])
-                option2['name'] = d['name'] + '_option2'
+                option2['name'] = d['name'] + '_option2' if 'name' in d else d['select'] + 'option1'
                 d['options'].append(option1)
                 d['options'].append(option2)
 
@@ -556,9 +569,9 @@ class OOGeneralSelectorTest(ClassTest):
 
 class OODatePickerSimpleTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         name = this_class.__name__
         with page.add_child(
                 this_class(name=name, radius={'tl': '8px', 'tr': '5px', 'br': '9px', 'bl': '5px'},
@@ -637,9 +650,9 @@ class OODatePickerIconTest(ClassTest):
             )
             cls.get_ret_stamp(r['data'])
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         name = this_class.__name__
         with page.add_child(this_class(name=name)) as test:
             pass
@@ -684,14 +697,20 @@ class OODatePickerRangeTest(ClassTest):
             # start = None if not r['data']['start_viewDate'] else r['data']['start_viewDate'].split('T')[0]
             start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
         else:
-            start = datetime.datetime.strptime(start, format)
+            try:
+                start = test_obj.get_dt(type=r['data']['select'], dt_str=start, format=format)
+            except ValueError:
+                start = datetime.datetime.strptime('2020-1-1', '%Y-%m-%d')
 
         end = None if not r['data']['end'] else r['data']['end']
         if not end:
             # end = None if not r['data']['end_viewDate'] else r['data']['end_viewDate'].split('T')[0]
             end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
         else:
-            end = datetime.datetime.strptime(end, format)
+            try:
+                end = test_obj.get_dt(type=r['data']['select'], dt_str=end, format=format)
+            except ValueError:
+                end = datetime.datetime.strptime('2020-12-31', '%Y-%m-%d')
 
         r['data']['start'] = int(start.timestamp())
         r['data']['start_viewDate'] = start.strftime('%Y-%m-%dT')
@@ -709,129 +728,13 @@ class OOBannerTest(ClassTest):
         req['data']['html'] = new_html
 
 
-'''
-class Test(MinXin):
-
-    _SUBCLASSES = {}
-
-    @classmethod
-    def get_sub_classes(cls, root_class):
-        """
-        Get all subclasses recursively
-        """
-
-        for subclass in root_class.__subclasses__():
-            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
-                    and (subclass.__name__.find('WebPage') < 0):
-                cls._SUBCLASSES[subclass.__name__] = subclass
-                cls.get_sub_classes(subclass)
-
-        return cls._SUBCLASSES
-
-    def __init__(self, test=False, client=False, **kwargs):
-        super().__init__(**kwargs)
-        self._test = test
-        if self._test and not self._client and hasattr(self, 'test_init'):
-            self.test_init()
-
-    def get_test_js(self):
-
-        url = ''
-        return 'alert(\'!@#class_name!@#\');\n'.replace('!@#class_name!@#', self.__class__.__name__)
-
-    @classmethod
-    def test_result(cls):
-
-        # return 'OK', 201
-        raise NotImplementedError
-
-    @classmethod
-    def add_test_route(cls, app):
-        url_request = 'test_' + cls.__name__ + '_request'
-        app.add_url_rule('/' + url_request, endpoint=url_request, view_func=cls.test_request, methods=['GET', 'POST'])
-        url_result = 'test_' + cls.__name__ + '_result'
-        app.add_url_rule('/' + url_result, endpoint=url_result, view_func=cls.test_result, methods=['POST'])
-        return {'test_request': url_request, 'test_result': url_result}
-
-    @classmethod
-    def custom_test_init(cls):
-        pass
-
-class TestClient(Test):
-
-    def __init__(self, test=False, **kwargs):
-        super().__init__(**kwargs)
-        self._test = test
-        if self._test and self._client and hasattr(self, 'test_init'):
-            self.test_init()
-
-class TestPage(Test):
-    _TEST_DB = 'test.db'
-
-    def __init__(self, test=False, **kwargs):
-        super().__init__(test=test, **kwargs)
-        if test and not self._client:
-            TestPage.test_init(self)
-
-    def test_init(self):
-        self._test_route_list = []
-        self.create_app()
-
-    def create_test_routes(self, app):
-
-        nav_items = {'title': {'name': '测试所有类', 'action': None}, 'menu_list': []}
-        subclasses = self.get_sub_classes(self._root_class)
-        for name, klass in subclasses.items():
-            test_urls = klass.add_test_route(app)
-            nav_items['menu_list'].append({'name': name, 'action': test_urls['test_request']})
-
-        self._nav_items = {**self._nav_items, **nav_items} if hasattr(self, '_nav_item') else nav_items
-
-        @app.route('/')
-        def index():
-            return render_template_string(self.render())
-
-    def create_app(self):
-        
-        from flask import Flask
-        from flask_appconfig import AppConfig
-        from flask_bootstrap import Bootstrap
-        from flask_socketio import SocketIO
-
-        app = Flask(__name__)
-        AppConfig(app, 'default_config.py')
-        Bootstrap(app)
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        app.config['TESTING'] = True
-        timestamp = datetime.datetime.now().strftime('-%Y-%m-%d-%H-%M-%S.db')
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
-                                                os.path.join(basedir, self._TEST_DB + timestamp)
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        self.socketio = SocketIO(app=app, debug=True)
-        app.socketio = self.socketio
-        self.create_test_routes(app)
-        self.app_client = app.test_client()
-        self.app = app
-        self.db = SQLAlchemy(app)
-        self.db.drop_all()
-        self.db.create_all()
-
-        def week():
-            print('week')
-
-        return app
-
-    def test_start(self):
-        self.app.run(host='0.0.0.0', port=5600, threaded=True)
-'''
-
 class OOCalendarTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
         NAME = 'OOCalendar'
         TITLE = 'title'
-        this_class = kwargs['testing_class']
+        this_class = page.testing_class
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         WebHead2 = page._SUBCLASSES['WebHead2']['class']
@@ -847,7 +750,8 @@ class OOCalendarTest(ClassTest):
                     pass
         with page.add_child(WebRow()) as r2:
             with r2.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c2:
-                with c2.add_child(this_class(name=NAME)) as calendar:
+                with c2.add_child(this_class(name=NAME,
+                                             url='/test_' + this_class.__name__ + '_request')) as calendar:
                     pass
         with page.add_child(WebBr()):
             pass
@@ -964,7 +868,11 @@ class OOCalendarTest(ClassTest):
         NAME = self.__class__.__name__
         TITLE = 'title'
         WebPage = self._PAGE_CLASS
-        req_ = WebPage.on_post()
+        req_ = None
+        if hasattr(self._page, '_action'):
+            req_ = self._page._action.on_post()
+        else:
+            req_ = self._page.on_post()
         title_ = '时间标题'
         OOCalendar = self.__class__
         for r in req_:
@@ -993,10 +901,11 @@ class OOCalendarTest(ClassTest):
 
 class WebTabTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
-        testing_class = kwargs['testing_class']
+    def place_components_for_class_test(self):
+        page = self
+        testing_class = page.testing_reqeust
         cls = testing_class
-        tab_name = testing_class.__name__
+        tab_name = testing_class.testing_cls_name
         tab_contain_name = 'tab_contain_test'
         tab_item1_name = 'tab_item1'
         tab_item2_name = 'tab_item2'
@@ -1004,7 +913,6 @@ class WebTabTest(ClassTest):
         tab_contain1_name = 'tab_contain1'
         tab_contain2_name = 'tab_contain2'
         tab_contain3_name = 'tab_contain3'
-        page = self
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         WebTabContain = page._SUBCLASSES['WebTabContain']['class']
@@ -1062,7 +970,11 @@ class WebTabTest(ClassTest):
         tab_contain2_name = 'tab_contain2'
         tab_contain3_name = 'tab_contain3'
         WebPage = self._PAGE_CLASS
-        req = WebPage.on_post()
+        req = None
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
         for r in req:
             if r['me'] == tab_name:
                 print('Got tab active item: {}'.format(r['data']))
@@ -1070,6 +982,236 @@ class WebTabTest(ClassTest):
             if r['me'] == tab_contain_name:
                 print('Got tab contain active page: {}'.format(r['data']))
                 r['data'] = tab_item2_name
+        return jsonify({'status': 'success', 'data': req})
+
+
+class WebTableTest(ClassTest):
+
+    testing_cls_name = 'WebTable'
+
+    @classmethod
+    def example_data(cls, schema_only=False):
+        '''
+        return {
+            'schema':[
+                {'name': 'Firstname','subhead':[{'name':'Firstname', 'style':'width:16%','attr':''},{'name':'Middlename','style':'width:16%', 'attr':''}]},
+                {'name': 'Lastname','style':'width:32%'},
+                {'name': 'Email','style': 'width:32%'},
+                {'name': 'registered', 'style': 'width:4%', 'type':'checkbox'}
+            ],
+            'records':[
+                ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':True, 'attr':''}),
+                ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':True, 'attr':''}),
+                ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
+                ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'})
+            ]
+        } ,
+        '''
+
+        cols = [
+            {'name': '事件', 'style': 'width:30%', 'attr': ''},
+            {'name': '审批', 'style': 'width:20%', 'attr': '', 'type': 'checkbox'},
+            {'name': '完成', 'style': '', 'attr': '', 'type': 'checkbox'},
+            {'name': '审核', 'style': '', 'attr': '', 'type': 'checkbox'},
+            {'name': '开始', 'style': '', 'attr': ''},
+            {'name': '结束', 'style': '', 'attr': ''},
+            {'name': '备份', 'style': '', 'attr': ''},
+        ]
+
+        schema = [
+            {'name': '标题', 'class': 'text-center', 'subhead': cols}
+        ]
+
+        if schema_only:
+            return schema
+
+        data = {
+            'schema': schema,
+            'records': []
+        }
+        for i in range(16):
+            approve = True if random.randint(0, 1) else False
+            done = True if random.randint(0, 1) else False
+            check = True if random.randint(0, 1) else False
+
+            start, end = randDatetimeRange()
+            data['records'].append(
+                (
+                    {'data': _getStr(random.randint(3, 6)), 'attr': 'nowrap data-ootable-details="This is event name"'},
+                    {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
+                    {'data': start, 'attr': 'data-ootable-details="This is start date time"'},
+                    {'data': end, 'attr': 'data-ootable-details="This is end date time"'},
+                    {'data': _getStr(random.randint(10, 128)), 'attr': 'data-ootable-details="This is details"'}
+                )
+            )
+
+        return cls.html(data)
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+
+        testing_class = page.testing_class
+        cls = page.testing_class
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebTable = page._SUBCLASSES['WebTable']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='400px')) as c1:
+                with c1.add_child(WebTable(parent=page, name=testing_class.testing_cls_name)) as test:
+                    pass
+
+    def events_trigger_for_class_test(self):
+        page = self
+        testing_cls_name = page.testing_class.testing_cls_name
+        test = page._components[testing_cls_name]
+
+        with page.render_post_w():
+            test.render_for_post()
+
+    def on_post_for_class_test(self):
+
+        WebPage = self._PAGE_CLASS
+        test_obj = self._page._components[self.testing_cls_name]
+        req = None
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
+        for r in req:
+            if r['me'] == self.testing_cls_name:
+                print('Got WebTable request data: {}'.format(r['data']))
+                r['data'] = {'html': self.example_data()}
+
+        return jsonify({'status': 'success', 'data': req})
+
+
+class OOTableTest(ClassTest):
+
+    testing_cls_name = 'OOTable'
+
+    @classmethod
+    def example_data(cls, type=None, schema_only=False):
+
+        def example_data_img():
+            schema = [
+                {'name': ''},
+                {'name': ''},
+                {'name': ''}
+            ]
+            records = []
+            for _ in range(random.randint(6, 10)):
+                records.append((
+                    {'data': "!@#render_img!@#:". \
+                                 replace('!@#render_img!@#',
+                                         cls.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
+                    {'data': _getStr(random.randint(3, 6))},
+                    {'data': _getStr(random.randint(3, 6))}
+                ))
+            setting = {
+                'scrollY': '500px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy': True,
+                'colReorder': False,
+                'columnDefs': [],
+            }
+            return {'html': jsonify(cls.html({'schema': schema, 'records': records})), 'setting': setting}
+
+        def example_data_chart():
+            schema = [
+                {'name': ''},
+                {'name': ''},
+                {'name': ''}
+            ]
+            records = []
+            for _ in range(10):
+                records.append((
+                    {'data': ("!@#render_chart!@#:" + "mbar;oochart_multibar_example_data").replace(
+                        '!@#render_chart!@#', cls.RENDER_CHART_KEY)},
+                    {'data': _getStr(random.randint(3, 6))},
+                    {'data': _getStr(random.randint(3, 6))}
+                ))
+            setting = {
+                'scrollY': '400px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy': True,
+                'colReorder': False,
+                'columnDefs': []
+            }
+            return {'html': jsonify(cls.html({'schema': schema, 'records': records})), 'setting': setting}
+
+        if type == 'img':
+            return example_data_img()
+        elif type == 'chart':
+            return example_data_chart()
+        else:
+            data = {'html': jsonify(super().example_data(schema_only=schema_only))}
+            data['setting'] = {
+                'scrollY': '600px',
+                'scrollX': True,
+                'scrollCollapse': True,
+                'paging': False,
+                'searching': False,
+                'destroy': True,
+                'colReorder': False,
+                'columnDefs': [],
+                'border': True
+            }
+            return data
+
+    def place_components_for_class_test(self, **kwargs):
+        page = self
+
+        testing_class = page.testing_class
+        cls = page.testing_class
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebTable = page._SUBCLASSES['WebTable']['class']
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='400px')) as c1:
+                with c1.add_child(testing_class(parent=page, name=testing_class.testing_cls_name)) as test:
+                    pass
+
+    def events_trigger_for_class_test(self, **kwargs):
+        page = self
+        testing_cls_name = page.testing_class.testing_cls_name
+        test = page._components[testing_cls_name]
+
+        with page.render_post_w():
+            test.render_for_post()
+
+    def on_post_for_class_test(self):
+
+        WebPage = self._PAGE_CLASS
+        test_obj = self._page._components[self.testing_cls_name]
+        req = None
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
+        for r in req:
+            if r['me'] == self.testing_cls_name:
+                print('Got OOTable request data: {}'.format(r['data']))
+                r['data'] = self.example_data()
+
         return jsonify({'status': 'success', 'data': req})
 
 
@@ -1118,7 +1260,7 @@ def test_home(app, PageClass, RootClass):
     WebNav = subclasses['WebNav']['class']
     WebBtn = subclasses['WebBtn']['class']
     class_objs = []
-
+    exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption']
     def place_components(self):
         with self.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
@@ -1143,10 +1285,12 @@ def test_home(app, PageClass, RootClass):
                     url_result = 'test_' + name + '_result'
                     app.add_url_rule('/' + url_result, endpoint=url_result, view_func=subclass['test_result'],
                                      methods=['POST'])
-                    with c3.add_child(WebBtn(name=name, value=name, width='280px',
+                    with c3.add_child(WebBtn(name=name, value=name, width='265px',
                                              styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
                         class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
         for class_obj in class_objs:
+            if class_obj in exclude_class_objs:
+                continue
             with class_obj['obj'].on_event_w('click'):
                 self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
 
@@ -1176,14 +1320,6 @@ def test_home(app, PageClass, RootClass):
     PageClass.TEST_HOME_HTML = render_template_string(html)
     return PageClass.TEST_HOME_HTML
 
-'''
-class TestPageClient(TestClient, TestPage):
-
-    def __init__(self, test=False, **kwargs):
-        super().__init__(test=test, **kwargs)
-        if test and self._client:
-            TestPage.test_init(self)
-'''
 
 class ExampleData():
     LAST_NAME = [

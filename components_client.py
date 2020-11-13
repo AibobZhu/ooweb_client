@@ -31,6 +31,7 @@ from interfaces import *
 from requests import post
 from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
 from test_class import *
+import json
 
 sys.setrecursionlimit(2000)
 
@@ -361,10 +362,6 @@ class Action(CommandInf, ActionInf):
         finally:
             self._pop_current_context()
 
-    def render_for_post(self, return_parts=['all'], trigger_event=False):
-        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
-        return self.func_call(params)
-
     @contextmanager
     def timeout_w(self, time=None):
         params = {'time': time}
@@ -610,10 +607,6 @@ class ActionJquery(Action):
             self._pop_current_context()
     '''
 
-    def alert(self, message=''):
-        params = {'message': message}
-        return self.func_call(params)
-
     '''
     def execute_list_name(self, action_name):
         params = {'action_name': action_name}
@@ -710,10 +703,6 @@ class ActionJquery(Action):
             raise Exception(err)
         finally:
             self._pop_current_context()
-
-    def render_for_post(self, return_parts=['all'], trigger_event=False):
-        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
-        return self.func_call(params)
 
     @contextmanager
     def timeout_w(self, time=None):
@@ -1020,7 +1009,7 @@ class WebComponent(ComponentInf, ClientBase):
         if not js:
             if not url:
                 if self._parent:
-                    return self._parent.url()
+                    return self._parent.url(js=js)
                 else:
                     return self._url
             else:
@@ -1070,16 +1059,10 @@ class WebComponent(ComponentInf, ClientBase):
         WebComponent._context = context
         WebComponent._cur_context_stack = [WebComponent._context]
 
+    '''
     def add_script(self, scripts, indent=True, place=None):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3],caller_id=self.id(),params={'scripts': scripts})
-        self.add_context(context)
-        '''
         params = {'scripts': scripts, 'indent': indent, "place": place}
         return self.func_call(params)
-
-    def replace_scripts(self, stub, scripts):
-        raise NotImplementedError
 
     def add_script_files(self, files):
         params = {'files': files}
@@ -1089,14 +1072,13 @@ class WebComponent(ComponentInf, ClientBase):
         raise NotImplementedError
 
     def set_script_indent(self, indent):
-        '''
-        context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(),params={'indent': indent})
-        self.add_context(context)
-        '''
         params = {'indent': indent}
         return self.func_call(params)
 
     def get_script_indent(self):
+        raise NotImplementedError
+    '''
+    def replace_scripts(self, stub, scripts):
         raise NotImplementedError
 
     def add_styles(self, styles):
@@ -1416,8 +1398,10 @@ class WebComponent(ComponentInf, ClientBase):
 
 class WebComponentBootstrap(WebComponent,
                             EventInf, AppearanceInf, PositionInf, PropertyInf,
+                            CommandInf,
                             ClassTest, ClientBase):
 
+    '''
     def _derive_event_members(self, **kwargs):
         action = ActionJquery(**kwargs)
         ActionClass = action.__class__
@@ -1435,35 +1419,209 @@ class WebComponentBootstrap(WebComponent,
                 if event_item[0] == action_item[0]:
                     setattr(self.__class__, event_item[0], action_item[1])
         # End EventInf
+    '''
+
+    '''
+    def _derive_action_members(self, **kwargs):
+        action = self._action
+        ActionClass = action.__class__
+
+        EventInfFunctions = inspect.getmembers(EventInf, predicate=inspect.isfunction)
+        AppearanceInfFunctions = inspect.getmembers(AppearanceInf, predicate=inspect.isfunction)
+        PropertyInfFunctions = inspect.getmembers(PropertyInf, predicate=inspect.isfunction)
+        PositionInfFunctions = inspect.getmembers(PositionInf, predicate=inspect.isfunction)
+        CommandInfFunctions = inspect.getmembers(CommandInf, predicate=inspect.isfunction)
+
+        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
+        format = self._format
+        FormatClass = format.__class__
+        FormatFunctions = inspect.getmembers(FormatClass, predicate=inspect.isfunction)
+
+        MyFunctions = [member for member in dir(self) if member.find('__') != 0]
+
+        # Derive all EventInf function from ActionJquery
+        for event_item in EventInfFunctions:
+            if event_item[0] == '__init__':
+                continue
+            for action_item in ActionFunctions:
+                if event_item[0] == action_item[0]:
+                    find = False
+                    for my_func in MyFunctions:
+                        if my_func == action_item[0]:
+                            find = True
+                            continue
+                    if not find:
+                        setattr(self.__class__, action_item[0], action_item[1])
+        # End EventInf
+
+        # Derive all other functions from ActionJquery
+        for action_item in ActionFunctions:
+            find = False
+            if action_item[0] == '__init__':
+                continue
+            for app_item in AppearanceInfFunctions:
+                if app_item[0] == action_item[0]:
+                    find = True
+            for pos_item in PositionInfFunctions:
+                if pos_item[0] == action_item[0]:
+                    find = True
+            for prop_item in PropertyInfFunctions:
+                if prop_item[0] == action_item[0]:
+                    find = True
+            for event_item in EventInfFunctions:
+                if event_item[0] == action_item[0]:
+                    find = True
+            for com_item in CommandInfFunctions:
+                if com_item[0] == action_item[0]:
+                    find = True
+            for format_item in FormatFunctions:
+                if format_item[0] == action_item[0]:
+                    find = True
+            for my_item in MyFunctions:
+                if my_item == action_item[0]:
+                    find = True
+            if not find:
+                setattr(self.__class__, action_item[0], action_item[1])
+        # End other function
+
+        # Get members of ActionClass
+        member_prefix = '_{}__'.format(ActionClass.__name__)
+        action_members = [member for member in dir(self._action)
+                            if member.find(member_prefix) != 0 and member.find('__') != 0 and
+                            not callable(getattr(self._action, member))]
+        my_members = [member for member in dir(self)
+                        if member.find(member_prefix) != 0 and member.find('__') != 0 and
+                        not callable(getattr(self, member))]
+
+        # Add the action members not in my members
+        for m in action_members:
+            if not m in my_members:
+                setattr(self, m, getattr(self._action, m))
+
+    def _derive_format_members(self, **kwargs):
+        action = self._action
+        ActionClass = action.__class__
+        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
+
+        format = self._format
+        FormatClass = format.__class__
+        FormatFunctions = inspect.getmembers(FormatClass, predicate=inspect.isfunction)
+
+        CommandInfFunctions = inspect.getmembers(CommandInf, predicate=inspect.isfunction)
+        EventInfFunctions = inspect.getmembers(EventInf, predicate=inspect.isfunction)
+        AppearanceInfFunctions = inspect.getmembers(AppearanceInf, predicate=inspect.isfunction)
+        PositionInfFunctions = inspect.getmembers(PositionInf, predicate=inspect.isfunction)
+        PropertyInfFunctions = inspect.getmembers(PropertyInf, predicate=inspect.isfunction)
+
+        MyFunctions = [member for member in dir(self) if member.find('__') != 0]
+
+        # Derive all CommandInf function from ActionJquery
+        for command_item in CommandInfFunctions:
+            if command_item[0] == '__init__':
+                continue
+            for action_item in ActionFunctions:
+                if command_item[0] == action_item[0]:
+                    setattr(self.__class__, action_item[0], action_item[1])
+        # End CommandInf
+
+        # Derive all other functions from FormatClass
+        for format_item in FormatFunctions:
+            find = False
+            if format_item[0] == '__init__':
+                continue
+            for app_item in AppearanceInfFunctions:
+                if app_item[0] == format_item[0]:
+                    find = True
+            for pos_item in PositionInfFunctions:
+                if pos_item[0] == format_item[0]:
+                    find = True
+            for prop_item in PropertyInfFunctions:
+                if prop_item[0] == format_item[0]:
+                    find = True
+            for event_item in EventInfFunctions:
+                if event_item[0] == format_item[0]:
+                    find = True
+            for com_item in CommandInfFunctions:
+                if com_item[0] == format_item[0]:
+                    find = True
+            for action_item in ActionFunctions:
+                if action_item[0] == format_item[0]:
+                    find = True
+            for my_item in MyFunctions:
+                if my_item == format_item[0]:
+                    find = True
+            if not find:
+                setattr(self.__class__, format_item[0], format_item[1])
+        # End all other functions
+
+        # Get members of FormatClass
+        member_prefix = '_{}__'.format(FormatClass.__name__)
+
+        format_members = [member for member in dir(self._format)
+                          if member.find('__') != 0 and member.find(member_prefix) != 0 and
+                          not callable(getattr(self._format, member))]
+
+        # Get my members
+        my_members = [member for member in dir(self)
+                      if member.find('__') != 0 and member.find(member_prefix) != 0 and
+                        not callable(getattr(self, member))]
+
+        for m in format_members:
+            if not m in my_members:
+                setattr(self, m, getattr(self._format, m))
+    '''
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        '''
         self._derive_event_members(**kwargs)
         self._format = FormatBootstrap(**kwargs)
+        self._action = ActionJquery(component=self, **kwargs)
+        self._format = FormatBootstrap(component=self, **kwargs)
+        self._derive_format_members(**kwargs)
+        self._derive_action_members(**kwargs)
+        '''
 
+    # EventInf
+    @contextmanager
     def on_event_w(self, event, filter='', propagation=None):
-        raise NotImplementedError('Error: WebComponentBootstrap.on_event_w is a dumy function '
-                                  'and should be replaced by Action.on_event_w!')
+        params = {'event': event, 'filter': filter, 'propagation': propagation}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
 
-    def render_post_w(self):
-        raise NotImplementedError('Error: WebComponentBootstrap.render_post_w is a dumy function '
-                                  'and should be replaced by Action.render_post_w!')
+    @contextmanager
+    def render_post_w(self, post_async=True):
+        params = {'post_async': post_async}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
 
-    def render_for_post(self):
-        raise NotImplementedError('Error: WebComponentBootstrap.render_for_post is a dumy function '
-                                  'and should be replaced by Action.render_for_post!')
+    def render_for_post(self, trigger_event=False, return_parts=["all"]):
+        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
+        return self.func_call(params)
 
-    def trigger_event(self, event, filter='', propagation=None):
-        raise NotImplementedError('Error: WebComponentBootstrap.trigger_event is a dumy function '
-                                  'and should be replaced by Action.trigger_event!')
-
+    def trigger_event(self, event):
+        params = {'event': event}
+        return self.func_call(params=params)
+    
     def sync(self, sync=True):
-        raise NotImplementedError('Error: WebComponentBootstrap.sync is a dumy function '
-                                  'and should be replaced by Action.sync!')
-
+        params = {'sync': sync}
+        return self.func_call(params=params)
+    
     def timeout_w(self, time):
-        raise NotImplementedError('Error: WebComponentBootstrap.timeout_w is a dumy function '
-                                  'and should be replaced by Action.timeout_w!')
+        params = {'time': time}
+        return self.func_call(params=params)
+
+    # End EventInf
 
     # Appearance members
     def width(self, width):
@@ -1487,7 +1645,7 @@ class WebComponentBootstrap(WebComponent,
         return self.func_call(params=params)
 
     def disable(self, disable):
-        params = {'disable': diable}
+        params = {'disable': disable}
         return self.func_call(params=params)
 
     # End appearance
@@ -1505,9 +1663,13 @@ class WebComponentBootstrap(WebComponent,
         params = {'align': align}
         return self.func_call(params=params)
 
+    def offset(self, offset):
+        params = {'offset': offset}
+        return self.func_call(params=params)
+
     # End position
 
-    # Property
+    # Property.
     def value(self, value):
         params = {'value': value}
         return self.func_call(params=params)
@@ -1523,8 +1685,156 @@ class WebComponentBootstrap(WebComponent,
     def styles(self, styles):
         params = {'styles': styles}
         return self.func_call(params=params)
-
     # End property
+
+    # CommandInf
+    def call_custom_func(self, fname='', fparams={}):
+        params = {'fname': fname, 'fparams': fparams}
+        return self.func_call(params=params)
+
+    @contextmanager
+    def cmds_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def condition_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def elif_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def else_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def for_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    @contextmanager
+    def if_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
+    def declare_custom_func(self, fname='', fparams=[], fbody=[]):
+        params = {'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params=params)
+
+    def declare_custom_global_func(self, fname, fparams=[], fbody=[]):
+        params = { 'fname': fname, 'fparams': fparams, 'fbody': fbody}
+        return self.func_call(params=params)
+
+    def equal(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def is_condition(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def is_js(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def set_condition(self, cond):
+        params = {'cond': cond}
+        return self.func_call(params=params)
+
+    def set_js(self, js):
+        params = {'js': js}
+        return self.func_call(params=params)
+
+    # End CommandInf
+
+    # ComponentInf
+    def add_context_indent(self, indent):
+        params = {'indent': indent}
+        return self.func_call(params=params)
+
+    def add_scripts(self, scripts):
+        params = {'scripts': scripts}
+        return self.func_call(params=params)
+
+    def set_scripts_indent(self, indent):
+        params = {'indent': indent}
+        return self.func_call(params=params)
+
+    def add_scripts_files(self, files):
+        params = {'files': files}
+        return self.func_call(params=params)
+
+    def get_scripts_files(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def get_scripts_indent(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def add_styles_files(self, files):
+        params = {'files': files}
+        return self.func_call(params=params)
+
+    def get_styles_files(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def get_context_indent(self):
+        params = {}
+        return self.func_call(params=params)
+    # End ComponentInf
+
+    # Other functions
+    def alert(self, message):
+        params = {'message': message}
+        return self.func_call(params=params)
+
+    def val(self, value=None):
+        params = {'value': value}
+        return self.func_call(params=params)
+    # End other functions
 
 
 from dominate import tags
@@ -1753,6 +2063,20 @@ class WebPage(WebComponentBootstrap):
     '''
 
     @classmethod
+    def on_post(cls):
+        '''
+        The process function to response the post request from the WebComponent itself
+        TODO: Query data by user model
+
+        :return: jsonify({'status':'success','data': data})
+        '''
+        data_j = request.form.get('data')
+        if data_j:
+            data = json.loads(request.form.get('data'))
+            return data
+        return []
+
+    @classmethod
     def get_page(cls, app):
         '''
         if not cls.PAGE:
@@ -1936,6 +2260,58 @@ class WebPage(WebComponentBootstrap):
                 component.render_for_post()
         '''
 
+    def add_context_indent(self, indent=None):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    '''
+    def add_scripts(self, scripts=None):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+    '''
+
+    def add_scripts_files(self, script_files):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def add_styles_files(self, style_files):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def get_context_indent(self):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def get_scripts_files(self):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def get_scripts_indent(self):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def get_styles_files(self):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def offset(self, offset):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
+    def set_scripts_indent(self, indent):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
+
 
 class WebA(WebComponentBootstrap):
     pass
@@ -2086,7 +2462,7 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
                 '测试3'))
             with LVar(parent=radio, var_name='click_val') as val:
                 radio.val()
-                radio.add_script('\n')
+                radio.add_scripts('\n')
                 radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
                 with page.render_post_w():
                     radio.render_for_post()
@@ -2265,11 +2641,11 @@ class OODatePickerBase:
     VIEWS = {'week': '周', 'month': '月', 'day': '日'}
     
     DAY_FORMAT_ZH = ("yyyy年 M月 d日", "%Y年 %m月 %d日")
-    WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年 第%W周")
+    WEEK_FORMAT_ZH = ("yyyy'年 第'w'周'", "%Y年 第%W周:%w")
     MONTH_FORMAT_ZH = ("yyyy年 M月", "%Y年 %m月")
 
     DAY_FORMAT_EN = ("yyyy M d", "%Y %m %d")
-    WEEK_FORMAT_EN = ("'Week of 'yyyy:w", "Week of %Y:%W")
+    WEEK_FORMAT_EN = ("'Week of 'yyyy:w", "Week of %Y:%W:%w")
     MONTH_FORMAT_EN = ("yyyy M", "%Y %m")
 
     start_func_name = "OODatePickerStart"
@@ -2387,6 +2763,12 @@ class OODatePickerBase:
                       'str_func': 'MONTH_DATETIME_STR', 'stamp_func': 'MONTH_STR_STAMP'}
         }
     }
+
+    @classmethod
+    def get_dt(cls, type, dt_str, format):
+        if type == 'week' or type == '周':
+            return datetime.datetime.strptime(dt_str+':1', format) - relativedelta.days(7)
+        return datetime.datetime.strptime(dt_str, format)
 
 
 class OODatePickerSimple(OODatePickerSimpleTest, WebInputGroup, OODatePickerBase):
@@ -4612,7 +4994,7 @@ class WebTabContain(WebDiv):
     pass
 
 
-class WebTable(WebComponentBootstrap):
+class WebTable(WebTableTest, WebComponentBootstrap):
     '''
     WebTable generates a html table from a data including schema and records.
     schema leads to table heads and records lead to table body.
@@ -4685,75 +5067,6 @@ class WebTable(WebComponentBootstrap):
             return ' '.join(cls._head_classes)
         else:
             return ''
-
-    @classmethod
-    def _example_data(cls, schema_only=False):
-        '''
-        return {
-            'schema':[
-                {'name': 'Firstname','subhead':[{'name':'Firstname', 'style':'width:16%','attr':''},{'name':'Middlename','style':'width:16%', 'attr':''}]},
-                {'name': 'Lastname','style':'width:32%'},
-                {'name': 'Email','style': 'width:32%'},
-                {'name': 'registered', 'style': 'width:4%', 'type':'checkbox'}
-            ],
-            'records':[
-                ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':True, 'attr':''}),
-                ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':True, 'attr':''}),
-                ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'})
-            ]
-        } ,
-        '''
-
-        cols = [
-            {'name': '事件', 'style': 'width:30%', 'attr': ''},
-            {'name': '审批', 'style': 'width:20%', 'attr': '', 'type': 'checkbox'},
-            {'name': '完成', 'style': '', 'attr': '', 'type': 'checkbox'},
-            {'name': '审核', 'style': '', 'attr': '', 'type': 'checkbox'},
-            {'name': '开始', 'style': '', 'attr': ''},
-            {'name': '结束', 'style': '', 'attr': ''},
-            {'name': '备份', 'style': '', 'attr': ''},
-        ]
-
-        schema = [
-            {'name': '标题', 'class': 'text-center', 'subhead': cols}
-        ]
-
-        if schema_only:
-            return schema
-
-        data = {
-            'schema': schema,
-            'records': []
-        }
-        for i in range(16):
-            approve = True if random.randint(0, 1) else False
-            done = True if random.randint(0, 1) else False
-            check = True if random.randint(0, 1) else False
-
-            start, end = randDatetimeRange()
-            data['records'].append(
-                (
-                    {'data': _getStr(random.randint(3, 6)), 'attr': 'nowrap data-ootable-details="This is event name"'},
-                    {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                    {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                    {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                    {'data': start, 'attr': 'data-ootable-details="This is start date time"'},
-                    {'data': end, 'attr': 'data-ootable-details="This is end date time"'},
-                    {'data': _getStr(random.randint(10, 128)), 'attr': 'data-ootable-details="This is details"'}
-                )
-            )
-
-        return data
 
     @classmethod
     def html(cls, data=None, head_class=None, head_style=None):
@@ -4907,7 +5220,8 @@ class WebTable(WebComponentBootstrap):
         return html
 
 
-class OOTable(WebTable):
+class OOTable(OOTableTest, WebTable):
+
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
@@ -5005,8 +5319,8 @@ class OOTable(WebTable):
             records = []
             for _ in range(random.randint(6, 10)):
                 records.append((
-                    {'data': "!@#render_img!@#:".replace('!@#render_img!@#', OOTable.RENDER_IMG_KEY) + url_for('static',
-                                                                                                               filename='img/demo.jpg')},
+                    {'data': "!@#render_img!@#:".\
+                        replace('!@#render_img!@#', OOTable.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
                     {'data': _getStr(random.randint(3, 6))},
                     {'data': _getStr(random.randint(3, 6))}
                 ))
@@ -5125,10 +5439,6 @@ class OOTable(WebTable):
         if setting_only:
             return data['setting']
         return {'schema': data['schema'], 'records': data['records']}
-
-    def render_for_post(self, trigger_event=False):
-        params = {'trigger_event': trigger_event}
-        return self.func_call({})
 
     def row_render_for_post(self, trigger_event=False):
         params = {'trigger_event': trigger_event}
