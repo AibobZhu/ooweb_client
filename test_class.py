@@ -1056,7 +1056,7 @@ class WebTableTest(ClassTest):
                 )
             )
 
-        return ''.join(cls.html(data))
+        return ' '.join(cls.html(data))
 
     def place_components_for_class_test(self, **kwargs):
         page = self
@@ -1100,6 +1100,8 @@ class WebTableTest(ClassTest):
 class OOTableTest(ClassTest):
 
     testing_cls_name = 'OOTable'
+    testing_cls_name2 = 'OOTable2'
+    testing_cls_name3 = 'OOTable3'
 
     @classmethod
     def example_data(cls, type=None, schema_only=False):
@@ -1120,7 +1122,7 @@ class OOTableTest(ClassTest):
                     {'data': _getStr(random.randint(3, 6))}
                 ))
             setting = {
-                'scrollY': '500px',
+                'scrollY': '400px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': False,
@@ -1164,7 +1166,7 @@ class OOTableTest(ClassTest):
         else:
             data = {'html': super().example_data(schema_only=schema_only)}
             data['setting'] = {
-                'scrollY': '600px',
+                'scrollY': '400px',
                 'scrollX': True,
                 'scrollCollapse': True,
                 'paging': False,
@@ -1184,19 +1186,56 @@ class OOTableTest(ClassTest):
 
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
-        WebTable = page._SUBCLASSES['WebTable']['class']
+        WebBr = page._SUBCLASSES['WebBr']['class']
+
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='400px')) as c1:
-                with c1.add_child(testing_class(parent=page, name=testing_class.testing_cls_name)) as test:
+                with c1.add_child(testing_class(parent=page,
+                                                mytype=['striped', 'hover', 'responsive'],
+                                                name=testing_class.testing_cls_name,
+                                                width='100%')) as test1:
+                    pass
+
+        with page.add_child(WebBr()):
+            pass
+        with page.add_child(WebBr()):
+            pass
+        with page.add_child(WebRow()) as r2:
+            with r2.add_child(WebColumn(width=['md8'],
+                                        offset=['mdo2'], height='400px')) as c2:
+                with c2.add_child(testing_class(parent=page,
+                                                mytype=['striped', 'hover', 'responsive'],
+                                                name=testing_class.testing_cls_name2,
+                                                width='100%')) as test2:
+                    pass
+
+        with page.add_child(WebBr()):
+            pass
+        with page.add_child(WebBr()):
+            pass
+        with page.add_child(WebRow()) as r3:
+            with r3.add_child(WebColumn(width=['md8'],
+                                        offset=['mdo2'], height='400px')) as c3:
+                with c3.add_child(testing_class(parent=page,
+                                                mytype=['striped', 'hover', 'responsive'],
+                                                name=testing_class.testing_cls_name3,
+                                                width='100%')) as test3:
                     pass
 
     def events_trigger_for_class_test(self, **kwargs):
         page = self
         testing_cls_name = page.testing_class.testing_cls_name
+        testing_cls_name2 = page.testing_class.testing_cls_name2
+        testing_cls_name3 = page.testing_class.testing_cls_name3
+
         test = page._components[testing_cls_name]
+        test2 = page._components[testing_cls_name2]
+        test3 = page._components[testing_cls_name3]
 
         with page.render_post_w():
             test.render_for_post()
+            test2.render_for_post()
+            test3.render_for_post()
 
     def on_post_for_class_test(self):
 
@@ -1210,7 +1249,11 @@ class OOTableTest(ClassTest):
         for r in req:
             if r['me'] == self.testing_cls_name:
                 print('Got OOTable request data: {}'.format(r['data']))
+                r['data'] = self.example_data(type='img')
+            elif r['me'] == self.testing_cls_name2:
                 r['data'] = self.example_data(type='chart')
+            elif r['me'] == self.testing_cls_name3:
+                r['data'] = self.example_data(type=None)
 
         return jsonify({'status': 'success', 'data': req})
 
