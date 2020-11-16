@@ -1793,8 +1793,8 @@ class WebComponentBootstrap(WebComponent,
         params = {'indent': indent}
         return self.func_call(params=params)
 
-    def add_scripts(self, scripts):
-        params = {'scripts': scripts}
+    def add_scripts(self, scripts, indent=True, place=None):
+        params = {'scripts': scripts, 'indent': indent, 'place': place}
         return self.func_call(params=params)
 
     def set_scripts_indent(self, indent):
