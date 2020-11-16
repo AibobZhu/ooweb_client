@@ -19,6 +19,7 @@ class ClassTest():
     _PAGE_CLASS = None
     RENDERED_HTML = None
     CLASS_TEST_HTML = None
+    testing_class = None
 
     def place_components_for_class_test(self, **kwargs):
         """
@@ -28,8 +29,10 @@ class ClassTest():
         page = self
 
         testing_class = page.testing_class
-        class_name = testing_class.testing_cls_name
-        name_ = class_name
+        testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else\
+            testing_class.__name__
+        class_name = testing_class.__name__
+        name_ = testing_cls_name
 
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
@@ -79,8 +82,6 @@ class ClassTest():
 
         with page.render_post_w():
             for name, component in page._components.items():
-                if name == 'WebHead1':
-                    print('Find WebHead1, url:{}'.format(component.url(js=False)))
                 component.render_for_post()
         return
 
@@ -99,12 +100,13 @@ class ClassTest():
         """
 
         for subclass in root_class.__subclasses__():
-            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
-                    and (subclass.__name__.find('WebPage') < 0):
-                cls._SUBCLASSES[subclass.__name__] = {'class': subclass, 'test_request': subclass.test_request,
+            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and \
+                    (subclass.__name__.find('Inf') < 0) and \
+                    (subclass.__name__.find('WebPage') < 0):
+                cls._SUBCLASSES[subclass.__name__] = {'class': subclass,
+                                                      'test_request': subclass.test_request,
                                                       'test_result': subclass.test_result}
                 cls.get_sub_classes(subclass)
-
         return cls._SUBCLASSES
 
     def __init__(self, client=False, **kwargs):
@@ -138,13 +140,14 @@ class ClassTest():
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        testing_cls_name = cls.testing_cls_name if hasattr(cls, 'testing_cls_name') else cls.__name__
         PageClass = cls._PAGE_CLASS
         page = PageClass(app=current_app, url='/test_' + cls.__name__ + '_request')
         page.testing_class = cls
         page.place_components = types.MethodType(cls.place_components_for_class_test, page)
         page.place_components()
 
-        this_obj = page._components[cls.testing_cls_name]
+        this_obj = page._components[testing_cls_name]
         page.events_trigger = types.MethodType(this_obj.__class__.events_trigger_for_class_test, page)
         this_obj.on_post_for_class_test = types.MethodType(this_obj.__class__.on_post_for_class_test, this_obj )
         page.init_on_post(app=current_app,
@@ -240,7 +243,9 @@ class OODictTest(ClassTest):
 
 class WebBtnRadioTest(ClassTest):
 
-    def place_components_for_class_test(self, **kwargs):
+    testing_cls_name = 'WebBtnRadio'
+
+    def place_components_for_class_test(self):
         page = self
         name = page.testing_class.testing_cls_name
         WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
@@ -503,6 +508,7 @@ class WebUlTest(ClassTest):
 
 
 class OOGeneralSelectorTest(ClassTest):
+    testing_cls_name = 'OOGeneralSelector'
 
     def place_components_for_class_test(self):
         page = self
@@ -515,7 +521,8 @@ class OOGeneralSelectorTest(ClassTest):
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                 with c1.add_child(
-                        testing_class(styles={'display': 'flex'}, name=testing_class.testing_cls_name)) as gs1:
+                        testing_class(styles={'display': 'flex'},
+                                      name=testing_class.testing_cls_name)) as gs1:
                     pass
         with page.add_child(WebBr()) as br1:
             pass
@@ -568,6 +575,7 @@ class OOGeneralSelectorTest(ClassTest):
 
 
 class OODatePickerSimpleTest(ClassTest):
+    testing_cls_name = 'OODatePickerSimple'
 
     def place_components_for_class_test(self):
         page = self
@@ -629,6 +637,7 @@ class OODatePickerSimpleTest(ClassTest):
 
 
 class OODatePickerIconTest(ClassTest):
+    testing_cls_name = 'OODatePickerIcon'
 
     def events_trigger_for_class_test(self):
         page = self
@@ -653,7 +662,9 @@ class OODatePickerIconTest(ClassTest):
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
-        name = this_class.__name__
+        testing_cls_name = this_class.testing_cls_name if hasattr(this_class, 'testing_cls_name') else \
+            this_class.__name__
+        name = testing_cls_name
         with page.add_child(this_class(name=name)) as test:
             pass
         test.call_custom_func(fname=test.start_func_name,
@@ -662,10 +673,11 @@ class OODatePickerIconTest(ClassTest):
 
 
 class OODatePickerRangeTest(ClassTest):
+    testing_cls_name = 'OODatePickerRange'
 
     def events_trigger_for_class_test(self):
         page = self
-        this_obj = page._components['OODatePickerRange']
+        this_obj = page._components[page.testing_class.testing_cls_name]
         this_class = this_obj.__class__
 
         with this_obj.on_event_w('change'):
@@ -719,6 +731,7 @@ class OODatePickerRangeTest(ClassTest):
 
 
 class OOBannerTest(ClassTest):
+    testing_cls_name = 'OOBanner'
 
     def events_action_for_class_test(self, req):
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
@@ -732,9 +745,9 @@ class OOCalendarTest(ClassTest):
 
     def place_components_for_class_test(self):
         page = self
-        NAME = 'OOCalendar'
         TITLE = 'title'
         this_class = page.testing_class
+        NAME = this_class.testing_cls_name if hasattr(this_class, 'testing_cls_name') else this_class.__name__
         WebRow = page._SUBCLASSES['WebRow']['class']
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         WebHead2 = page._SUBCLASSES['WebHead2']['class']
@@ -759,7 +772,10 @@ class OOCalendarTest(ClassTest):
     def events_trigger_for_class_test(self):
         page = self
         title = page._components['title']
-        calendar = page._components['OOCalendar']
+        testing_class = page.testing_class
+        testing_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
+            testing_class.__name__
+        calendar = page._components[testing_name]
 
         with page.render_post_w():
             calendar.render_for_post()
@@ -865,7 +881,7 @@ class OOCalendarTest(ClassTest):
         return render_template_string(html)
     '''
     def on_post_for_class_test(self):
-        NAME = self.__class__.__name__
+        NAME = self.testing_cls_name if hasattr(self, 'testing_cls_name') else self.__class__.__name__
         TITLE = 'title'
         WebPage = self._PAGE_CLASS
         req_ = None
@@ -903,9 +919,10 @@ class WebTabTest(ClassTest):
 
     def place_components_for_class_test(self):
         page = self
-        testing_class = page.testing_reqeust
+        testing_class = page.testing_class
         cls = testing_class
-        tab_name = testing_class.testing_cls_name
+        tab_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
+            testing_class.__name__
         tab_contain_name = 'tab_contain_test'
         tab_item1_name = 'tab_item1'
         tab_item2_name = 'tab_item2'
@@ -948,7 +965,10 @@ class WebTabTest(ClassTest):
         tab_contain3_name = 'tab_contain3'
 
         page = self
-        test = page._components['WebTab']
+        testing_class = page.testing_class
+        testing_cls_name = page.testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
+            testing_class.__name__
+        test = page._components[testing_cls_name]
         contain = page._components[tab_contain_name]
 
         with page.render_post_w():
@@ -961,7 +981,7 @@ class WebTabTest(ClassTest):
                 contain.render_for_post()
 
     def on_post_for_class_test(self):
-        tab_name = self.__class__.__name__
+        tab_name = self.testing_cls_name if hasattr(self, 'testing_cls_name') else self.__class__.__name__
         tab_contain_name = 'tab_contain_test'
         tab_item1_name = 'tab_item1'
         tab_item2_name = 'tab_item2'
@@ -1178,9 +1198,8 @@ class OOTableTest(ClassTest):
             }
             return data
 
-    def place_components_for_class_test(self, **kwargs):
+    def place_components_for_class_test(self):
         page = self
-
         testing_class = page.testing_class
         cls = page.testing_class
 
@@ -1222,7 +1241,7 @@ class OOTableTest(ClassTest):
                                                 width='100%')) as test3:
                     pass
 
-    def events_trigger_for_class_test(self, **kwargs):
+    def events_trigger_for_class_test(self):
         page = self
         testing_cls_name = page.testing_class.testing_cls_name
         testing_cls_name2 = page.testing_class.testing_cls_name2
@@ -1258,6 +1277,116 @@ class OOTableTest(ClassTest):
         return jsonify({'status': 'success', 'data': req})
 
 
+class OOChatClientTest(ClassTest):
+
+    testing_cls_name = 'oochatclient'
+    NAMESPACE = '/test_namespace'
+    SERVER_DATA = 'server_data'
+
+    def place_components_for_class_test(self):
+        page = self
+        server_name = '客服1'
+        testing_class = page.testing_class
+        cls = page.testing_class
+        testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
+            testing_class.__name__
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='800px')) as c1:
+                with c1.add_child(testing_class(  parent=page,
+                                                  name=testing_cls_name,
+                                                  socket_namespace=testing_class.NAMESPACE,
+                                                  user_name='用户' + str(random.randint(1, 1000)),
+                                                  server_name=server_name,
+                                                  radius='10px 10px 10px 10px')) as chat_test:
+                    pass
+
+    def events_trigger_for_class_test(self, **kwargs):
+        pass
+
+    def on_post_for_class_test(self):
+        WebPage = self._PAGE_CLASS
+        test_obj = self._page._components[self.testing_cls_name]
+
+        BODY, INPUT, SEND_BTN = self.get_names(myname=self.testing_cls_name)
+
+        req = None
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
+
+        for r in req:
+            if r['me'] == self.testing_cls_name:
+                req_me = r['data']
+                server_message = None
+                client_message = None
+                for r_ in req_me:
+                    if r_['me'] == self.SERVER_DATA:
+                        print('Got request data from chat server: {}'.format(r_['data']))
+                        server_message = r_['data']
+                    elif r_['me'] == BODY:
+                        print('Got data of panel body : {}'.format(r_['data']))
+                        if 'style' not in r_['data']:
+                            r_['data'] = {**r_['data'], **self.DEFAULT_BODY_STYLE}
+                        else:
+                            r_['data']['style'] = {'height': self.DEFAULT_BODY_STYLE['style']['height']}
+                            #r_['data']['style']['height'] = self.DEFAULT_BODY_TYYLE['style']['height']
+                        if server_message:
+                            self.body_process(body_data=r_['data'], message=server_message, me=test_obj.user_name)
+                        if client_message:
+                            self.body_process(body_data=r_['data'], message=client_message, me=test_obj.user_name)
+                    elif r_['me'] == INPUT:
+                        print('Got data of input : {}'.format(r_['data']))
+                        val = r_['data']['val'] if 'val' in r_['data'] else ''
+                        client_message = {'from': '我', 'data': {'message': val}, 'type': 'me'}
+                    elif r_['me'] == SEND_BTN:
+                        print('Got data of send btn : {}'.format(r_['data']))
+
+        return jsonify({'status': 'success', 'data': req})
+
+
+class OOChatServerTest(OOChatClientTest):
+
+    testing_cls_name = 'oochatserver'
+
+    def place_components_for_class_test(self):
+        NAME = '客服1'
+
+        page = self
+        testing_class = page.testing_class
+        testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
+            testing_class.__name__
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        ServerChatNM = page._SUBCLASSES['ServerChatNM']['class']
+
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn()) as c1:
+                with c1.add_child(testing_class(parent=page,
+                                                name=testing_cls_name,
+                                                user_name=NAME,
+                                                socket_namespace=testing_class.NAMESPACE,
+                                                radius='10px 10px 10px 10px')) as chat_test:
+                    pass
+
+        current_app.socketio.on_namespace(ServerChatNM(server_obj=None,
+                                                       socket_namespace=testing_class.NAMESPACE))
+
+    def on_post_for_class_test(self):
+        req = None
+        if hasattr(self._page, '_action'):
+            req = self._page._action.on_post()
+        else:
+            req = self._page.on_post()
+
+        return jsonify({'status': 'success', 'data': req})
+
+
 _TEST_DB = 'test.db'
 def create_app():
     '''create app, and all test urls'''
@@ -1285,17 +1414,17 @@ def create_app():
     return app
 
 
-def test_home(app, PageClass, RootClass):
+def test_home(app, PageClass, testing_classes):
 
     if hasattr(PageClass, 'TEST_HOME_HTML') and PageClass.TEST_HOME_HTML:
         return PageClass.TEST_HOME_HTML
 
     WebPage = PageClass
-    RootClass = RootClass
     test_page = WebPage(app=current_app)
     test_page.socketio = app.socketio
     test_page.db = app.db
-    subclasses = test_page.get_sub_classes(root_class=RootClass)
+    subclasses = testing_classes
+
     WebRow = subclasses['WebRow']['class']
     WebColumn = subclasses['WebColumn']['class']
     WebHead1 = subclasses['WebHead1']['class']
@@ -1303,7 +1432,8 @@ def test_home(app, PageClass, RootClass):
     WebNav = subclasses['WebNav']['class']
     WebBtn = subclasses['WebBtn']['class']
     class_objs = []
-    exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption']
+    exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption',
+                          'ServerChatNM']
     def place_components(self):
         with self.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
@@ -1319,6 +1449,8 @@ def test_home(app, PageClass, RootClass):
                     if name == 'WebPage':
                         subclass['class']._PAGE_CLASS = WebPage
                         continue
+                    if name in exclude_class_objs:
+                        continue
                     url_request = 'test_' + name + '_request'
                     subclass['class']._PAGE_CLASS = WebPage
                     setattr(subclass['class'], 'RENDERED_HTML', None)
@@ -1331,6 +1463,7 @@ def test_home(app, PageClass, RootClass):
                     with c3.add_child(WebBtn(name=name, value=name, width='265px',
                                              styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
                         class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
+
         for class_obj in class_objs:
             if class_obj in exclude_class_objs:
                 continue

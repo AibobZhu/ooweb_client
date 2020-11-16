@@ -31,11 +31,17 @@ function oocss(a) {
     for (var i in sheets) {
         var rules = sheets[i].rules || sheets[i].cssRules;
         for (var r in rules) {
-            if(rules[r].selectorText == 'hover'){
-                console.log('oocss: find hover')
-            }
-            if (a.is(rules[r].selectorText)) {
-                o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+
+            if(typeof rules[r].selectorText !== 'undefined'){
+                if(rules[r].selectorText.indexOf('a:hover')>=0){
+                    o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+                } else if (rules[r].selectorText.indexOf('-moz-focus-inner')>=0){
+                    o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+                } else if (rules[r].selectorText.indexOf('webkit-outer-spin-button')){
+                    o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+                } else if (a.is(rules[r].selectorText)) {
+                    o = $.extend(o, oocss2json(rules[r].style), oocss2json(a.attr('style')));
+                }
             }
         }
     }

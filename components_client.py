@@ -2431,42 +2431,6 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
     VAL_FUNC_NAME = 'radio_val'
     VAL_FUNC_ARGS = ['that', 'data=null']
 
-    def place_components_for_class_test(self, **kwargs):
-        page = self
-        assert 'testing_class' in kwargs
-        name = kwargs['testing_class'].__name__
-
-        with page.add_child(WebBtnRadio(name=name, mytype=['inline'],
-                                        items=[{'label': '测试1', 'checked': ''},
-                                               {'label': '测试测试测试2'},
-                                               {'label': '测试3'}])) as radio:
-            pass
-
-    def events_action_for_class_test(self, req):
-        print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
-        req['data'] = {'oovalue': '测试3'}
-        print('Class testing: testing for {} is setting "测试3" always'.format(self.__class__.__name__))
-
-    def events_trigger_for_class_test(self):
-        page = self
-        radio = page._components['WebBtnRadio']
-        cls = radio.__class__
-
-        with page.render_post_w():
-            radio.render_for_post()
-
-        with radio.on_event_w('change'):
-            radio.alert('"Please checking on server side to find \'Class testing, class {} got: ...\''
-                        ' And the radio buttons is set {} always by on_post function on server side"'.format(
-                cls.__name__,
-                '测试3'))
-            with LVar(parent=radio, var_name='click_val') as val:
-                radio.val()
-                radio.add_scripts('\n')
-                radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
-                with page.render_post_w():
-                    radio.render_for_post()
-
     '''
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -2923,7 +2887,7 @@ class WebSvg(WebComponentBootstrap):
             self._id = _id
 
 
-class OOChatClient(WebComponentBootstrap):
+class OOChatClient(OOChatClientTest, WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'oochatclient_val'
     INIT_FUNC_NAME = 'oochatclient_init'
@@ -2961,6 +2925,64 @@ class OOChatClient(WebComponentBootstrap):
         send_input_name = cls.OOCHAT_SEND_INPUT + myname
         send_btn_name = cls.OOCHAT_SEND_BTN + myname
         return body_name, send_input_name, send_btn_name
+
+    '''
+    @classmethod
+    def test_request(cls, methods=['GET']):
+
+        NAMESPACE = '/test_namespace'
+        SERVER_DATA = 'server_data'
+        NAME = 'test'
+        USER_NAME = '用户' + str(random.randint(1, 100))
+        BODY, INPUT, SEND_BTN = OOChatClient.get_names(myname=NAME)
+
+        class Page(WebPage):
+            URL = '/OOChatClient_test'
+
+            def type_(self):
+                return 'WebPage'
+
+        def on_post():
+            req = WebPage.on_post()
+
+            OOChatClient.on_post(req=req, myname=NAME)
+            server_message = None
+            client_message = None
+            for r in req:
+                if r['me'] == SERVER_DATA:
+                    print('Got message of "message from server" : {}'.format(r['data']))
+                    server_message = r['data']
+                elif r['me'] == BODY:
+                    print('Got data of panel body : {}'.format(r['data']))
+                    if 'style' not in r['data']:
+                        r['data'] = {**r['data'], **cls.DEFAULT_BODY_STYLE}
+                    else:
+                        r['data']['style']['height'] = cls.DEFAULT_BODY_STYLE['height']
+                    if server_message:
+                        OOChatClient.body_process(body_data=r['data'], message=server_message, me=USER_NAME)
+                    if client_message:
+                        OOChatClient.body_process(body_data=r['data'], message=client_message, me=USER_NAME)
+                elif r['me'] == INPUT:
+                    print('Got data of input : {}'.format(r['data']))
+                    client_message = {'from': '我', 'data': {'message': r['data']['val']}, 'type': 'me'}
+                elif r['me'] == SEND_BTN:
+                    print('Got data of send btn : {}'.format(r['data']))
+
+            return jsonify({'status': 'success', 'data': req})
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=NAME, socket_namespace=NAMESPACE,
+                                                              user_name=USER_NAME,
+                                                              radius='10px 10px 10px 10px')) as chat_test:
+                        pass
+
+        html = page.render()
+        return render_template_string(html)
+    '''
 
 
 from flask_socketio import *
@@ -3317,10 +3339,47 @@ class ServerChatNM(OOWebChatNM):
         emit(OOChatServer.MSG_OPEN_ROOM_SERVER, {'from': data['from'],
                                                  'to': data['to']}, broadcast=True)
 
+    def on_test(self, data):
+        print('Got test event:{}'.format(data))
 
-class OOChatServer(OOChatClient):
+
+class OOChatServer(OOChatServerTest, OOChatClient):
 
     VAL_FUNC_NAME = 'oochatserver_val'
+
+    '''
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        NAMESPACE = '/test_namespace'
+        SERVER_DATA = 'server_data'
+        NAME = '客服'
+        USER_NAME = '客服'
+        PANEL_NAME = 'chat'
+
+        class Page(WebPage):
+            URL = '/OOChatServer_test'
+
+            def type_(self):
+                return 'WebPage'
+
+        def on_post():
+            req = WebPage.on_post()
+
+            return jsonify({'status': 'success', 'data': req})
+
+        Page.init_page(app=current_app, endpoint=cls.__name__ + '.test', on_post=on_post)
+
+        with Page() as page:
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn()) as c1:
+                    with c1.add_child(globals()[cls.__name__](parent=page, name=NAME,
+                                                              user_name=USER_NAME, socket_namespace=NAMESPACE,
+                                                              radius='10px 10px 10px 10px')) as chat_test:
+                        pass
+        current_app.socketio.on_namespace(ServerChatNM(server_obj=None, socket_namespace=NAMESPACE))
+        html = page.render()
+        return render_template_string(html)
+    '''
 
 
 class OOChartNVD3(WebSvg):
