@@ -2661,8 +2661,9 @@ class OODatePickerBase:
 
         ret = None
         if not is_view:
-            mon = dt.datetime.strptime(_str + '-1', format_ + '-%w')  # week starts at monday
-            sun = dt.datetime.strptime(_str + '-6', format_ + '-%w') + dt.timedelta(days=1) # week end at sunday
+            print('WEEK_STR_DT got string:{}, format:{}'.format(_str, format_))
+            mon = dt.datetime.strptime(_str + ':1', format_)  # week starts at monday
+            sun = dt.datetime.strptime(_str + ':6', format_) + dt.timedelta(days=1) # week end at sunday
             ret = [mon + dt.timedelta(days=-7), sun + dt.timedelta(days=-7)]
         else:
             view_date = dateutil.parser.parse(_str)
@@ -2731,7 +2732,7 @@ class OODatePickerBase:
     @classmethod
     def get_dt(cls, type, dt_str, format):
         if type == 'week' or type == '周':
-            return datetime.datetime.strptime(dt_str+':1', format) - relativedelta.days(7)
+            return datetime.datetime.strptime(dt_str+':1', format) - relativedelta(days=7)
         return datetime.datetime.strptime(dt_str, format)
 
 

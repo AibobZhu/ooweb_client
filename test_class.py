@@ -610,7 +610,7 @@ class OODatePickerSimpleTest(ClassTest):
                 dt = datetime.datetime.strptime(start, "%Y-%m-%d")
                 dt = dt.timestamp()
             else:
-                dt = datetime.today().timestamp()
+                dt = datetime.datetime.today().timestamp()
             r['data']['date'] = int(dt)
         elif r['data']['select'] == '日':
             start = None if not r['data']['date'] else r['data']['date']
@@ -619,7 +619,10 @@ class OODatePickerSimpleTest(ClassTest):
                     format_ = cls.DAY_FORMAT_ZH[1]
                 else:
                     format_ = cls.DAY_FORMAT_EN[1]
-                dt = datetime.strptime(start, format_).timestamp()
+                try:
+                    dt = datetime.datetime.strptime(start, format_).timestamp()
+                except ValueError:
+                    dt = datetime.datetime.today().timestamp()
             else:
                 dt = datetime.datetime.today().timestamp()
             r['data']['date'] = int(dt)
@@ -630,7 +633,10 @@ class OODatePickerSimpleTest(ClassTest):
                     format_ = cls.MONTH_FORMAT_ZH[1]
                 else:
                     format_ = cls.MONTH_FORMAT_EN[1]
-                dt = datetime.strptime(start, format_).timestamp()
+                try:
+                    dt = datetime.datetime.strptime(start, format_).timestamp()
+                except ValueError:
+                    dt = datetime.datetime.today().timestamp()
             else:
                 dt = datetime.datetime.today().timestamp()
             r['data']['date'] = int(dt)
