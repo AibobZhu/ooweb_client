@@ -73,7 +73,7 @@ dot.inf(name='ComponentInf', methods=[
     'add_styles', 'get_styles', 'add_styles_files', 'get_styles_files',
     'add_url_rule'
 ])
-
+'''
 dot.inf(name='ActionInf')
 dot.deri('ActionInf', 'AppearanceInf')
 dot.deri('ActionInf', 'EventInf')
@@ -84,6 +84,7 @@ dot.inf(name='FormatInf')
 dot.deri('FormatInf', 'AppearanceInf')
 dot.deri('FormatInf', 'PositionInf')
 dot.deri('FormatInf', 'PropertyInf')
+'''
 
 dot.klass(name='WebComponent', attrs=[
         '_id', '_name', '_context', '_scripts', '_script_indent', '_styles',
@@ -102,33 +103,44 @@ dot.klass(name='ClassTest', methods=[
 
 dot.klass('WebComponentBootstrap')
 dot.deri('WebComponentBootstrap', 'WebComponent')
-dot.impl('WebComponentBootstrap', 'ActionInf')
-dot.impl('WebComponentBootstrap', 'FormatInf')
+dot.impl('WebComponentBootstrap', 'PositionInf')
+dot.impl('WebComponentBootstrap', 'PropertyInf')
+dot.impl('WebComponentBootstrap', 'AppearanceInf')
+dot.impl('WebComponentBootstrap', 'EventInf')
 dot.impl('WebComponentBootstrap', 'CommandInf')
 
 dot.klass(name='WebPage')
 dot.deri('WebPage','WebComponentBootstrap')
+dot.deri('WebPage', 'ClassTest')
 
 dot.klass(name='WebTable')
-dot.deri('WebTable','WebComponentBootstrap')
+dot.deri('WebTable', 'WebComponentBootstrap')
+dot.deri('WebTable', 'ClassTest')
 
 dot.klass(name='WebBtnToggle', methods=['toggle_class', 'toggle'])
 dot.deri('WebBtnToggle', 'WebComponentBootstrap')
+dot.deri('WebBtnToggle', 'ClassTest')
 
 dot.klass(name='WebImg')
 dot.deri('WebImg','WebComponentBootstrap')
+dot.deri('WebImg', 'ClassTest')
 
 dot.klass(name='WebChart')
 dot.deri('WebChart','WebComponentBootstrap')
+dot.deri('WebChart', 'ClassTest')
 
 dot.klass(name='Web...')
 dot.deri('Web...', 'WebComponentBootstrap')
+dot.deri('Web...', 'ClassTest')
 
 with dot.subgraph() as lev1:
     lev1.attr(rank='same')
     lev1.node('ComponentInf')
     lev1.node('EventInf')
     lev1.node('CommandInf')
+    lev1.node('AppearanceInf')
+    lev1.node('PositionInf')
+    lev1.node('PropertyInf')
 
 with dot.subgraph() as lev2:
     lev2.attr(rank='same')
