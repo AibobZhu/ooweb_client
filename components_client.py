@@ -9,27 +9,18 @@
 import sys
 sys.path.append(".")
 import calendar
-import copy
 import datetime as dt
 import inspect
-import json
-import os
-import pprint
-import random
 import sys
 import uuid
-import types
 
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
-import flask
 import numpy as np
-from contextlib2 import contextmanager
-from flask import current_app, render_template_string, request, jsonify, url_for, redirect, Blueprint
-from flask_sqlalchemy import SQLAlchemy
+from flask import Blueprint
 from interfaces import *
 from requests import post
-from share import create_payload, extract_data, APIs, _getStr, randDatetimeRange, day_2_week_number
+from share import create_payload, extract_data, APIs, _getStr, day_2_week_number
 from test_class import *
 import json
 
@@ -88,6 +79,7 @@ TODO: try with eval, just pass the function calling and express in string, then 
 '''
 
 
+"""
 class Action(CommandInf, ActionInf):
 
     DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
@@ -900,9 +892,6 @@ class FormatBootstrap(Format):
     '''
     @staticmethod
     def get_sub_classes(cls):
-        """
-        Get all subclasses recursively
-        """
 
         for subclass in cls.__subclasses__():
             if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
@@ -930,7 +919,7 @@ class FormatBootstrap(Format):
             }
         }
         return menu
-
+"""
 
 class WebComponent(ComponentInf, ClientBase):
 
@@ -1842,6 +1831,7 @@ from flask_nav import Nav
 from flask_nav.elements import *
 from flask_bootstrap.nav import BootstrapRenderer, sha1
 
+
 """
 class WebNav(WebComponentBootstrap):
     BASE_TEMPLATE = \
@@ -2053,6 +2043,7 @@ class WebNav(WebComponentBootstrap):
             source=cls.BASE_TEMPLATE,
         )
 """
+
 
 class WebPage(WebComponentBootstrap):
 
@@ -5623,6 +5614,7 @@ class LVar(Var):
 
 class GVar(GVarTest, Var):
     pass
+
 
 class OOList(OOListTest, ListInf, WebComponentBootstrap):
 
