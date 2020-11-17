@@ -1842,7 +1842,7 @@ from flask_nav import Nav
 from flask_nav.elements import *
 from flask_bootstrap.nav import BootstrapRenderer, sha1
 
-
+"""
 class WebNav(WebComponentBootstrap):
     BASE_TEMPLATE = \
         '''
@@ -1963,7 +1963,7 @@ class WebNav(WebComponentBootstrap):
         app.extensions['nav_renderers'][None] = (__name__, 'WebNav.CustomBootstrapRenderer')
 
     def base_navbar(self):
-        """
+        '''
         self._nav_items = {
             'title':{'name':'OwwwO','action':'test'},
             'menu_list': [
@@ -1981,7 +1981,7 @@ class WebNav(WebComponentBootstrap):
         }
 
         :return: WebNav.ExtendedNavbar
-        """
+        '''
 
         items = []
 
@@ -2040,19 +2040,19 @@ class WebNav(WebComponentBootstrap):
 
     @classmethod
     def html(cls, nav_items=None):
-        """
+        '''
         render with nav items and return html string
 
         :param nav_items: nav items in list
         :return: html string
-        """
+        '''
         if nav_items is None:
             nav_items = {}
         nav = WebNav(nav_items=nav_items)
         return render_template_string(
             source=cls.BASE_TEMPLATE,
         )
-
+"""
 
 class WebPage(WebComponentBootstrap):
 
@@ -2088,8 +2088,27 @@ class WebPage(WebComponentBootstrap):
         '''
         raise NotImplemented
 
-    def __init__(self, app=None,page_name=None, url_prefix=None, endpoint=None,
-                 test=False, **kwargs):
+    def init_custom_nav_render(self, app):
+        app.extensions['nav_renderers']['bootstrap'] = (__name__, 'WebNav.CustomBootstrapRenderer')
+        app.extensions['nav_renderers'][None] = (__name__, 'WebNav.CustomBootstrapRenderer')
+
+    def top_navbar(self):
+        top_bar = self.base_navbar()
+        if 'login' in self._nav_items.keys():
+            if self._nav_items['login']['is_login']:
+                top_bar.right_items = (
+                    Subgroup(
+                        self._nav_items['login']['login_name'],
+                        WebNav.NavView('退出', self._nav_items['login']['logout_href'])
+                    ),
+                )
+            else:
+                top_bar.right_items = (
+                    WebNav.NavView(u'登录', self._nav_items['login']['login_href']),
+                )
+        return top_bar
+
+    def __init__(self, app=None, url_prefix=None, **kwargs):
         self.set_context([])
         self._root_class = WebComponentBootstrap
         if 'url' in kwargs:
@@ -2112,6 +2131,7 @@ class WebPage(WebComponentBootstrap):
         self.place = types.MethodType(place, self)
         self._components = {}
         self.rendered = False
+
     '''
     def do_post(self):
         req_ = self.on_post()
@@ -2195,6 +2215,7 @@ class WebPage(WebComponentBootstrap):
         html = extract_data(r.json()['data'])
 
         # get nav bar html and insert into page html
+        '''
         def insert_nav(page_html, nav_html):
             """
             cut <nav> ... </nav> from the page html and insert nav_html into page_html
@@ -2214,6 +2235,7 @@ class WebPage(WebComponentBootstrap):
         if hasattr(self, '_nav_items') and self._nav_items:
             nav_html = WebNav.html(nav_items=self._nav_items)
             html = insert_nav(page_html=html, nav_html=nav_html)
+        '''
         # nav bar html end
 
         self._rendered_html = render_template_string(html)

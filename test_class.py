@@ -1426,7 +1426,17 @@ def test_home(app, PageClass, testing_classes):
         return PageClass.TEST_HOME_HTML
 
     WebPage = PageClass
-    test_page = WebPage(app=current_app)
+    menu = {
+        'title': {'name': 'OwwwO', 'endpoint': 'home', 'href':'/'},
+        'login': {
+            'site_name': 'OwwwO',
+            'is_login': False,
+            'login_name': 'TestUser',
+            'login_href': '/',
+            'logout_href': '/'
+        }
+    }
+    test_page = WebPage(app=current_app, nav_items=menu)
     test_page.socketio = app.socketio
     test_page.db = app.db
     subclasses = testing_classes
@@ -1435,11 +1445,11 @@ def test_home(app, PageClass, testing_classes):
     WebColumn = subclasses['WebColumn']['class']
     WebHead1 = subclasses['WebHead1']['class']
     WebHr = subclasses['WebHr']['class']
-    WebNav = subclasses['WebNav']['class']
     WebBtn = subclasses['WebBtn']['class']
     class_objs = []
     exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption',
                           'ServerChatNM']
+
     def place_components(self):
         with self.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
@@ -1479,17 +1489,10 @@ def test_home(app, PageClass, testing_classes):
         if not hasattr(self, '_nav_items'):
             self._nav_items = {}
 
-        menu = {
-                'title': {'name': 'OwwwO', 'endpoint': 'home'},
-                'login': {
-                    'site_name': 'OwwwO',
-                    'is_login': False,
-                    'login_name': 'TestUser',
-                    'login_href': '/',
-                    'logout_href': '/'
-                }
-            }
-        self.nav = WebNav(nav_items=menu)
+        '''
+        self._nav_items = menu
+        self.nav = WebNav(nav_items=self._nav_items)
+        '''
     test_page.place_components = types.MethodType(place_components, test_page)
     test_page.place_components()
 
