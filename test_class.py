@@ -1307,7 +1307,7 @@ class OOChatClientTest(ClassTest):
                                                   socket_namespace=testing_class.NAMESPACE,
                                                   user_name='用户' + str(random.randint(1, 1000)),
                                                   server_name=server_name,
-                                                  radius='10px 10px 10px 10px')) as chat_test:
+                                                  radius='20px 10px 10px 10px')) as chat_test:
                     pass
 
     def events_trigger_for_class_test(self, **kwargs):
@@ -1340,7 +1340,6 @@ class OOChatClientTest(ClassTest):
                             r_['data'] = {**r_['data'], **self.DEFAULT_BODY_STYLE}
                         else:
                             r_['data']['style'] = {'height': self.DEFAULT_BODY_STYLE['style']['height']}
-                            #r_['data']['style']['height'] = self.DEFAULT_BODY_TYYLE['style']['height']
                         if server_message:
                             self.body_process(body_data=r_['data'], message=server_message, me=test_obj.user_name)
                         if client_message:

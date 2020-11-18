@@ -79,12 +79,12 @@ TODO: try with eval, just pass the function calling and express in string, then 
 '''
 
 
-"""
 class Action(CommandInf, ActionInf):
 
     DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
     DRAW_IMG_FUNC_ARG = ['img', 'height']
 
+"""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -921,6 +921,7 @@ class FormatBootstrap(Format):
         return menu
 """
 
+
 class WebComponent(ComponentInf, ClientBase):
 
     def __init__(self, **kwargs):
@@ -1385,6 +1386,69 @@ class WebComponent(ComponentInf, ClientBase):
     '''
 
 
+class WebComponentBootstrapResponse(AppearanceInf, PositionInf, PropertyInf):
+
+    def __init__(self, request=None, **kwargs):
+        if request:
+            self._request = request
+
+    def set_request(self, request):
+        self._request = request
+
+    def get_request(self):
+        req = self._request if hasattr(self, '_request') else None
+        return req
+
+    # AppearanceInf
+    def width(self, width):
+        req = self.get_request()
+        req
+
+    def height(self, height):
+        pass
+
+    def color(self, color):
+        pass
+
+    def font(self, font):
+        pass
+
+    def border(self, border):
+        pass
+
+    def disable(self, disable):
+        pass
+    # End AppearanceInf
+
+    # PositionInf
+    def pad(self, pad):
+        pass
+
+    def margin(self, margin):
+        pass
+
+    def align(self, align):
+        pass
+
+    def offset(self, offset):
+        pass
+    # End PositionInf
+
+    # PropertyInf
+    def value(self, value):
+        pass
+
+    def attrs(self, attrs):
+        pass
+
+    def classes(self, classes):
+        pass
+
+    def styles(self, styles):
+        pass
+    # End PropertyInf
+
+
 class WebComponentBootstrap(WebComponent,
                             EventInf, AppearanceInf, PositionInf, PropertyInf,
                             CommandInf,
@@ -1636,7 +1700,6 @@ class WebComponentBootstrap(WebComponent,
     def disable(self, disable):
         params = {'disable': disable}
         return self.func_call(params=params)
-
     # End appearance
 
     # Position
@@ -1655,7 +1718,6 @@ class WebComponentBootstrap(WebComponent,
     def offset(self, offset):
         params = {'offset': offset}
         return self.func_call(params=params)
-
     # End position
 
     # Property.
@@ -1774,7 +1836,6 @@ class WebComponentBootstrap(WebComponent,
     def set_js(self, js):
         params = {'js': js}
         return self.func_call(params=params)
-
     # End CommandInf
 
     # ComponentInf
@@ -1823,6 +1884,19 @@ class WebComponentBootstrap(WebComponent,
     def val(self, value=None):
         params = {'value': value}
         return self.func_call(params=params)
+
+    @classmethod
+    def check_width_format(cls, width):
+        if width[-1:] != '%' and width[-2:] != 'px' and width != 'auto':
+            return False
+        return True
+
+    @classmethod
+    def check_height_format(cls, height):
+        if height[-1:] != '%' and height[-2:] != 'px' and height != 'auto':
+            return False
+        else:
+            return True
     # End other functions
 
 

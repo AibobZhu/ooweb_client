@@ -80,12 +80,20 @@ dot.deri('ActionInf', 'EventInf')
 dot.deri('ActionInf', 'PositionInf')
 dot.deri('ActionInf', 'PropertyInf')
 
-dot.klass(name='Action',attrs=['_js', '_condition'])
+dot.klass(name='Action', attrs=['_js', '_condition'])
 dot.impl('Action', 'ActionInf')
 dot.impl('Action', 'CommandInf')
 
+dot.klass(name='Response', attrs=[])
+dot.impl('Response', 'AppearanceInf')
+dot.impl('Response', 'PositionInf')
+dot.impl('Response', 'PropertyInf')
+
 dot.klass(name='ActionJquery', attrs=['_component'])
 dot.deri('ActionJquery','Action')
+
+dot.klass(name='ResponseBootstrap')
+dot.deri('ResponseBootstrap', 'Response')
 
 dot.inf(name='FormatInf')
 dot.deri('FormatInf', 'AppearanceInf')
@@ -121,10 +129,11 @@ dot.klass(name='ClassTest', methods=[
     ], fontcolor='blue'
           )
 
-dot.klass('WebComponentBootstrap')
+dot.klass('WebComponentBootstrap', attrs=['_vtable', '_vptr'])
 dot.deri('WebComponentBootstrap', 'WebComponent')
-dot.comp('WebComponentBootstrap', 'ActionJquery')
-dot.comp('WebComponentBootstrap', 'FormatBootstrap')
+dot.vderi('WebComponentBootstrap', 'ActionJquery')
+dot.vderi('WebComponentBootstrap', 'ResponseBootstrap')
+dot.vderi('WebComponentBootstrap', 'FormatBootstrap')
 dot.impl('WebComponentBootstrap', 'AppearanceInf')
 dot.impl('WebComponentBootstrap', 'EventInf')
 dot.impl('WebComponentBootstrap', 'PositionInf')
@@ -161,11 +170,13 @@ with dot.subgraph() as lev2:
     lev2.node('Action')
     lev2.node('ClassTest')
     lev2.node('WebComponent')
+    lev2.node('Response')
 
 with dot.subgraph() as lev3:
     lev3.attr(rank='same')
     lev3.node('FormatBootstrap')
     lev3.node('ActionJquery')
+    lev3.node('ResponseBootstrap')
 
 with dot.subgraph() as lev4:
     lev4.attr(rank='same')
