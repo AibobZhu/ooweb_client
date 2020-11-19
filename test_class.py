@@ -336,6 +336,7 @@ class WebBtnDropdownTest(ClassTest):
 
     def events_trigger_for_class_test(self):
         page = self
+        LVar = page._SUBCLASSES['LVar']['class']
         test_obj = page._components['WebBtnDropdown']
         disable_btn = page._components['DisableBtn']
         enable_btn = page._components['EnableBtn']
@@ -352,9 +353,12 @@ class WebBtnDropdownTest(ClassTest):
             test_obj.set_options(options=options)
             test_obj.val('"menu items/options are changed by change button"')
 
-        with test_obj.on_event_w('change'):
-            with page.render_post_w():
-                test_obj.render_for_post()
+        with test_obj.on_event_w('selected'):
+            with LVar(parent=test_obj, var_name='data') as data:
+                test_obj.val()
+            test_obj.alert('"The dropdown button is selected, '
+                           'this alert dialog should pop up after the dropdown button select finish,'
+                           'new menu text is :"+data')
 
 
 class WebBtnTest(ClassTest):
@@ -590,7 +594,7 @@ class OODatePickerSimpleTest(ClassTest):
         page = self
         test_obj = self._components['OODatePickerSimple']
 
-        with test_obj.on_event_w('change'):
+        with test_obj.on_event_w('switch'):
             with page.render_post_w():
                 test_obj.render_for_post(trigger_event=False)
 
@@ -606,8 +610,13 @@ class OODatePickerSimpleTest(ClassTest):
             start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T')[0]
             if start:
                 # USE cls FORMATS here
+                print('OODatepickerSimple got week start: {}'.format(start))
                 format_ = cls.FORMATS[lang]['week']['to_format']
-                dt = datetime.datetime.strptime(start, "%Y-%m-%d")
+                #dt = datetime.datetime.strptime(start, "%Y-%m-%d")
+                try:
+                    dt = datetime.datetime.strptime(start, format_)
+                except ValueError:
+                    dt = datetime.datetime.today()
                 dt = dt.timestamp()
             else:
                 dt = datetime.datetime.today().timestamp()
