@@ -23,8 +23,91 @@ from requests import post
 from share import create_payload, extract_data, APIs, _getStr, day_2_week_number
 from test_class import *
 import json
+import oocc_define as ooccd
 
 sys.setrecursionlimit(2000)
+
+
+class Response(AppearanceInf, PositionInf, PropertyInf):
+
+    def __init__(self, **kwargs):
+        self._response = None
+
+    # AppearanceInf
+    def width(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def height(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def color(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def font(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def border(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def disable(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    # End AppearanceInf
+
+    # PositionInf
+    def pad(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def margin(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def align(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def offset(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    # End PositionInf
+
+    # PropertyInf
+    def value(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def attrs(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def classes(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def styles(self, **kwargs):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    # End PropertyInf
 
 
 class ClientBase(metaclass=abc.ABCMeta):
@@ -83,6 +166,7 @@ class Action(CommandInf, ActionInf):
 
     DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
     DRAW_IMG_FUNC_ARG = ['img', 'height']
+
 
 """
     def __init__(self, **kwargs):
@@ -924,6 +1008,7 @@ class FormatBootstrap(Format):
 
 class WebComponent(ComponentInf, ClientBase):
 
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -1164,10 +1249,15 @@ class WebComponent(ComponentInf, ClientBase):
         if 'parent' in kwargs:
             self._parent = kwargs['parent']
 
+        if page:
+            assert(isinstance(page, WebPage))
+        elif isinstance(self, WebPage):
+            page = self
+        else:
+            wrapper_frame = sys._getframe(2)
+            page = wrapper_frame.f_locals['current_page']
+        assert(page)
         self._page = page
-        if not page:
-            if isinstance(self, WebPage):
-                self._page = self
 
         self._children = set()
         if 'children' in kwargs:
@@ -1453,6 +1543,9 @@ class WebComponentBootstrap(WebComponent,
                             EventInf, AppearanceInf, PositionInf, PropertyInf,
                             CommandInf,
                             ClassTest, ClientBase):
+    ACTION_MEMBER = ooccd.ACTION_MEMBER
+    FORMAT_MEMBER = ooccd.FORMAT_MEMBER
+    RESPONSE_MEMBER = ooccd.RESPONSE_MEMBER
 
     '''
     def _derive_event_members(self, **kwargs):
@@ -2473,6 +2566,7 @@ class WebBtnGroup(WebComponentBootstrap):
 
 class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentBootstrap):
     pass
+
 
 class WebBtnToolbar(WebComponentBootstrap):
 

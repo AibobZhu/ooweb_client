@@ -6,6 +6,8 @@ import copy
 import pprint
 import random
 from share import randDatetimeRange, _getStr
+import oocc_define as ooccd
+
 
 class MinXin:
 
@@ -20,7 +22,10 @@ class ClassTest():
     RENDERED_HTML = None
     CLASS_TEST_HTML = None
     testing_class = None
+    RUNTIME_ROOT_CLASS = None
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         """
         Note: type of 'self' is WebPage.
@@ -53,6 +58,7 @@ class ClassTest():
                                                     url='/'+testing_class.__name__+'_test')) as test:
                         pass
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         name = self.name()
         if hasattr(self._page, '_action'):
@@ -65,6 +71,7 @@ class ClassTest():
 
         return jsonify({'status': 'success', 'data': req})
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         cls = self.__class__
         name_ = cls.__name__
@@ -74,6 +81,7 @@ class ClassTest():
         else:
             req['data'] = {'data': cls.test_request_data()}
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
     def events_trigger_for_class_test(self, **kwargs):
         print('class {} events_trigger'.format(self.__class__.__name__))
         page = self._page
@@ -83,6 +91,7 @@ class ClassTest():
         with page.render_post_w():
             for name, component in page._components.items():
                 component.render_for_post()
+
         return
 
         '''
@@ -161,6 +170,7 @@ class ClassTest():
 
 
 class GVarTest(ClassTest):
+
     def place_components_for_class_test(self, **kwargs):
         page = self
         WebHead1 = page._SUBCLASSES['WebHead1']['class']
@@ -1455,9 +1465,10 @@ def test_home(app, PageClass, testing_classes):
     WebHr = subclasses['WebHr']['class']
     WebBtn = subclasses['WebBtn']['class']
     class_objs = []
-    exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption',
-                          'ServerChatNM']
+    exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption', 'ServerChatNM']
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components(self):
         with self.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
@@ -1479,33 +1490,34 @@ def test_home(app, PageClass, testing_classes):
                     subclass['class']._PAGE_CLASS = WebPage
                     setattr(subclass['class'], 'RENDERED_HTML', None)
                     setattr(subclass['class'], 'CLASS_TEST_HTML', None)
-                    app.add_url_rule('/' + url_request, endpoint=url_request, view_func=subclass['test_request'],
+                    app.add_url_rule('/' + url_request, endpoint=url_request,
+                                     view_func=subclass['test_request'],
                                      methods=['GET', 'POST'])
                     url_result = 'test_' + name + '_result'
-                    app.add_url_rule('/' + url_result, endpoint=url_result, view_func=subclass['test_result'],
+                    app.add_url_rule('/' + url_result,
+                                     endpoint=url_result,
+                                     view_func=subclass['test_result'],
                                      methods=['POST'])
                     with c3.add_child(WebBtn(name=name, value=name, width='265px',
                                              styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
                         class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
 
+        if not hasattr(self, '_nav_items'):
+            self._nav_items = {}
+        self._components = class_objs
+    test_page.place_components = types.MethodType(place_components, test_page)
+    test_page.place_components()
+
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    def events_trigger(self):
+        page = self
+        class_objs = page._components
         for class_obj in class_objs:
-            if class_obj in exclude_class_objs:
+            if class_obj['name'] in exclude_class_objs:
                 continue
             with class_obj['obj'].on_event_w('click'):
                 self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
 
-        if not hasattr(self, '_nav_items'):
-            self._nav_items = {}
-
-        '''
-        self._nav_items = menu
-        self.nav = WebNav(nav_items=self._nav_items)
-        '''
-    test_page.place_components = types.MethodType(place_components, test_page)
-    test_page.place_components()
-
-    def events_trigger(self):
-        print('test_page set event_trigger do nothing')
 
     test_page.events_trigger = types.MethodType(events_trigger, test_page)
 

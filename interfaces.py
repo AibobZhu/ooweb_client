@@ -1,69 +1,80 @@
 import abc
 from contextlib2 import contextmanager
-from test_class import *
+
+
+class MetisInf(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def get_vptr(self):
+        pass
+
+    @abc.abstractmethod
+    def set_vptr(self, vptr):
+        pass
+
 
 class AppearanceInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def width(self, width):
+    def width(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def height(self, height):
+    def height(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def color(self, color):
+    def color(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def font(self, font):
+    def font(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def border(self, border):
+    def border(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def disable(self, disable):
+    def disable(self,  **kwargs):
         pass
 
 
 class PositionInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def pad(self, pad):
+    def pad(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def margin(self, margin):
+    def margin(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def align(self, align):
+    def align(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def offset(self, offset):
+    def offset(self,  **kwargs):
         pass
 
 
 class PropertyInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def value(self, value):
+    def value(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def attrs(self, attrs):
+    def attrs(self,  **kwargs):
         pass
 
     @abc.abstractmethod
-    def classes(self, classes):
+    def classes(self, **kwargs):
         pass
 
     @abc.abstractmethod
-    def styles(self, styles):
+    def styles(self,  **kwargs):
         pass
 
 
@@ -283,6 +294,22 @@ class ComponentInf(metaclass=abc.ABCMeta):
     def render(self):
         pass
 
+    @abc.abstractmethod
+    def is_js(self):
+        pass
+
+    @abc.abstractmethod
+    def set_js(self, js):
+        pass
+
+    @abc.abstractmethod
+    def is_condition(self):
+        pass
+
+    @abc.abstractmethod
+    def set_condition(self, cond):
+        pass
+
 
 class CustomComponentInf(metaclass=abc.ABCMeta):
 
@@ -364,22 +391,6 @@ class CommandInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def equal(self,right, lef=None):
-        pass
-
-    @abc.abstractmethod
-    def is_js(self):
-        pass
-
-    @abc.abstractmethod
-    def set_js(self, js):
-        pass
-
-    @abc.abstractmethod
-    def is_condition(self):
-        pass
-
-    @abc.abstractmethod
-    def set_condition(self, cond):
         pass
 
     @abc.abstractmethod

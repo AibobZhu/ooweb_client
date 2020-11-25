@@ -8,6 +8,8 @@ import uuid
 import calendar
 from dateutil.relativedelta import relativedelta
 import datetime
+import types
+import sys
 
 # TODO(haibo.zhu@hotmail.com): Check HTTPBasicAuth thread safe
 
@@ -163,3 +165,40 @@ def week_2_dates(_week_str, _format, _lang='zh', _iso_first_wkday=0):
     week = weeks[week_num]
     return [datetime.datetime(year, month, week[0]), datetime.datetime(year, month, _week_end(week))]
 '''
+
+def change_func_name(fn, name):
+    code = fn.__code__
+    if sys.version_info >= (3, 8):
+        fn.__code__ = types.CodeType(code.co_argcount,
+                                    code.co_posonlyargcount,
+                                    code.co_kwonlyargcount,
+                                    code.co_nlocals,
+                                    code.co_stacksize,
+                                    code.co_flags,
+                                    code.co_code,
+                                    code.co_consts,
+                                    code.co_names,
+                                    code.co_varnames,
+                                    code.co_filename,
+                                    name,
+                                    code.co_firstlineno,
+                                    code.co_lnotab,
+                                    code.co_freevars,
+                                    code.co_cellvars)
+    else:
+        fn.__code__ = types.CodeType(code.co_argcount,
+                                    code.co_kwonlyargcount,
+                                    code.co_nlocals,
+                                    code.co_stacksize,
+                                    code.co_flags,
+                                    code.co_code,
+                                    code.co_consts,
+                                    code.co_names,
+                                    code.co_varnames,
+                                    code.co_filename,
+                                    name,
+                                    code.co_firstlineno,
+                                    code.co_lnotab,
+                                    code.co_freevars,
+                                    code.co_cellvars)
+
