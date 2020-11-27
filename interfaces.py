@@ -12,69 +12,83 @@ class MetisInf(metaclass=abc.ABCMeta):
     def set_vptr(self, vptr):
         pass
 
+    @abc.abstractmethod
+    def keep_vptr_ori(self):
+        """
+        Just for api mode, client need somewhere to keep the last vptr value for restore it when exit a with sentence
+        """
+        pass
+
+    @abc.abstractmethod
+    def restore_vptr_ori(self):
+        """
+        same with get_vptr_ori
+        """
+        pass
+
 
 class AppearanceInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def width(self,  **kwargs):
+    def width(self,  width=None):
         pass
 
     @abc.abstractmethod
-    def height(self,  **kwargs):
+    def height(self,  height=None):
         pass
 
     @abc.abstractmethod
-    def color(self,  **kwargs):
+    def color(self,  color=None):
         pass
 
     @abc.abstractmethod
-    def font(self,  **kwargs):
+    def font(self, font=None):
         pass
 
     @abc.abstractmethod
-    def border(self,  **kwargs):
+    def border(self, border=None):
         pass
 
     @abc.abstractmethod
-    def disable(self,  **kwargs):
+    def disable(self, disable=None):
         pass
 
 
 class PositionInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def pad(self,  **kwargs):
+    def pad(self,  pad=None):
         pass
 
     @abc.abstractmethod
-    def margin(self,  **kwargs):
+    def margin(self, margin=None):
         pass
 
     @abc.abstractmethod
-    def align(self,  **kwargs):
+    def align(self, align=None):
         pass
 
     @abc.abstractmethod
-    def offset(self,  **kwargs):
+    def offset(self, offset=None):
         pass
 
 
 class PropertyInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def value(self,  **kwargs):
+    def value(self, value=None):
         pass
 
     @abc.abstractmethod
-    def attrs(self,  **kwargs):
+    def attrs(self, attrs=None):
         pass
 
     @abc.abstractmethod
-    def classes(self, **kwargs):
+    def classes(self, classes=None):
         pass
 
     @abc.abstractmethod
-    def styles(self,  **kwargs):
+    def styles(self, styles=None):
         pass
 
 
@@ -95,7 +109,7 @@ class EventInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def trigger_event(self, evente):
+    def trigger_event(self, event, filter=''):
         pass
 
     @abc.abstractmethod

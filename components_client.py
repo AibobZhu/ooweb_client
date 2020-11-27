@@ -17,7 +17,7 @@ import uuid
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
 import numpy as np
-from flask import Blueprint
+from flask import Blueprint, request
 from interfaces import *
 from requests import post
 from share import create_payload, extract_data, APIs, _getStr, day_2_week_number
@@ -108,6 +108,20 @@ class Response(AppearanceInf, PositionInf, PropertyInf):
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
     # End PropertyInf
+
+    def on_post(self):
+        """
+        The process function to response the post request from the WebComponent itself
+        TODO: Query data by user model
+
+        :return: jsonify({'status':'success','data': data})
+        """
+        data_j = request.form.get('data')
+        if data_j:
+            data = json.loads(request.form.get('data'))
+            return data
+        return []
+        # return {"status": "sucess", 'data': data['data'], 'me':data['me']}
 
 
 class ClientBase(metaclass=abc.ABCMeta):
@@ -1009,11 +1023,14 @@ class FormatBootstrap(Format):
 class WebComponent(ComponentInf, ClientBase):
 
 
+    '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
+    '''
     _context = None
     _cur_context_stack = []
+
+    # ComponentInf
 
     def __enter__(self):
         '''
@@ -1063,6 +1080,7 @@ class WebComponent(ComponentInf, ClientBase):
         assert(isinstance(self._page, WebPage))
         child._page = self._page
         child._page._components[child.name()] = child
+
         params = {'child_id': child.id()}
         self.func_call(params)
         return child
@@ -1121,39 +1139,28 @@ class WebComponent(ComponentInf, ClientBase):
     def add_context(self, cont):
         return self._add_context(cont)
 
-    @classmethod
-    def _add_context(cls, cont):
-        if len(cls._cur_context_stack) == 0:
-            cls._cur_context_stack.append([])
-        cls._cur_context_stack[-1].append(cont)
-
-        return cls._cur_context_stack[-1]
-
-    @classmethod
-    def set_context(cls, context):
-        WebComponent._context = context
-        WebComponent._cur_context_stack = [WebComponent._context]
-
-    '''
-    def add_script(self, scripts, indent=True, place=None):
-        params = {'scripts': scripts, 'indent': indent, "place": place}
-        return self.func_call(params)
-
-    def add_script_files(self, files):
-        params = {'files': files}
-        return self.func_call(params)
-
-    def get_script_files(self):
+    def add_context_indent(self, indent):
         raise NotImplementedError
 
-    def set_script_indent(self, indent):
-        params = {'indent': indent}
-        return self.func_call(params)
-
-    def get_script_indent(self):
+    def get_context_indent(self):
         raise NotImplementedError
-    '''
+
+    def add_scripts(self, scripts, indent=True, place=None):
+        raise NotImplementedError
+
     def replace_scripts(self, stub, scripts):
+        raise NotImplementedError
+
+    def add_scripts_files(self, files):
+        raise NotImplementedError
+
+    def get_scripts_files(self):
+        raise NotImplementedError
+
+    def set_scripts_indent(self, indent):
+        raise NotImplementedError
+
+    def get_scripts_indent(self):
         raise NotImplementedError
 
     def add_styles(self, styles):
@@ -1162,10 +1169,10 @@ class WebComponent(ComponentInf, ClientBase):
     def get_styles(self):
         raise NotImplementedError
 
-    def add_style_files(self, files):
+    def add_styles_files(self, files):
         raise NotImplementedError
 
-    def get_style_files(self):
+    def get_styles_files(self):
         raise NotImplementedError
 
     @classmethod
@@ -1184,6 +1191,47 @@ class WebComponent(ComponentInf, ClientBase):
                 else:
                     url = e['rule']
                     app.add_url_rule(rule=url, view_func=e['view_func'])
+
+    def render(self):
+        '''
+        render and return a complete page information in html
+        :return:
+        '''
+        # components = components_factory(self.context())
+        payload = create_payload(self.context())
+        # print('WebPage::render api:{}'.format(self._ap_i))
+        r = post(url=self._api, json=payload)
+        html = extract_data(r.json()['data'])
+        return render_template_string(html)
+
+    def is_js(self):
+        raise NotImplementedError
+
+    def set_js(self, js):
+        raise NotImplementedError
+
+    def is_condition(self):
+        raise NotImplementedError
+
+    def set_condition(self, cond):
+        raise NotImplementedError
+
+    @classmethod
+    def _add_context(cls, cont):
+        if len(cls._cur_context_stack) == 0:
+            cls._cur_context_stack.append([])
+        cls._cur_context_stack[-1].append(cont)
+
+        return cls._cur_context_stack[-1]
+
+    @classmethod
+    def set_context(cls, context):
+        WebComponent._context = context
+        WebComponent._cur_context_stack = [WebComponent._context]
+
+    # End ComponentInf
+
+    # My methods
 
     def _get_objcall_context(self, func, caller_id=None, params=None, sub_context=[]):
         """
@@ -1230,7 +1278,7 @@ class WebComponent(ComponentInf, ClientBase):
             'sub_context': sub_context
         }
 
-    def __init__(self, page=None, test=False, client=True, **kwargs):
+    def __init__(self, test=False, client=True, **kwargs):
         self._client = client
         kwargs['client'] = client
         super().__init__(**kwargs)
@@ -1244,11 +1292,11 @@ class WebComponent(ComponentInf, ClientBase):
         else:
             self._name = self.name()
 
-
         self._parent = None
         if 'parent' in kwargs:
             self._parent = kwargs['parent']
 
+        '''
         if page:
             assert(isinstance(page, WebPage))
         elif isinstance(self, WebPage):
@@ -1258,6 +1306,33 @@ class WebComponent(ComponentInf, ClientBase):
             page = wrapper_frame.f_locals['current_page']
         assert(page)
         self._page = page
+        '''
+
+        page = None
+        if 'page' in kwargs and kwargs['page']:
+            page = kwargs['page']
+            assert (isinstance(page, WebPage))
+        elif isinstance(self, WebPage):
+            page = self
+        else:
+            stack = inspect.stack()
+            wrapper_index = 0
+            ROP_find = False
+            for level in stack:
+                if level.function.find('ROP_wrapped_function') >= 0:
+                    ROP_find = True
+                    break
+                wrapper_index += 1
+            if ROP_find:
+                wrapper_frame = sys._getframe(wrapper_index)
+                page = wrapper_frame.f_locals['current_page']
+            else:
+                raise RuntimeError("Not able to find page in stack, "
+                                   "may add RuntimeOnPage someware ahead of this class:{} is instanced".
+                                   format(self.__class__.__name__))
+        assert (page)
+        self._page = page
+        kwargs['page_id'] = page.id()
 
         self._children = set()
         if 'children' in kwargs:
@@ -1281,7 +1356,6 @@ class WebComponent(ComponentInf, ClientBase):
         self.add_context(context)
         self._components = None
 
-
     def set_api(self):
         if hasattr(self, "app") and self.app:
             self._api = self.app.config['API_URL'] + APIs['render'].format('v1.0')
@@ -1292,22 +1366,62 @@ class WebComponent(ComponentInf, ClientBase):
     def type_(self):
         return self.__class__.__name__
 
+    @classmethod
+    def _push_current_context(cls, cont):
+        cls._cur_context_stack.append(cont)
+
+    @classmethod
+    def _pop_current_context(cls):
+        cls._cur_context_stack.pop()
+
+    def true(self):
+        params = {}
+        return self.func_call(params)
+
+    def false(self):
+        params = {}
+        return self.func_call(params)
+
+    def null(self):
+        params = {}
+        return self.func_call(params)
+
+    # End my methods
+
+    '''
+    def add_style_files(self, files):
+        raise NotImplementedError
+    '''
+
+    '''
+    def add_script(self, scripts, indent=True, place=None):
+        params = {'scripts': scripts, 'indent': indent, "place": place}
+        return self.func_call(params)
+
+    def add_script_files(self, files):
+        params = {'files': files}
+        return self.func_call(params)
+
+    def get_script_files(self):
+        raise NotImplementedError
+
+    def set_script_indent(self, indent):
+        params = {'indent': indent}
+        return self.func_call(params)
+
+    def get_script_indent(self):
+        raise NotImplementedError
+    '''
+
+    '''
+    def get_style_files(self):
+        raise NotImplementedError
+    '''
+
     '''
     def url_for(self, context):
         pass
     '''
-
-    def render(self):
-        '''
-        render and return a complete page information in html
-        :return:
-        '''
-        # components = components_factory(self.context())
-        payload = create_payload(self.context())
-        # print('WebPage::render api:{}'.format(self._ap_i))
-        r = post(url=self._api, json=payload)
-        html = extract_data(r.json()['data'])
-        return render_template_string(html)
 
     '''
     def add_context_list(self, context_list, indent=True):
@@ -1333,19 +1447,11 @@ class WebComponent(ComponentInf, ClientBase):
                     del cls._cur_context_stack[i]
     '''
 
-
-    @classmethod
-    def _push_current_context(cls, cont):
-        cls._cur_context_stack.append(cont)
-
-    @classmethod
-    def _pop_current_context(cls):
-        cls._cur_context_stack.pop()
-
     '''
     def scripts(self):
         raise NotImplementedError
     '''
+
     '''
     def add_script_list(self, script_list, indent=True, place=None):
         
@@ -1428,23 +1534,17 @@ class WebComponent(ComponentInf, ClientBase):
         pass
     '''
 
-    BASE_VAL_FUNC_NAME = 'ooweb_base_val'
-    BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']
-
-    VAL_FUNC_NAME = 'ooweb_val'
-    VAL_FUNC_PARAMS = BASE_VAL_FUNC_PARAMS
-
     '''
     def has_class(self, class_):
         raise NotImplementedError
 
     def is_width(self, width):
-       
+
         params = {'width': width}
         return self.func_call(params)
 
     def remove_width(self, width):
-       
+
         params = {'width': width}
         return self.func_call(params)
 
@@ -1460,7 +1560,7 @@ class WebComponent(ComponentInf, ClientBase):
         params = {'value': value}
         return self.func_call(params)
 
-        
+
     def is_js_kw(self):
         pass
 
@@ -1472,250 +1572,24 @@ class WebComponent(ComponentInf, ClientBase):
         print('Got request')
         if req:
             print('     req["me"]:{}'.format(req['me']))
-    
+
     '''
 
+    BASE_VAL_FUNC_NAME = 'ooweb_base_val'
+    BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']
 
-class WebComponentBootstrapResponse(AppearanceInf, PositionInf, PropertyInf):
-
-    def __init__(self, request=None, **kwargs):
-        if request:
-            self._request = request
-
-    def set_request(self, request):
-        self._request = request
-
-    def get_request(self):
-        req = self._request if hasattr(self, '_request') else None
-        return req
-
-    # AppearanceInf
-    def width(self, width):
-        req = self.get_request()
-        req
-
-    def height(self, height):
-        pass
-
-    def color(self, color):
-        pass
-
-    def font(self, font):
-        pass
-
-    def border(self, border):
-        pass
-
-    def disable(self, disable):
-        pass
-    # End AppearanceInf
-
-    # PositionInf
-    def pad(self, pad):
-        pass
-
-    def margin(self, margin):
-        pass
-
-    def align(self, align):
-        pass
-
-    def offset(self, offset):
-        pass
-    # End PositionInf
-
-    # PropertyInf
-    def value(self, value):
-        pass
-
-    def attrs(self, attrs):
-        pass
-
-    def classes(self, classes):
-        pass
-
-    def styles(self, styles):
-        pass
-    # End PropertyInf
+    VAL_FUNC_NAME = 'ooweb_val'
+    VAL_FUNC_PARAMS = BASE_VAL_FUNC_PARAMS
 
 
 class WebComponentBootstrap(WebComponent,
                             EventInf, AppearanceInf, PositionInf, PropertyInf,
                             CommandInf,
                             ClassTest, ClientBase):
+
     ACTION_MEMBER = ooccd.ACTION_MEMBER
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
     RESPONSE_MEMBER = ooccd.RESPONSE_MEMBER
-
-    '''
-    def _derive_event_members(self, **kwargs):
-        action = ActionJquery(**kwargs)
-        ActionClass = action.__class__
-
-        EventInfFunctions = inspect.getmembers(ActionInf, predicate=inspect.isfunction)
-        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
-
-        self._action = action
-
-        # Derive all EventInf function from ActionJquery
-        for event_item in EventInfFunctions:
-            if event_item[0] == '__init__':
-                continue
-            for action_item in ActionFunctions:
-                if event_item[0] == action_item[0]:
-                    setattr(self.__class__, event_item[0], action_item[1])
-        # End EventInf
-    '''
-
-    '''
-    def _derive_action_members(self, **kwargs):
-        action = self._action
-        ActionClass = action.__class__
-
-        EventInfFunctions = inspect.getmembers(EventInf, predicate=inspect.isfunction)
-        AppearanceInfFunctions = inspect.getmembers(AppearanceInf, predicate=inspect.isfunction)
-        PropertyInfFunctions = inspect.getmembers(PropertyInf, predicate=inspect.isfunction)
-        PositionInfFunctions = inspect.getmembers(PositionInf, predicate=inspect.isfunction)
-        CommandInfFunctions = inspect.getmembers(CommandInf, predicate=inspect.isfunction)
-
-        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
-        format = self._format
-        FormatClass = format.__class__
-        FormatFunctions = inspect.getmembers(FormatClass, predicate=inspect.isfunction)
-
-        MyFunctions = [member for member in dir(self) if member.find('__') != 0]
-
-        # Derive all EventInf function from ActionJquery
-        for event_item in EventInfFunctions:
-            if event_item[0] == '__init__':
-                continue
-            for action_item in ActionFunctions:
-                if event_item[0] == action_item[0]:
-                    find = False
-                    for my_func in MyFunctions:
-                        if my_func == action_item[0]:
-                            find = True
-                            continue
-                    if not find:
-                        setattr(self.__class__, action_item[0], action_item[1])
-        # End EventInf
-
-        # Derive all other functions from ActionJquery
-        for action_item in ActionFunctions:
-            find = False
-            if action_item[0] == '__init__':
-                continue
-            for app_item in AppearanceInfFunctions:
-                if app_item[0] == action_item[0]:
-                    find = True
-            for pos_item in PositionInfFunctions:
-                if pos_item[0] == action_item[0]:
-                    find = True
-            for prop_item in PropertyInfFunctions:
-                if prop_item[0] == action_item[0]:
-                    find = True
-            for event_item in EventInfFunctions:
-                if event_item[0] == action_item[0]:
-                    find = True
-            for com_item in CommandInfFunctions:
-                if com_item[0] == action_item[0]:
-                    find = True
-            for format_item in FormatFunctions:
-                if format_item[0] == action_item[0]:
-                    find = True
-            for my_item in MyFunctions:
-                if my_item == action_item[0]:
-                    find = True
-            if not find:
-                setattr(self.__class__, action_item[0], action_item[1])
-        # End other function
-
-        # Get members of ActionClass
-        member_prefix = '_{}__'.format(ActionClass.__name__)
-        action_members = [member for member in dir(self._action)
-                            if member.find(member_prefix) != 0 and member.find('__') != 0 and
-                            not callable(getattr(self._action, member))]
-        my_members = [member for member in dir(self)
-                        if member.find(member_prefix) != 0 and member.find('__') != 0 and
-                        not callable(getattr(self, member))]
-
-        # Add the action members not in my members
-        for m in action_members:
-            if not m in my_members:
-                setattr(self, m, getattr(self._action, m))
-
-    def _derive_format_members(self, **kwargs):
-        action = self._action
-        ActionClass = action.__class__
-        ActionFunctions = inspect.getmembers(ActionClass, predicate=inspect.isfunction)
-
-        format = self._format
-        FormatClass = format.__class__
-        FormatFunctions = inspect.getmembers(FormatClass, predicate=inspect.isfunction)
-
-        CommandInfFunctions = inspect.getmembers(CommandInf, predicate=inspect.isfunction)
-        EventInfFunctions = inspect.getmembers(EventInf, predicate=inspect.isfunction)
-        AppearanceInfFunctions = inspect.getmembers(AppearanceInf, predicate=inspect.isfunction)
-        PositionInfFunctions = inspect.getmembers(PositionInf, predicate=inspect.isfunction)
-        PropertyInfFunctions = inspect.getmembers(PropertyInf, predicate=inspect.isfunction)
-
-        MyFunctions = [member for member in dir(self) if member.find('__') != 0]
-
-        # Derive all CommandInf function from ActionJquery
-        for command_item in CommandInfFunctions:
-            if command_item[0] == '__init__':
-                continue
-            for action_item in ActionFunctions:
-                if command_item[0] == action_item[0]:
-                    setattr(self.__class__, action_item[0], action_item[1])
-        # End CommandInf
-
-        # Derive all other functions from FormatClass
-        for format_item in FormatFunctions:
-            find = False
-            if format_item[0] == '__init__':
-                continue
-            for app_item in AppearanceInfFunctions:
-                if app_item[0] == format_item[0]:
-                    find = True
-            for pos_item in PositionInfFunctions:
-                if pos_item[0] == format_item[0]:
-                    find = True
-            for prop_item in PropertyInfFunctions:
-                if prop_item[0] == format_item[0]:
-                    find = True
-            for event_item in EventInfFunctions:
-                if event_item[0] == format_item[0]:
-                    find = True
-            for com_item in CommandInfFunctions:
-                if com_item[0] == format_item[0]:
-                    find = True
-            for action_item in ActionFunctions:
-                if action_item[0] == format_item[0]:
-                    find = True
-            for my_item in MyFunctions:
-                if my_item == format_item[0]:
-                    find = True
-            if not find:
-                setattr(self.__class__, format_item[0], format_item[1])
-        # End all other functions
-
-        # Get members of FormatClass
-        member_prefix = '_{}__'.format(FormatClass.__name__)
-
-        format_members = [member for member in dir(self._format)
-                          if member.find('__') != 0 and member.find(member_prefix) != 0 and
-                          not callable(getattr(self._format, member))]
-
-        # Get my members
-        my_members = [member for member in dir(self)
-                      if member.find('__') != 0 and member.find(member_prefix) != 0 and
-                        not callable(getattr(self, member))]
-
-        for m in format_members:
-            if not m in my_members:
-                setattr(self, m, getattr(self._format, m))
-    '''
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1729,6 +1603,7 @@ class WebComponentBootstrap(WebComponent,
         '''
 
     # EventInf
+
     @contextmanager
     def on_event_w(self, event, filter='', propagation=None):
         params = {'event': event, 'filter': filter, 'propagation': propagation}
@@ -1770,63 +1645,63 @@ class WebComponentBootstrap(WebComponent,
     # End EventInf
 
     # Appearance members
-    def width(self, width):
+    def width(self, width=None):
         params = {'width':width}
         return self.func_call(params=params)
 
-    def height(self, height):
+    def height(self, height=None):
         params = {'height':height}
         return self.func_call(params=params)
 
-    def color(self, color):
+    def color(self, color=None):
         params = {'color':color}
         return self.func_call(params=params)
 
-    def font(self, font):
+    def font(self, font=None):
         params = {'font':font}
         return self.func_call(params=params)
 
-    def border(self, border):
+    def border(self, border=None):
         params = {'border':border}
         return self.func_call(params=params)
 
-    def disable(self, disable):
+    def disable(self, disable=None):
         params = {'disable': disable}
         return self.func_call(params=params)
     # End appearance
 
     # Position
-    def pad(self, pad):
+    def pad(self, pad=None):
         params = {'pad': pad}
         return self.func_call(params=params)
 
-    def margin(self, margin):
+    def margin(self, margin=None):
         params = {'margin':margin}
         return self.func_call(params=params)
 
-    def align(self, align):
+    def align(self, align=None):
         params = {'align': align}
         return self.func_call(params=params)
 
-    def offset(self, offset):
+    def offset(self, offset=None):
         params = {'offset': offset}
         return self.func_call(params=params)
     # End position
 
     # Property.
-    def value(self, value):
+    def value(self, value=None):
         params = {'value': value}
         return self.func_call(params=params)
 
-    def attrs(self, attrs):
+    def attrs(self, attrs=None):
         params = {'attrs': attrs}
         return self.func_call(params=params)
 
-    def classes(self, classes):
+    def classes(self, classes=None):
         params = {'classes': classes}
         return self.func_call(params=params)
 
-    def styles(self, styles):
+    def styles(self, styles=None):
         params = {'styles': styles}
         return self.func_call(params=params)
     # End property
@@ -2246,6 +2121,7 @@ class WebPage(WebComponentBootstrap):
         '''
         raise NotImplemented
 
+    '''
     def init_custom_nav_render(self, app):
         app.extensions['nav_renderers']['bootstrap'] = (__name__, 'WebNav.CustomBootstrapRenderer')
         app.extensions['nav_renderers'][None] = (__name__, 'WebNav.CustomBootstrapRenderer')
@@ -2265,6 +2141,7 @@ class WebPage(WebComponentBootstrap):
                     WebNav.NavView(u'登录', self._nav_items['login']['login_href']),
                 )
         return top_bar
+    '''
 
     def __init__(self, app=None, url_prefix=None, **kwargs):
         self.set_context([])
@@ -2344,6 +2221,7 @@ class WebPage(WebComponentBootstrap):
         except AssertionError:
             print("Add url rule error!")
 
+    '''
     def init_page(self, app,
                   page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
 
@@ -2361,6 +2239,7 @@ class WebPage(WebComponentBootstrap):
 
         except AssertionError:
             print("Add url rule error!")
+    '''
 
     def render(self):
         if hasattr(self, '_rendered_html') and self._rendered_html:
@@ -2492,6 +2371,22 @@ class WebPage(WebComponentBootstrap):
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
 
+    def get_vptr(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def set_vptr(self, vptr):
+        params = {'vptr': vptr}
+        return self.func_call(params=params)
+
+    def keep_vptr_ori(self):
+        params = {}
+        return self.func_call(params=params)
+
+    def restore_vptr_ori(self):
+        params = {}
+        return self.func_call(params=params)
+
 
 class WebA(WebComponentBootstrap):
     pass
@@ -2499,7 +2394,6 @@ class WebA(WebComponentBootstrap):
 
 class WebRow(WebComponentBootstrap):
     pass
-
 
 class WebColumn(WebComponentBootstrap):
     pass
@@ -5687,13 +5581,16 @@ class OOTable(OOTableTest, WebTable):
 
     def __enter__(self):
         ret = super().__enter__()
-        self.declare_custom_global_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS,
-                                        self.ROW_CHILD_FORMAT_FUNC_BODY)
-        self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS,
-                                        self.CELL_RENDER_FUNC_BODY)
-        self.declare_custom_global_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS,
-                                        self.CREATED_CELL_RENDER_FUNC_BODY)
-        self.declare_custom_global_func(fname=self.ON_CLICK_ROW_FUNC_NAME, fparams=self.ON_CLICK_ROW_FUNC_ARGS, fbody=self.ON_CLICK_ROW_FUNC_BODY)
+
+        with ooccd.MetisTransform.transform_w(self, ooccd.ACTION_MEMBER):
+            self.declare_custom_global_func(self.ROW_CHILD_FORMAT_FUNC_NAME, self.ROW_CHILD_FORMAT_FUNC_ARGS,
+                                            self.ROW_CHILD_FORMAT_FUNC_BODY)
+            self.declare_custom_global_func(self.CELL_RENDER_FUNC_NAME, self.CELL_RENDER_FUNC_ARGS,
+                                            self.CELL_RENDER_FUNC_BODY)
+            self.declare_custom_global_func(self.CREATED_CELL_RENDER_FUNC_NAME, self.CREATED_CELL_RENDER_FUNC_ARGS,
+                                            self.CREATED_CELL_RENDER_FUNC_BODY)
+            self.declare_custom_global_func(fname=self.ON_CLICK_ROW_FUNC_NAME, fparams=self.ON_CLICK_ROW_FUNC_ARGS, fbody=self.ON_CLICK_ROW_FUNC_BODY)
+
         return self
 
 
@@ -5766,7 +5663,7 @@ class Var(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'var_val'
 
-    def __init__(self, parent, var_name, **kwargs):
+    def __init__(self, parent, var_name='data', **kwargs):
         kwargs['parent'] = parent
         kwargs['var_name'] = var_name
         super().__init__(**kwargs)
@@ -5774,6 +5671,18 @@ class Var(WebComponentBootstrap):
 
     def __repr__(self):
         return self._var_name
+
+    @contextmanager
+    def assign_w(self):
+        params = {}
+        self.with_call(params)
+        try:
+            yield
+        except Exception as err:
+            raise Exception(err)
+        finally:
+            self._pop_current_context()
+
 
 
 class LVar(Var):

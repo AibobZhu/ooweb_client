@@ -54,17 +54,17 @@ class ClassTest():
                 else:
                     with c1.add_child(testing_class(parent=c1,
                                                     name=name_,
-                                                    oovalue=name_,
+                                                    value=name_,
                                                     url='/'+testing_class.__name__+'_test')) as test:
                         pass
 
     @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
+        page = self
+        if self.__class__.__name__ != 'WebPage':
+            page = self._page
         name = self.name()
-        if hasattr(self._page, '_action'):
-            req = self._page._action.on_post()
-        else:
-            req = self._page.on_post()
+        req = page.on_post()
         for r in req:
             if r['me'] == name:
                 self.events_action_for_class_test(req=r)
@@ -82,6 +82,7 @@ class ClassTest():
             req['data'] = {'data': cls.test_request_data()}
 
     @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self, **kwargs):
         print('class {} events_trigger'.format(self.__class__.__name__))
         page = self._page
@@ -171,6 +172,8 @@ class ClassTest():
 
 class GVarTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         page = self
         WebHead1 = page._SUBCLASSES['WebHead1']['class']
@@ -181,23 +184,27 @@ class GVarTest(ClassTest):
             pass
         with page.add_child(WebHead3(value='var test = false;')) as head3:
             pass
-        with page.add_child(GVar(parent=page, name='GVar', var_name='test')) as gv:
-            gv.false
+        with page.add_child(GVar(parent=page, name='GVar', var_name='test', var_value='false')) as gv:
+            pass
         with page.add_child(WebBtn(value='Test GVar assign', name='TestBtn')) as btn:
             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         btn = page._components['TestBtn']
         gv = page._components['GVar']
         with btn.on_event_w('click'):
             with gv.assign_w():
-                gv.true
+                gv.true()
             btn.alert('"GVar value should be true, real:"+test')
 
 
 class OOListTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         page = self._page
         WebRow = page._SUBCLASSES['WebRow']['class']
@@ -209,23 +216,29 @@ class OOListTest(ClassTest):
             with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
                 with c1.add_child(WebBtn(name='TestBtn', value='Test OOList')) as btn:
                     pass
-        with btn.on_event_w('click'):
-            with btn.add_child(LVar(parent=btn, name='lvar', var_name='data')) as data:
-                with data.add_child(OOList(parent=data, name='OOList')) as list_data:
-                    with list_data.append_w():
-                        list_data.add_scripts('"value1"', indent=False)
-                    with list_data.append_w():
-                        list_data.add_scripts('"value2"', indent=False)
-                list_data.add_scripts(';\n')
-                page.alert(
-                    "'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
 
+        with ooccd.MetisTransform.transform_w(component=self, vptr=ooccd.ACTION_MEMBER):
+            with btn.on_event_w('click'):
+                with btn.add_child(LVar(parent=btn, name='lvar', var_name='data')) as data:
+                    with data.add_child(OOList(parent=data, name='OOList')) as list_data:
+                        with list_data.append_w():
+                            list_data.add_scripts('"value1"', indent=False)
+                        with list_data.append_w():
+                            list_data.add_scripts('"value2"', indent=False)
+                    list_data.add_scripts(';\n')
+                    page.alert(
+                        "'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
+
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         print('OOList.events_trigger_for_class_test')
 
 
 class OODictTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         page = self
         WebBtn = page._SUBCLASSES['WebBtn']['class']
@@ -235,18 +248,21 @@ class OODictTest(ClassTest):
         with page.add_child(WebBtn(value='Test dict update', name='name2')) as btn2:
             pass
 
-        with btn1.on_event_w('click'):
-            with btn1.add_child(OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict')) as dict:
-                pass
-            btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+        with ooccd.MetisTransform.transform_w(component=self, vptr=ooccd.ACTION_MEMBER):
+            with btn1.on_event_w('click'):
+                with btn1.add_child(OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict')) as dict:
+                    pass
+                btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
 
-        with btn2.on_event_w("click"):
-            with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict_update') as dict_update:
-                pass
-            with dict_update.update_w(key='key2'):
-                dict_update.add_scripts('"val_updated";\n', indent=False)
-            btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+            with btn2.on_event_w("click"):
+                with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'}, var_name='test_dict_update') as dict_update:
+                    pass
+                with dict_update.update_w(key='key2'):
+                    dict_update.add_scripts('"val_updated";\n', indent=False)
+                btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         pass
 
@@ -255,6 +271,8 @@ class WebBtnRadioTest(ClassTest):
 
     testing_cls_name = 'WebBtnRadio'
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         name = page.testing_class.testing_cls_name
@@ -266,11 +284,14 @@ class WebBtnRadioTest(ClassTest):
                                                {'label': '测试3'}])) as radio:
             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
         req['data'] = {'oovalue': '测试3'}
         print('Class testing: testing for {} is setting "测试3" always'.format(self.__class__.__name__))
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         radio = page._components['WebBtnRadio']
@@ -294,9 +315,13 @@ class WebBtnRadioTest(ClassTest):
 
 class WebBtnGroupVerticalTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         pass
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         page = self
         this_class = page.testing_class
@@ -312,6 +337,8 @@ class WebBtnGroupVerticalTest(ClassTest):
 
 class WebBtnDropdownTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
@@ -344,6 +371,8 @@ class WebBtnDropdownTest(ClassTest):
             '''
             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         LVar = page._SUBCLASSES['LVar']['class']
@@ -353,10 +382,10 @@ class WebBtnDropdownTest(ClassTest):
         change_btn = page._components['ChangeBtn']
 
         with disable_btn.on_event_w('click'):
-            test_obj.disable(True)
+            test_obj.disable(disable=True)
 
         with enable_btn.on_event_w('click'):
-            test_obj.disable(False)
+            test_obj.disable(disable=False)
 
         with change_btn.on_event_w('click'):
             options = [{'name': 'op1, changed by change button', 'href': '#'}]
@@ -373,15 +402,19 @@ class WebBtnDropdownTest(ClassTest):
 
 class WebBtnTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
     def events_default_action(self, req):
         pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
     def events_action_for_class_test(self, req):
         cls = self.__class__
         name_ = cls.__name__
         print('Class testing, class {} got req:{}'.format(name_, req))
         req['data'] = {'oovalue': name_ + ' from on_post'}
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = page._components['WebBtn']
@@ -397,6 +430,8 @@ class WebBtnTest(ClassTest):
 
 class WebBtnToggleTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = page._components['WebBtnToggle']
@@ -410,6 +445,8 @@ class WebBtnToggleTest(ClassTest):
 
 class WebCheckboxTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = page._components['WebCheckbox']
@@ -422,12 +459,15 @@ class WebCheckboxTest(ClassTest):
 
 class WebSelectTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
         req['data'] = {'options': [{'text': 'OptionResetByOnPost1'},
                                  {'text': 'OptionResetByOnPost2'},
                                  {'text': 'OptionResetByOnPost3', 'selected': 'true'}]}
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = page._components['WebSelect']
@@ -439,6 +479,8 @@ class WebSelectTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
@@ -456,6 +498,8 @@ class WebSelectTest(ClassTest):
 
 class WebDatalistTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
@@ -475,6 +519,8 @@ class WebDatalistTest(ClassTest):
                             this_class(parent=page, name=name_, id=TEST_ID, options=options)) as test:
                         pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         input = page._components['test_input']
@@ -486,6 +532,7 @@ class WebDatalistTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         print('Class testing, WebDatalist got req:{}'.format(req['data']))
 
@@ -497,6 +544,8 @@ class WebDatalistTest(ClassTest):
 
 class WebUlTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         cls = page.testing_class
@@ -515,6 +564,7 @@ class WebUlTest(ClassTest):
                 ])) as test:
                     pass
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         data  = '' if 'data' not in req else req['data']
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, data))
@@ -524,6 +574,8 @@ class WebUlTest(ClassTest):
 class OOGeneralSelectorTest(ClassTest):
     testing_cls_name = 'OOGeneralSelector'
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         testing_class = page.testing_class
@@ -546,6 +598,8 @@ class OOGeneralSelectorTest(ClassTest):
                 with c3.add_child(WebBtn(value='select值', name='test_btn')) as val_btn:
                     pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         gs1 = page._components['OOGeneralSelector']
@@ -567,6 +621,7 @@ class OOGeneralSelectorTest(ClassTest):
         with page.render_post_w():
             gs1.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         page = self._page
         OOGeneralSelector = page._SUBCLASSES['OOGeneralSelector']['class']
@@ -591,6 +646,8 @@ class OOGeneralSelectorTest(ClassTest):
 class OODatePickerSimpleTest(ClassTest):
     testing_cls_name = 'OODatePickerSimple'
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
@@ -600,6 +657,8 @@ class OODatePickerSimpleTest(ClassTest):
                                         width="500px")) as test1:
             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = self._components['OODatePickerSimple']
@@ -611,6 +670,7 @@ class OODatePickerSimpleTest(ClassTest):
         with page.render_post_w():
             test_obj.render_for_post(trigger_event=False)
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         r = req
         lang = r['data']['lang']
@@ -664,6 +724,8 @@ class OODatePickerSimpleTest(ClassTest):
 class OODatePickerIconTest(ClassTest):
     testing_cls_name = 'OODatePickerIcon'
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         test_obj = self._components['OODatePickerIcon']
@@ -674,6 +736,7 @@ class OODatePickerIconTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         r = req
         cls = self.__class__
@@ -684,6 +747,8 @@ class OODatePickerIconTest(ClassTest):
             )
             cls.get_ret_stamp(r['data'])
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         this_class = page.testing_class
@@ -692,7 +757,8 @@ class OODatePickerIconTest(ClassTest):
         name = testing_cls_name
         with page.add_child(this_class(name=name)) as test:
             pass
-        test.call_custom_func(fname=test.start_func_name,
+        with ooccd.MetisTransform.transform_w(component=test, vptr=ooccd.ACTION_MEMBER):
+            test.call_custom_func(fname=test.start_func_name,
                               fparams={'that': '$("#{}")'.format(test.id()),
                                        'type': '"{}"'.format(test.VIEWS['week'])})
 
@@ -700,6 +766,8 @@ class OODatePickerIconTest(ClassTest):
 class OODatePickerRangeTest(ClassTest):
     testing_cls_name = 'OODatePickerRange'
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         this_obj = page._components[page.testing_class.testing_cls_name]
@@ -712,6 +780,7 @@ class OODatePickerRangeTest(ClassTest):
         with page.render_post_w():
             this_obj.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         page = self._page
         test_obj = self
@@ -758,6 +827,7 @@ class OODatePickerRangeTest(ClassTest):
 class OOBannerTest(ClassTest):
     testing_cls_name = 'OOBanner'
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
         banner = self._get_banner()
@@ -768,6 +838,8 @@ class OOBannerTest(ClassTest):
 
 class OOCalendarTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         TITLE = 'title'
@@ -794,6 +866,8 @@ class OOCalendarTest(ClassTest):
         with page.add_child(WebBr()):
             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         title = page._components['title']
@@ -905,6 +979,7 @@ class OOCalendarTest(ClassTest):
         html = page.render()
         return render_template_string(html)
     '''
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         NAME = self.testing_cls_name if hasattr(self, 'testing_cls_name') else self.__class__.__name__
         TITLE = 'title'
@@ -942,6 +1017,8 @@ class OOCalendarTest(ClassTest):
 
 class WebTabTest(ClassTest):
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         testing_class = page.testing_class
@@ -980,6 +1057,8 @@ class WebTabTest(ClassTest):
                         with item3.add_child(WebHead3(name=tab_contain3_name, value=tab_contain3_name)) as contain3:
                             pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         tab_contain_name = 'tab_contain_test'
         tab_item1_name = 'tab_item1'
@@ -1005,6 +1084,7 @@ class WebTabTest(ClassTest):
                 test.render_for_post()
                 contain.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         tab_name = self.testing_cls_name if hasattr(self, 'testing_cls_name') else self.__class__.__name__
         tab_contain_name = 'tab_contain_test'
@@ -1103,6 +1183,8 @@ class WebTableTest(ClassTest):
 
         return ' '.join(cls.html(data))
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self, **kwargs):
         page = self
 
@@ -1117,6 +1199,8 @@ class WebTableTest(ClassTest):
                 with c1.add_child(WebTable(parent=page, name=testing_class.testing_cls_name)) as test:
                     pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         testing_cls_name = page.testing_class.testing_cls_name
@@ -1125,6 +1209,7 @@ class WebTableTest(ClassTest):
         with page.render_post_w():
             test.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
 
         WebPage = self._PAGE_CLASS
@@ -1223,6 +1308,8 @@ class OOTableTest(ClassTest):
             }
             return data
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         testing_class = page.testing_class
@@ -1266,6 +1353,8 @@ class OOTableTest(ClassTest):
                                                 width='100%')) as test3:
                     pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
         testing_cls_name = page.testing_class.testing_cls_name
@@ -1281,6 +1370,7 @@ class OOTableTest(ClassTest):
             test2.render_for_post()
             test3.render_for_post()
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
 
         WebPage = self._PAGE_CLASS
@@ -1308,6 +1398,8 @@ class OOChatClientTest(ClassTest):
     NAMESPACE = '/test_namespace'
     SERVER_DATA = 'server_data'
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
         server_name = '客服1'
@@ -1329,9 +1421,12 @@ class OOChatClientTest(ClassTest):
                                                   radius='20px 10px 10px 10px')) as chat_test:
                     pass
 
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self, **kwargs):
         pass
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         WebPage = self._PAGE_CLASS
         test_obj = self._page._components[self.testing_cls_name]
@@ -1377,6 +1472,8 @@ class OOChatServerTest(OOChatClientTest):
 
     testing_cls_name = 'oochatserver'
 
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         NAME = '客服1'
 
@@ -1401,6 +1498,7 @@ class OOChatServerTest(OOChatClientTest):
         current_app.socketio.on_namespace(ServerChatNM(server_obj=None,
                                                        socket_namespace=testing_class.NAMESPACE))
 
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         req = None
         if hasattr(self._page, '_action'):
