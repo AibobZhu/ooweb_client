@@ -8,7 +8,6 @@ import random
 from share import randDatetimeRange, _getStr
 import oocc_define as ooccd
 
-
 class MinXin:
 
     def __init__(self, **kwargs):
@@ -24,54 +23,6 @@ class ClassTest():
     testing_class = None
     RUNTIME_ROOT_CLASS = None
 
-    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
-    @ooccd.RuntimeOnPage()
-    def place_components_for_class_test(self, **kwargs):
-        """
-        Note: type of 'self' is WebPage.
-        This function is used by being assigned to a WebPage object's place_components
-        """
-        page = self
-
-        testing_class = page.testing_class
-        testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else\
-            testing_class.__name__
-        class_name = testing_class.__name__
-        name_ = testing_cls_name
-
-        WebRow = page._SUBCLASSES['WebRow']['class']
-        WebColumn = page._SUBCLASSES['WebColumn']['class']
-        default_width = ['md6', 'lg6']
-        default_offset = ['mdo3', 'mdo3']
-        page._url = '/test_' + testing_class.__name__ + '_request'
-        with page.add_child(WebRow()) as r1:
-            with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
-                if class_name.find('OOChart') == 0:
-                    with c1.add_child(testing_class(
-                            parent=page, value=class_name, name=name_, height='400px', width='100%'
-                    )) as test:
-                        pass
-                else:
-                    with c1.add_child(testing_class(parent=c1,
-                                                    name=name_,
-                                                    value=name_,
-                                                    url='/'+testing_class.__name__+'_test')) as test:
-                        pass
-
-    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
-    def on_post_for_class_test(self):
-        page = self
-        if self.__class__.__name__ != 'WebPage':
-            page = self._page
-        name = self.name()
-        req = page.on_post()
-        for r in req:
-            if r['me'] == name:
-                self.events_action_for_class_test(req=r)
-
-        return jsonify({'status': 'success', 'data': req})
-
-    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         cls = self.__class__
         name_ = cls.__name__
@@ -80,28 +31,6 @@ class ClassTest():
             req['data'] = {'val': name_ + '_testing from on_post', 'text': name_ + '_testing from on_post'}
         else:
             req['data'] = {'data': cls.test_request_data()}
-
-    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
-    @ooccd.RuntimeOnPage()
-    def events_trigger_for_class_test(self, **kwargs):
-        print('class {} events_trigger'.format(self.__class__.__name__))
-        page = self._page
-        if (not hasattr(self, '_PAGE_CLASS')) or (hasattr(self, '_PAGE_CLASS') and self._PAGE_CLASS is None):
-            page = self
-
-        with page.render_post_w():
-            for name, component in page._components.items():
-                component.render_for_post()
-
-        return
-
-        '''
-        Do custom event trigger here or replace below
-        '''
-        '''
-        with page.render_post_w():
-            self.render_for_post()
-        '''
 
     @classmethod
     def get_sub_classes(cls, root_class):
@@ -151,21 +80,24 @@ class ClassTest():
             return cls.CLASS_TEST_HTML
 
         testing_cls_name = cls.testing_cls_name if hasattr(cls, 'testing_cls_name') else cls.__name__
-        PageClass = cls._PAGE_CLASS
-        page = PageClass(app=current_app, url='/test_' + cls.__name__ + '_request')
+        WebPage = cls._PAGE_CLASS
+        page = WebPage(app=current_app, url='/test_' + cls.__name__ + '_request')
         page.testing_class = cls
+        '''
         page.place_components = types.MethodType(cls.place_components_for_class_test, page)
         page.place_components()
+        page.events_trigger = types.MethodType(cls.events_trigger_for_class_test, page)
+        page.events_trigger()
 
-        this_obj = page._components[testing_cls_name]
-        page.events_trigger = types.MethodType(this_obj.__class__.events_trigger_for_class_test, page)
+        this_obj = page._components[testing_cls_name]['obj']
         this_obj.on_post_for_class_test = types.MethodType(this_obj.__class__.on_post_for_class_test, this_obj )
         page.init_on_post(app=current_app,
                           on_post=this_obj.on_post_for_class_test,
                           endpoint=cls.__name__ + '_test',
                           url='/' + cls.__name__ + '_test')
-
+        '''
         html = page.render()
+
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
 
@@ -193,8 +125,8 @@ class GVarTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        btn = page._components['TestBtn']
-        gv = page._components['GVar']
+        btn = page._components['TestBtn']['obj']
+        gv = page._components['GVar']['obj']
         with btn.on_event_w('click'):
             with gv.assign_w():
                 gv.true()
@@ -294,7 +226,7 @@ class WebBtnRadioTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        radio = page._components['WebBtnRadio']
+        radio = page._components['WebBtnRadio']['obj']
         LVar = page._SUBCLASSES['LVar']['class']
         cls = radio.__class__
 
@@ -376,10 +308,10 @@ class WebBtnDropdownTest(ClassTest):
     def events_trigger_for_class_test(self):
         page = self
         LVar = page._SUBCLASSES['LVar']['class']
-        test_obj = page._components['WebBtnDropdown']
-        disable_btn = page._components['DisableBtn']
-        enable_btn = page._components['EnableBtn']
-        change_btn = page._components['ChangeBtn']
+        test_obj = page._components['WebBtnDropdown']['obj']
+        disable_btn = page._components['DisableBtn']['obj']
+        enable_btn = page._components['EnableBtn']['obj']
+        change_btn = page._components['ChangeBtn']['obj']
 
         with disable_btn.on_event_w('click'):
             test_obj.disable(disable=True)
@@ -417,7 +349,7 @@ class WebBtnTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = page._components['WebBtn']
+        test_obj = page._components['WebBtn']['obj']
         WebBtn = page._SUBCLASSES['WebBtn']['class']
 
         with page.render_post_w():
@@ -434,7 +366,7 @@ class WebBtnToggleTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = page._components['WebBtnToggle']
+        test_obj = page._components['WebBtnToggle']['obj']
         with page.render_post_w():
             test_obj.render_for_post()
         with test_obj.on_event_w('click'):
@@ -449,7 +381,7 @@ class WebCheckboxTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = page._components['WebCheckbox']
+        test_obj = page._components['WebCheckbox']['obj']
         LVar = page._SUBCLASSES['LVar']['class']
         with test_obj.on_event_w('change'):
             with LVar(parent=self, var_name="data") as data:
@@ -470,7 +402,7 @@ class WebSelectTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = page._components['WebSelect']
+        test_obj = page._components['WebSelect']['obj']
         with page.render_post_w():
             test_obj.render_for_post()
 
@@ -523,8 +455,8 @@ class WebDatalistTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        input = page._components['test_input']
-        test_obj = page._components['WebDatalist']
+        input = page._components['test_input']['obj']
+        test_obj = page._components['WebDatalist']['obj']
         with page.render_post_w():
             test_obj.render_for_post()
 
@@ -602,8 +534,8 @@ class OOGeneralSelectorTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        gs1 = page._components['OOGeneralSelector']
-        val_btn = page._components['test_btn']
+        gs1 = page._components['OOGeneralSelector']['obj']
+        val_btn = page._components['test_btn']['obj']
         LVar = page._SUBCLASSES['LVar']['class']
 
         with gs1.on_event_w('change'):
@@ -661,7 +593,7 @@ class OODatePickerSimpleTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = self._components['OODatePickerSimple']
+        test_obj = self._components['OODatePickerSimple']['obj']
 
         with test_obj.on_event_w('switch'):
             with page.render_post_w():
@@ -728,7 +660,7 @@ class OODatePickerIconTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        test_obj = self._components['OODatePickerIcon']
+        test_obj = self._components['OODatePickerIcon']['obj']
         with page.render_post_w():
             test_obj.render_for_post()
 
@@ -770,7 +702,7 @@ class OODatePickerRangeTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        this_obj = page._components[page.testing_class.testing_cls_name]
+        this_obj = page._components[page.testing_class.testing_cls_name]['obj']
         this_class = this_obj.__class__
 
         with this_obj.on_event_w('change'):
@@ -870,11 +802,11 @@ class OOCalendarTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
         page = self
-        title = page._components['title']
+        title = page._components['title']['obj']
         testing_class = page.testing_class
         testing_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
             testing_class.__name__
-        calendar = page._components[testing_name]
+        calendar = page._components[testing_name]['obj']
 
         with page.render_post_w():
             calendar.render_for_post()
@@ -1072,8 +1004,8 @@ class WebTabTest(ClassTest):
         testing_class = page.testing_class
         testing_cls_name = page.testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
             testing_class.__name__
-        test = page._components[testing_cls_name]
-        contain = page._components[tab_contain_name]
+        test = page._components[testing_cls_name]['obj']
+        contain = page._components[tab_contain_name]['obj']
 
         with page.render_post_w():
             test.render_for_post()
@@ -1204,7 +1136,7 @@ class WebTableTest(ClassTest):
     def events_trigger_for_class_test(self):
         page = self
         testing_cls_name = page.testing_class.testing_cls_name
-        test = page._components[testing_cls_name]
+        test = page._components[testing_cls_name]['obj']
 
         with page.render_post_w():
             test.render_for_post()
@@ -1213,7 +1145,7 @@ class WebTableTest(ClassTest):
     def on_post_for_class_test(self):
 
         WebPage = self._PAGE_CLASS
-        test_obj = self._page._components[self.testing_cls_name]
+        test_obj = self._page._components[self.testing_cls_name]['obj']
         req = None
         if hasattr(self._page, '_action'):
             req = self._page._action.on_post()
@@ -1361,9 +1293,9 @@ class OOTableTest(ClassTest):
         testing_cls_name2 = page.testing_class.testing_cls_name2
         testing_cls_name3 = page.testing_class.testing_cls_name3
 
-        test = page._components[testing_cls_name]
-        test2 = page._components[testing_cls_name2]
-        test3 = page._components[testing_cls_name3]
+        test = page._components[testing_cls_name]['obj']
+        test2 = page._components[testing_cls_name2]['obj']
+        test3 = page._components[testing_cls_name3]['obj']
 
         with page.render_post_w():
             test.render_for_post()
@@ -1374,7 +1306,7 @@ class OOTableTest(ClassTest):
     def on_post_for_class_test(self):
 
         WebPage = self._PAGE_CLASS
-        test_obj = self._page._components[self.testing_cls_name]
+        test_obj = self._page._components[self.testing_cls_name]['obj']
         req = None
         if hasattr(self._page, '_action'):
             req = self._page._action.on_post()
@@ -1429,7 +1361,7 @@ class OOChatClientTest(ClassTest):
     @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def on_post_for_class_test(self):
         WebPage = self._PAGE_CLASS
-        test_obj = self._page._components[self.testing_cls_name]
+        test_obj = self._page._components[self.testing_cls_name]['obj']
 
         BODY, INPUT, SEND_BTN = self.get_names(myname=self.testing_cls_name)
 
@@ -1541,9 +1473,15 @@ def test_home(app, PageClass, testing_classes):
     if hasattr(PageClass, 'TEST_HOME_HTML') and PageClass.TEST_HOME_HTML:
         return PageClass.TEST_HOME_HTML
 
-    WebPage = PageClass
+    subclasses = testing_classes
+
+    WebRow = subclasses['WebRow']['class']
+    WebColumn = subclasses['WebColumn']['class']
+    WebHead1 = subclasses['WebHead1']['class']
+    WebHr = subclasses['WebHr']['class']
+    WebBtn = subclasses['WebBtn']['class']
     menu = {
-        'title': {'name': 'OwwwO', 'endpoint': 'home', 'href':'/'},
+        'title': {'name': 'OwwwO', 'endpoint': 'home', 'href': '/'},
         'login': {
             'site_name': 'OwwwO',
             'is_login': False,
@@ -1552,72 +1490,71 @@ def test_home(app, PageClass, testing_classes):
             'logout_href': '/'
         }
     }
-    test_page = WebPage(app=current_app, nav_items=menu)
-    test_page.socketio = app.socketio
-    test_page.db = app.db
-    subclasses = testing_classes
 
-    WebRow = subclasses['WebRow']['class']
-    WebColumn = subclasses['WebColumn']['class']
-    WebHead1 = subclasses['WebHead1']['class']
-    WebHr = subclasses['WebHr']['class']
-    WebBtn = subclasses['WebBtn']['class']
-    class_objs = []
+    # class_objs = []
+    class_objs = {}
     exclude_class_objs = ['OOCalendarBar', 'WebTabItem', 'WebTabContain', 'WebNav', 'WebOption', 'ServerChatNM']
 
-    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
-    @ooccd.RuntimeOnPage()
-    def place_components(self):
-        with self.add_child(WebRow()) as r1:
-            with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
-                with c1.add_child(WebHead1(value='OWWWO Classes Testing')) as head:
-                    pass
-        with self.add_child(WebRow()) as r2:
-            with r2.add_child(WebColumn(width=['md8', 'lg8'], offset=['mdo2', 'lgo2'])) as c2:
-                with c2.add_child(WebHr()) as hr:
-                    pass
-        with self.add_child(WebRow()) as r3:
-            with r3.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c3:
-                for name, subclass in subclasses.items():
-                    if name == 'WebPage':
-                        subclass['class']._PAGE_CLASS = WebPage
-                        continue
-                    if name in exclude_class_objs:
-                        continue
-                    url_request = 'test_' + name + '_request'
-                    subclass['class']._PAGE_CLASS = WebPage
-                    setattr(subclass['class'], 'RENDERED_HTML', None)
-                    setattr(subclass['class'], 'CLASS_TEST_HTML', None)
-                    app.add_url_rule('/' + url_request, endpoint=url_request,
-                                     view_func=subclass['test_request'],
-                                     methods=['GET', 'POST'])
-                    url_result = 'test_' + name + '_result'
-                    app.add_url_rule('/' + url_result,
-                                     endpoint=url_result,
-                                     view_func=subclass['test_result'],
-                                     methods=['POST'])
-                    with c3.add_child(WebBtn(name=name, value=name, width='265px',
-                                             styles={'margin-top':'10px', 'margin-left':'10px'})) as btn:
-                        class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
+    class ClassTestHomePage(PageClass):
 
-        if not hasattr(self, '_nav_items'):
-            self._nav_items = {}
-        self._components = class_objs
-    test_page.place_components = types.MethodType(place_components, test_page)
-    test_page.place_components()
+        def type_(self):
+            return 'WebPage'
 
-    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
-    def events_trigger(self):
-        page = self
-        class_objs = page._components
-        for class_obj in class_objs:
-            if class_obj['name'] in exclude_class_objs:
-                continue
-            with class_obj['obj'].on_event_w('click'):
-                self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
+        def place_components_impl(self):
+            with self.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c1:
+                    with c1.add_child(WebHead1(value='OWWWO Classes Testing')) as head:
+                        pass
+            with self.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8', 'lg8'], offset=['mdo2', 'lgo2'])) as c2:
+                    with c2.add_child(WebHr()) as hr:
+                        pass
+            with self.add_child(WebRow()) as r3:
+                with r3.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c3:
+                    for name, subclass in subclasses.items():
+                        if name == 'WebPage':
+                            subclass['class']._PAGE_CLASS = PageClass
+                            continue
+                        if name in exclude_class_objs:
+                            continue
+                        url_request = 'test_' + name + '_request'
+                        subclass['class']._PAGE_CLASS = PageClass
+                        setattr(subclass['class'], 'RENDERED_HTML', None)
+                        setattr(subclass['class'], 'CLASS_TEST_HTML', None)
+                        app.add_url_rule('/' + url_request, endpoint=url_request,
+                                         view_func=subclass['test_request'],
+                                         methods=['GET', 'POST'])
+                        url_result = 'test_' + name + '_result'
+                        app.add_url_rule('/' + url_result,
+                                         endpoint=url_result,
+                                         view_func=subclass['test_result'],
+                                         methods=['POST'])
+                        with c3.add_child(WebBtn(name=name, value=name, width='265px',
+                                                 styles={'margin-top': '10px', 'margin-left': '10px'})) as btn:
 
+                            # class_objs.append({'obj': btn, 'name': name, 'test_request_url': url_request})
+                            if name not in class_objs.keys():
+                                class_objs[name] = {'obj': btn, 'test_request_url': url_request}
+                            else:
+                                raise RuntimeError('Find multiple objects with same name:{}'.format(name))
+            '''
+            if not hasattr(self, '_nav_items'):
+                self._nav_items = {}
+            '''
+            self._components = class_objs
 
-    test_page.events_trigger = types.MethodType(events_trigger, test_page)
+        def intro_events_impl(self):
+            page = self
+            class_objs = page._components
+            for name, class_obj in class_objs.items():
+                if name in exclude_class_objs:
+                    continue
+                with class_obj['obj'].on_event_w('click'):
+                    self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
+
+    test_page = ClassTestHomePage(app=current_app, nav_items=menu)
+    test_page.socketio = app.socketio
+    test_page.db = app.db
 
     html = test_page.render()
     PageClass.TEST_HOME_HTML = render_template_string(html)
@@ -1684,9 +1621,9 @@ class ExampleData():
         return random.choice(['男', '女'])
 
     def get_a_day(self):
-        start_dt = date.today().replace(day=1, month=1).toordinal()
-        end_dt = date.today().toordinal()
-        return date.fromordinal(random.randint(start_dt, end_dt))
+        start_dt = datetime.date.today().replace(day=1, month=1).toordinal()
+        end_dt = datetime.date.today().toordinal()
+        return datetime.date.fromordinal(random.randint(start_dt, end_dt))
 
     def example_data(self):
         raise NotImplementedError

@@ -1079,7 +1079,8 @@ class WebComponent(ComponentInf, ClientBase):
         assert(self._page)
         assert(isinstance(self._page, WebPage))
         child._page = self._page
-        child._page._components[child.name()] = child
+        if child.name() not in self._page._components.keys():
+            self._page._components[child.name()] = {'obj': child}
 
         params = {'child_id': child.id()}
         self.func_call(params)
@@ -1193,6 +1194,8 @@ class WebComponent(ComponentInf, ClientBase):
                     app.add_url_rule(rule=url, view_func=e['view_func'])
 
     def render(self):
+        raise RuntimeError('{}.render should be removed, for only page need render for now.'.
+                           format(self.__class__.__name__))
         '''
         render and return a complete page information in html
         :return:
@@ -2095,8 +2098,7 @@ class WebPage(WebComponentBootstrap):
     Create an unique instance of page, which add a rule for on_post, and register current page view in app
     '''
 
-    @classmethod
-    def on_post(cls):
+    def on_post(self):
         '''
         The process function to response the post request from the WebComponent itself
         TODO: Query data by user model
@@ -2142,6 +2144,9 @@ class WebPage(WebComponentBootstrap):
                 )
         return top_bar
     '''
+
+    def type_(self):
+        return 'WebPage'
 
     def __init__(self, app=None, url_prefix=None, **kwargs):
         self.set_context([])
@@ -2241,39 +2246,61 @@ class WebPage(WebComponentBootstrap):
             print("Add url rule error!")
     '''
 
-    def render(self):
+    def place_components_impl(self):
+        pass
+
+    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
+    @ooccd.RuntimeOnPage()
+    def place_components(self):
+        self.place_components_impl()
+
+    def on_page_render_impl(self):
+        page = self
+        name = self.name()
+        req = page.on_post()
+        for r in req:
+            if r['me'] == name:
+                self.process_events(req=r)
+        return req
+
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
+    def on_page_render(self):
+        return self.on_page_render_impl()
+
+    def process_events_impl(self, req):
+        pass
+
+    @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
+    def process_events(self, req):
+        self.process_events_impl(req=req)
+
+    def intro_events_impl(self):
+        pass
+
+    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
+    @ooccd.RuntimeOnPage()
+    def intro_events(self):
+        self.intro_events_impl()
+
+    def render(self, app=None, on_post=None, endpoint=None, url=None):
+
         if hasattr(self, '_rendered_html') and self._rendered_html:
            return self._rendered_html
-        self.events_trigger()
+
+        self.place_components()
+        self.intro_events()
+        app_ = app if app else current_app
+        on_post_ = on_post if on_post else self.on_page_render
+        endpoint_ = endpoint if endpoint else self.name()+'_on_post'
+        url_ = url if url else self._url
+        self.init_on_page_render(app=app_,
+                                 on_post=on_post_,
+                                 endpoint=endpoint_,
+                                 url=url_)
 
         payload = create_payload(self.context())
-        # print('WebPage::render api:{}'.format(self._ap_i))
         r = post(url=self._api, json=payload)
         html = extract_data(r.json()['data'])
-
-        # get nav bar html and insert into page html
-        '''
-        def insert_nav(page_html, nav_html):
-            """
-            cut <nav> ... </nav> from the page html and insert nav_html into page_html
-            :param page_html:
-            :param nav_html:
-            :return:
-            """
-            pg_bgn = page_html.find('<nav')
-            pg_end = page_html.find('</nav>')
-            page_html_=page_html[:pg_bgn] + page_html[pg_end+6:]
-            nav_bgn = nav_html.find('<nav')
-            nav_end = nav_html.find('</nav>')
-            nav_html_ = nav_html[nav_bgn:nav_end+6]
-            page_html_ = page_html[0:pg_bgn] + nav_html_ + page_html_[pg_bgn:]
-            return page_html_
-
-        if hasattr(self, '_nav_items') and self._nav_items:
-            nav_html = WebNav.html(nav_items=self._nav_items)
-            html = insert_nav(page_html=html, nav_html=nav_html)
-        '''
-        # nav bar html end
 
         self._rendered_html = render_template_string(html)
         return self._rendered_html
@@ -2282,7 +2309,7 @@ class WebPage(WebComponentBootstrap):
         with self.render_post_w():
             [element.render_for_post() for element in self._components.values()]
 
-    def init_on_post(self, app, on_post=None, blueprint=None, blueprint_url_prefix=None, endpoint='', url=''):
+    def init_on_page_render(self, app, on_post=None, blueprint=None, blueprint_url_prefix=None, endpoint='', url=''):
         on_post_ = on_post if on_post else self.on_post
         url_ = None
         if url:
@@ -2388,12 +2415,80 @@ class WebPage(WebComponentBootstrap):
         return self.func_call(params=params)
 
 
+class ClassTestPage(WebPage):
+
+    def place_components_impl(self):
+
+        page = self
+
+        testing_class = page.testing_class
+        testing_cls_name = testing_class.__name__
+        # testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else testing_class.__name__
+        class_name = testing_class.__name__
+        name_ = testing_cls_name
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        default_width = ['md6', 'lg6']
+        default_offset = ['mdo3', 'mdo3']
+        page._url = '/test_' + testing_class.__name__ + '_request'
+        with page.add_child(WebRow()) as r1:
+            with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
+                if class_name.find('OOChart') == 0:
+                    with c1.add_child(testing_class(
+                            parent=page, value=class_name, name=name_, height='400px', width='100%'
+                    )) as test:
+                        pass
+                else:
+                    with c1.add_child(testing_class(parent=c1,
+                                                    name=name_,
+                                                    value=name_,
+                                                    url='/' + testing_class.__name__ + '_test')) as test:
+                        pass
+
+    def intro_events_impl(self):
+
+        page = self._page
+        if (not hasattr(self, '_PAGE_CLASS')) or \
+                (hasattr(self, '_PAGE_CLASS') and
+                 self._PAGE_CLASS is None):
+            page = self
+
+        with page.render_post_w():
+            for name, component in page._components.items():
+                component['obj'].render_for_post()
+
+        return
+
+    def process_events_impl(self, req):
+        cls = self.__class__
+        name_ = req['me']
+        print('Class testing, class {} got req:{}'.format(name_, req))
+        if not hasattr(cls, 'test_request_data') or not cls.test_request_data:
+            req['data'] = {'val': name_ + '_testing from on_post', 'text': name_ + '_testing from on_post'}
+        else:
+            req['data'] = {'data': cls.test_request_data()}
+
+    def on_page_render_impl(self):
+        page = self
+        if self.__class__.__name__ != 'WebPage':
+            page = self._page
+        testing_cls_name = page.testing_class.__name__
+        req = page.on_post()
+        for r in req:
+            if r['me'] == testing_cls_name:
+                self.process_events(req=r)
+
+        return jsonify({'status': 'success', 'data': req})
+
+
 class WebA(WebComponentBootstrap):
     pass
 
 
 class WebRow(WebComponentBootstrap):
     pass
+
 
 class WebColumn(WebComponentBootstrap):
     pass
@@ -2439,8 +2534,23 @@ class WebImg(WebComponentBootstrap):
             kwargs['value'] = value
         super().__init__(**kwargs)
 
-    def events_action_for_class_test(self, req):
-        req['data']['oovalue'] = url_for('static', filename='img/demo.jpg')
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        # Create a testing page containing the component tested
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class TestPage(cls._PAGE_CLASS):
+            def process_events_impl(self, req):
+                req['data']['oovalue'] = url_for('static', filename='img/demo.jpg')
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
 
 
 class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
@@ -2511,6 +2621,58 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
     def test_request(cls, methods=['GET']):
         return super().test_request(methods=methods)
     '''
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def place_components_impl(self):
+                page = self
+                name = page.testing_class.testing_cls_name
+                WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
+
+                with page.add_child(WebBtnRadio(name=name, mytype=['inline'],
+                                                items=[{'label': '测试1', 'checked': ''},
+                                                       {'label': '测试测试测试2'},
+                                                       {'label': '测试3'}])) as radio:
+                    pass
+
+            def process_events_impl(self, req):
+                print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
+                req['data'] = {'oovalue': '测试3'}
+                print('Class testing: testing for {} is setting "测试3" always'.format(self.__class__.__name__))
+
+            def intro_events_impl(self):
+                page = self
+                radio = page._components['WebBtnRadio']['obj']
+                LVar = page._SUBCLASSES['LVar']['class']
+                cls = radio.__class__
+
+                with page.render_post_w():
+                    radio.render_for_post()
+
+                with radio.on_event_w('change'):
+                    radio.alert('"Please checking on server side to find \'Class testing, class {} got: ...\''
+                                ' And the radio buttons is set {} always by on_post function on server side"'.format(
+                        cls.__name__,
+                        '测试3'))
+                    with LVar(parent=radio, var_name='click_val') as val:
+                        radio.val()
+                        radio.add_scripts('\n')
+                        radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
+                        with page.render_post_w():
+                            radio.render_for_post()
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
 
 
 class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
