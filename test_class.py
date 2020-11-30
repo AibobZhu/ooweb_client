@@ -104,34 +104,43 @@ class ClassTest():
 
 class GVarTest(ClassTest):
 
-    @ooccd.MetisTransform(vptr=ooccd.FORMAT_MEMBER)
-    @ooccd.RuntimeOnPage()
-    def place_components_for_class_test(self, **kwargs):
-        page = self
-        WebHead1 = page._SUBCLASSES['WebHead1']['class']
-        WebHead3 = page._SUBCLASSES['WebHead3']['class']
-        GVar = page._SUBCLASSES['GVar']['class']
-        WebBtn = page._SUBCLASSES['WebBtn']['class']
-        with page.add_child(WebHead1(value='Test GVar and js values')) as head1:
-            pass
-        with page.add_child(WebHead3(value='var test = false;')) as head3:
-            pass
-        with page.add_child(GVar(parent=page, name='GVar', var_name='test', var_value='false')) as gv:
-            pass
-        with page.add_child(WebBtn(value='Test GVar assign', name='TestBtn')) as btn:
-            pass
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
 
-    @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
-    @ooccd.RuntimeOnPage()
-    def events_trigger_for_class_test(self):
-        page = self
-        btn = page._components['TestBtn']['obj']
-        gv = page._components['GVar']['obj']
-        with btn.on_event_w('click'):
-            with gv.assign_w():
-                gv.true()
-            btn.alert('"GVar value should be true, real:"+test')
+        class TestPage(cls._PAGE_CLASS):
+            def place_components_impl(self):
+                page = self
+                WebHead1 = page._SUBCLASSES['WebHead1']['class']
+                WebHead3 = page._SUBCLASSES['WebHead3']['class']
+                GVar = page._SUBCLASSES['GVar']['class']
+                WebBtn = page._SUBCLASSES['WebBtn']['class']
+                with page.add_child(WebHead1(value='Test GVar and js values')) as head1:
+                    pass
+                with page.add_child(WebHead3(value='var test = false;')) as head3:
+                    pass
+                with page.add_child(GVar(parent=page, name='GVar', var_name='test', var_value='false')) as gv:
+                    pass
+                with page.add_child(WebBtn(value='Test GVar assign', name='TestBtn')) as btn:
+                    pass
 
+            def intro_events_impl(self):
+                page = self
+                btn = page._components['TestBtn']['obj']
+                gv = page._components['GVar']['obj']
+                with btn.on_event_w('click'):
+                    with gv.assign_w():
+                        gv.true()
+                    btn.alert('"GVar value should be true, real:"+test')
+
+        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
 
 class OOListTest(ClassTest):
 
@@ -166,6 +175,45 @@ class OOListTest(ClassTest):
     def events_trigger_for_class_test(self):
         print('OOList.events_trigger_for_class_test')
 
+    @classmethod
+    def test_request(cls, methods=['GET ']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def place_components_impl(self):
+                page = self._page
+                WebRow = page._SUBCLASSES['WebRow']['class']
+                WebColumn = page._SUBCLASSES['WebColumn']['class']
+                WebBtn = page._SUBCLASSES['WebBtn']['class']
+                LVar = page._SUBCLASSES['LVar']['class']
+                OOList = page._SUBCLASSES['OOList']['class']
+                with page.add_child(WebRow()) as r1:
+                    with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'])) as c1:
+                        with c1.add_child(WebBtn(name='TestBtn', value='Test OOList')) as btn:
+                            pass
+
+                with ooccd.MetisTransform.transform_w(component=self, vptr=ooccd.ACTION_MEMBER):
+                    with btn.on_event_w('click'):
+                        with btn.add_child(LVar(parent=btn, name='lvar', var_name='data')) as data:
+                            with data.add_child(OOList(parent=data, name='OOList')) as list_data:
+                                with list_data.append_w():
+                                    list_data.add_scripts('"value1"', indent=False)
+                                with list_data.append_w():
+                                    list_data.add_scripts('"value2"', indent=False)
+                            list_data.add_scripts(';\n')
+                            page.alert(
+                                "'Testing is to append the text of the button to a list twice and print out the list: ' + data.join(' ')")
+
+        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
 
 class OODictTest(ClassTest):
 
@@ -198,6 +246,44 @@ class OODictTest(ClassTest):
     def events_trigger_for_class_test(self):
         pass
 
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class TestPage(cls._PAGE_CLASS):
+            def place_components_impl(self):
+                page = self
+                WebBtn = page._SUBCLASSES['WebBtn']['class']
+                OODict = page._SUBCLASSES['OODict']['class']
+                with page.add_child(WebBtn(value='Test dict', name='name1')) as btn1:
+                    pass
+                with page.add_child(WebBtn(value='Test dict update', name='name2')) as btn2:
+                    pass
+
+                with ooccd.MetisTransform.transform_w(component=self, vptr=ooccd.ACTION_MEMBER):
+                    with btn1.on_event_w('click'):
+                        with btn1.add_child(
+                                OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'},
+                                       var_name='test_dict')) as dict:
+                            pass
+                        btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+
+                    with btn2.on_event_w("click"):
+                        with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'},
+                                    var_name='test_dict_update') as dict_update:
+                            pass
+                        with dict_update.update_w(key='key2'):
+                            dict_update.add_scripts('"val_updated";\n', indent=False)
+                        btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+
+        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
 
 class WebBtnRadioTest(ClassTest):
 
@@ -1512,13 +1598,14 @@ def test_home(app, PageClass, testing_classes):
             with self.add_child(WebRow()) as r3:
                 with r3.add_child(WebColumn(width=['md6', 'lg6'], offset=['mdo3', 'lgo3'])) as c3:
                     for name, subclass in subclasses.items():
-                        if name == 'WebPage':
+                        if name == 'ClassTestPage':
                             subclass['class']._PAGE_CLASS = PageClass
                             continue
                         if name in exclude_class_objs:
                             continue
                         url_request = 'test_' + name + '_request'
                         subclass['class']._PAGE_CLASS = PageClass
+                        subclass['class']._PAGE_CLASS._TESTING_CLASS = subclass['class']
                         setattr(subclass['class'], 'RENDERED_HTML', None)
                         setattr(subclass['class'], 'CLASS_TEST_HTML', None)
                         app.add_url_rule('/' + url_request, endpoint=url_request,
