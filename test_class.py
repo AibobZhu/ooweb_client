@@ -79,10 +79,8 @@ class ClassTest():
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
-        testing_cls_name = cls.testing_cls_name if hasattr(cls, 'testing_cls_name') else cls.__name__
         WebPage = cls._PAGE_CLASS
-        page = WebPage(app=current_app, url='/test_' + cls.__name__ + '_request')
-        page.testing_class = cls
+        page = WebPage(url='/test_'+cls.__name__+'_request')
         '''
         page.place_components = types.MethodType(cls.place_components_for_class_test, page)
         page.place_components()
@@ -141,6 +139,7 @@ class GVarTest(ClassTest):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+
 
 class OOListTest(ClassTest):
 
@@ -284,6 +283,7 @@ class OODictTest(ClassTest):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+
 
 class WebBtnRadioTest(ClassTest):
 
@@ -445,6 +445,32 @@ class WebBtnTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post()
 
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        WebPage = cls._PAGE_CLASS
+        class MyPage(WebPage):
+            def intro_events_impl(self):
+                page = self
+                test_obj = page._components['WebBtn']['obj']
+                WebBtn = page._SUBCLASSES['WebBtn']['class']
+
+                with page.render_post_w():
+                    test_obj.render_for_post()
+                with test_obj.on_event_w('click'):
+                    test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
+                    with page.render_post_w():
+                        test_obj.render_for_post()
+
+        page = MyPage(url='/test_' + cls.__name__ + '_request')
+
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
 
 class WebBtnToggleTest(ClassTest):
 
@@ -1554,7 +1580,7 @@ def create_app():
     return app
 
 
-def test_home(app, PageClass, testing_classes):
+def test_home(app, PageClass, testing_classes, base_url):
 
     if hasattr(PageClass, 'TEST_HOME_HTML') and PageClass.TEST_HOME_HTML:
         return PageClass.TEST_HOME_HTML
@@ -1603,11 +1629,20 @@ def test_home(app, PageClass, testing_classes):
                             continue
                         if name in exclude_class_objs:
                             continue
-                        url_request = 'test_' + name + '_request'
-                        subclass['class']._PAGE_CLASS = PageClass
+                        url_request = '/test_' + name + '_request'
+                        '''
+                        TestRequestPage = type(name+'_page', (PageClass,), {})
+                        setattr(TestRequestPage, 'INSTANCES', set())
+                        subclass['class']._PAGE_CLASS = TestRequestPage
+                        TestRequestPage.register(app=app,
+                                                 route=url_request,
+                                                 top_menu=menu,
+                                                 view_func=subclass['test_request'])
                         subclass['class']._PAGE_CLASS._TESTING_CLASS = subclass['class']
+                        '''
                         setattr(subclass['class'], 'RENDERED_HTML', None)
                         setattr(subclass['class'], 'CLASS_TEST_HTML', None)
+                        '''
                         app.add_url_rule('/' + url_request, endpoint=url_request,
                                          view_func=subclass['test_request'],
                                          methods=['GET', 'POST'])
@@ -1616,6 +1651,7 @@ def test_home(app, PageClass, testing_classes):
                                          endpoint=url_result,
                                          view_func=subclass['test_result'],
                                          methods=['POST'])
+                        '''
                         with c3.add_child(WebBtn(name=name, value=name, width='265px',
                                                  styles={'margin-top': '10px', 'margin-left': '10px'})) as btn:
 
@@ -1637,7 +1673,7 @@ def test_home(app, PageClass, testing_classes):
                 if name in exclude_class_objs:
                     continue
                 with class_obj['obj'].on_event_w('click'):
-                    self.add_scripts('location="/{}";'.format(class_obj['test_request_url']))
+                    self.add_scripts("location.href='{}';\n".format(class_obj['test_request_url']))
 
     test_page = ClassTestHomePage(app=current_app, nav_items=menu)
     test_page.socketio = app.socketio

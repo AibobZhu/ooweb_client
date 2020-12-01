@@ -2094,11 +2094,14 @@ class WebPage(WebComponentBootstrap):
 
     PAGE = None
 
+    INSTANCES = set()
+
     '''
     Create an unique instance of page, which add a rule for on_post, and register current page view in app
     '''
 
-    def on_post(self):
+    @classmethod
+    def on_post(cls):
         '''
         The process function to response the post request from the WebComponent itself
         TODO: Query data by user model
@@ -2111,17 +2114,19 @@ class WebPage(WebComponentBootstrap):
             return data
         return []
 
+    '''
     @classmethod
     def get_page(cls, app):
-        '''
+        """
         if not cls.PAGE:
             cls.PAGE = Page(default_url='view.index', nav=CustomPage.NAV, value=CustomPage.TITLE, app=view)
             app.register_blueprint(blueprint=view, url_prefix=url_prefix)
             print('app.run, app.url_map:{}'.format(pprint.pformat(app.url_map)))
             print('app.run, app.view_functions:{}'.format(pprint.pformat(app.view_functions)))
         return cls.PAGE
-        '''
+        """
         raise NotImplemented
+    '''
 
     '''
     def init_custom_nav_render(self, app):
@@ -2144,6 +2149,36 @@ class WebPage(WebComponentBootstrap):
                 )
         return top_bar
     '''
+
+    @classmethod
+    def on_page_render(cls):
+        req = cls.on_post()
+        ret = req
+        assert(len(cls.INSTANCES))
+        for ins in cls.INSTANCES:
+            ret = ins.on_my_render(req=req)
+        return ret
+
+    @classmethod
+    def register(cls, app, route, top_menu, end_point=None, view_func=None):
+
+        def get_page(top_menu=top_menu):
+            page = cls(nav_items=top_menu)
+            html = page.render()
+            return render_template_string(html)
+
+        view_func_ = get_page
+        if view_func:
+            view_func_ = view_func
+
+        end_point_ = '{}_route'.format(cls.__name__)
+        if end_point:
+            end_point_ = end_point
+
+        end_point_on_ = end_point_ + '_on_page_render'
+        app.add_url_rule(rule=route, endpoint=end_point_, view_func=view_func_, methods=['GET', 'POST'])
+        app.add_url_rule(rule=route+'/on_post', endpoint=end_point_on_, view_func=cls.on_page_render, methods=['POST'])
+
 
     def type_(self):
         return 'WebPage'
@@ -2171,6 +2206,11 @@ class WebPage(WebComponentBootstrap):
         self.place = types.MethodType(place, self)
         self._components = {}
         self.rendered = False
+        self.__class__.INSTANCES.add(self)
+
+    def __del__(self):
+        self.__class__.INSTANCES.remove(self)
+        super().__del__()
 
     '''
     def do_post(self):
@@ -2254,18 +2294,17 @@ class WebPage(WebComponentBootstrap):
     def place_components(self):
         self.place_components_impl()
 
-    def on_page_render_impl(self):
+    def on_my_render_impl(self, req):
         page = self
         name = self.name()
-        req = page.on_post()
         for r in req:
             if r['me'] == name:
                 self.process_events(req=r)
         return req
 
     @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
-    def on_page_render(self):
-        return self.on_page_render_impl()
+    def on_my_render(self, req):
+        return self.on_my_render_impl(req)
 
     def process_events_impl(self, req):
         pass
@@ -2289,6 +2328,8 @@ class WebPage(WebComponentBootstrap):
 
         self.place_components()
         self.intro_events()
+
+        '''
         app_ = app if app else current_app
         on_post_ = on_post if on_post else self.on_page_render
         endpoint_ = endpoint if endpoint else self.name()+'_on_post'
@@ -2297,6 +2338,7 @@ class WebPage(WebComponentBootstrap):
                                  on_post=on_post_,
                                  endpoint=endpoint_,
                                  url=url_)
+        '''
 
         payload = create_payload(self.context())
         r = post(url=self._api, json=payload)
@@ -2310,6 +2352,7 @@ class WebPage(WebComponentBootstrap):
             [element.render_for_post() for element in self._components.values()]
 
     def init_on_page_render(self, app, on_post=None, blueprint=None, blueprint_url_prefix=None, endpoint='', url=''):
+
         on_post_ = on_post if on_post else self.on_post
         url_ = None
         if url:
@@ -2324,19 +2367,19 @@ class WebPage(WebComponentBootstrap):
         try:
             if blueprint:
                 self.add_url_rule(app=blueprint, extend=[
-                    {'rule': '/on_post',
+                    {'rule': url_ + '/on_post',
                      'endpoint': endpoint,
                      'view_func': on_post_,
                      'methods': ['POST']}])
                 app.register_blueprint(blueprint=blueprint, url_prefix=blueprint_url_prefix)
             else:
                 self.add_url_rule(app=app, extend=[
-                    {'rule': self._url + '/on_post',
+                    {'rule': url_ + '/on_post',
                      'endpoint': endpoint,
                      'view_func': on_post_,
                      'methods': ['POST']}])
-        except AssertionError:
-            print("Add url rule error!")
+        except Exception as e:
+            print("Add url rule error:{}!".format(e))
 
     def events_trigger(self):
         print('WebPage.events_trigger')
@@ -2431,7 +2474,7 @@ class ClassTestPage(WebPage):
         WebColumn = page._SUBCLASSES['WebColumn']['class']
         default_width = ['md6', 'lg6']
         default_offset = ['mdo3', 'mdo3']
-        page._url = '/test_' + testing_class.__name__ + '_request'
+        page._url = '/test_' + testing_class.__name__ + '_requesft'
         with page.add_child(WebRow()) as r1:
             with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
                 if class_name.find('OOChart') == 0:
@@ -2469,12 +2512,11 @@ class ClassTestPage(WebPage):
         else:
             req['data'] = {'data': cls.test_request_data()}
 
-    def on_page_render_impl(self):
+    def on_my_render_impl(self, req):
         page = self
         if self.__class__.__name__ != 'WebPage':
             page = self._page
         testing_cls_name = page.testing_class.__name__
-        req = page.on_post()
         for r in req:
             if r['me'] == testing_cls_name:
                 self.process_events(req=r)
@@ -3160,6 +3202,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
         params = {'btn_only': btn_only, 'disable': disable}
         self.func_call(params)
 
+
     @classmethod
     def test_request(cls, methods=['GET']):
         # Create a testing page containing the component tested
@@ -3650,17 +3693,19 @@ class OOChatClient(OOChatClientTest, WebComponentBootstrap):
             def intro_events_impl(self):
                 pass
 
-            def on_page_render_impl(self):
+            def on_my_render_impl(self, req):
                 test_obj = self._page._components['OOChatClient']['obj']
                 test_class = test_obj.__class__
 
                 BODY, INPUT, SEND_BTN = self.get_names('OOChatClient')
 
+                '''
                 req = None
                 if hasattr(self._page, '_action'):
                     req = self._page._action.on_post()
                 else:
                     req = self._page.on_post()
+                '''
 
                 for r in req:
                     if r['me'] == 'OOChatClient':
@@ -5962,9 +6007,10 @@ class OOCalendar(OOCalendarTest, WebDiv):
                         calendar.render_for_post()
                         title.render_for_post()
 
-            def on_page_render_impl(self):
+            def on_my_render_impl(self, req):
 
-                req_ = self.on_post()
+                #req_ = self.on_post()
+                req_ = req
 
                 title_ = '时间标题'
                 for r in req_:
@@ -6078,14 +6124,16 @@ class WebTab(WebUl):
                         test.render_for_post()
                         contain.render_for_post()
 
-            def on_page_render_impl(self):
+            def on_my_render_impl(self, req):
 
-                WebPage = self._PAGE_CLASS
+                '''
                 req = None
                 if hasattr(self._page, '_action'):
                     req = self._page._action.on_post()
                 else:
                     req = self._page.on_post()
+                '''
+
                 for r in req:
                     if r['me'] == self.tab_name:
                         print('Got tab active item: {}'.format(r['data']))
@@ -6432,14 +6480,16 @@ class WebTable(WebTableTest, WebComponentBootstrap):
                 with page.render_post_w():
                     test.render_for_post()
 
-            def on_page_render_impl(self):
+            def on_my_render_impl(self, req):
                 WebPage = self._PAGE_CLASS
                 test_obj = self._page._components['WebTable']['obj']
+                '''
                 req = None
                 if hasattr(self._page, '_action'):
                     req = self._page._action.on_post()
                 else:
                     req = self._page.on_post()
+                '''
                 for r in req:
                     if r['me'] == 'WebTable':
                         print('Got WebTable request data: {}'.format(r['data']))
@@ -6900,12 +6950,14 @@ class OOTable(OOTableTest, WebTable):
                     test2.render_for_post()
                     test3.render_for_post()
 
-            def on_page_render_impl(self):
+            def on_my_render_impl(self, req):
+                '''
                 req = None
                 if hasattr(self._page, '_action'):
                     req = self._page._action.on_post()
                 else:
                     req = self._page.on_post()
+                '''
                 for r in req:
                     if r['me'] == self.TEST_NAME1:
                         print('Got OOTable request data: {}'.format(r['data']))
