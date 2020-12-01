@@ -2160,10 +2160,10 @@ class WebPage(WebComponentBootstrap):
         return ret
 
     @classmethod
-    def register(cls, app, route, top_menu, end_point=None, view_func=None):
+    def register(cls, app, rule, top_menu, end_point=None, view_func=None):
 
-        def get_page(top_menu=top_menu):
-            page = cls(nav_items=top_menu)
+        def get_page(top_menu=top_menu, rule=rule):
+            page = cls(nav_items=top_menu, url=rule)
             html = page.render()
             return render_template_string(html)
 
@@ -2176,8 +2176,8 @@ class WebPage(WebComponentBootstrap):
             end_point_ = end_point
 
         end_point_on_ = end_point_ + '_on_page_render'
-        app.add_url_rule(rule=route, endpoint=end_point_, view_func=view_func_, methods=['GET', 'POST'])
-        app.add_url_rule(rule=route+'/on_post', endpoint=end_point_on_, view_func=cls.on_page_render, methods=['POST'])
+        app.add_url_rule(rule=rule, endpoint=end_point_, view_func=view_func_, methods=['GET', 'POST'])
+        app.add_url_rule(rule=rule+'/on_post', endpoint=end_point_on_, view_func=cls.on_page_render, methods=['POST'])
 
 
     def type_(self):
@@ -2295,11 +2295,13 @@ class WebPage(WebComponentBootstrap):
         self.place_components_impl()
 
     def on_my_render_impl(self, req):
+        '''
         page = self
         name = self.name()
         for r in req:
             if r['me'] == name:
                 self.process_events(req=r)
+        '''
         return req
 
     @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
@@ -2510,7 +2512,7 @@ class ClassTestPage(WebPage):
         if not hasattr(cls, 'test_request_data') or not cls.test_request_data:
             req['data'] = {'val': name_ + '_testing from on_post', 'text': name_ + '_testing from on_post'}
         else:
-            req['data'] = {'data': cls.test_request_data()}
+            req['data'] = {'data': cls.test_request_data(), 'attrs':'align:'}
 
     def on_my_render_impl(self, req):
         page = self

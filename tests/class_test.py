@@ -11,7 +11,7 @@ def home():
     base_url = request.base_url
     testing_classes = ClassTestPage.get_sub_classes(root_class=WebComponentBootstrap)
     testing_classes['ServerChatNM'] = {'class': ServerChatNM}
-    return test_home(app=app, PageClass=ClassTestPage, testing_classes=testing_classes, base_url=base_url)
+    return test_home(app=app, PageClass=ClassTestPage, testing_classes=testing_classes)
 
 testing_classes = ClassTestPage.get_sub_classes(root_class=WebComponentBootstrap)
 for name, tc in testing_classes.items():

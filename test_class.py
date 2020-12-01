@@ -1580,7 +1580,7 @@ def create_app():
     return app
 
 
-def test_home(app, PageClass, testing_classes, base_url):
+def test_home(app, PageClass, testing_classes):
 
     if hasattr(PageClass, 'TEST_HOME_HTML') and PageClass.TEST_HOME_HTML:
         return PageClass.TEST_HOME_HTML
