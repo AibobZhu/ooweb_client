@@ -1,4 +1,4 @@
-import os, sys, getopt, subprocess, re
+import os, sys, getopt, subprocess
 USAGE = '' \
         'Usage:\n' \
         'create_project.py -r <your_project_root_dir> -n <your_project_name>\n' \
