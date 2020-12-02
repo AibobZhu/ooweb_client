@@ -2316,7 +2316,10 @@ class WebPage(WebComponentBootstrap):
         self.process_events_impl(req=req)
 
     def intro_events_impl(self):
-        pass
+        page = self
+        with page.render_post_w():
+            for name, component in page._components.items():
+                component['obj'].render_for_post()
 
     @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
     @ooccd.RuntimeOnPage()

@@ -69,7 +69,6 @@ def main(argv):
             f2.write(newline)
     os.remove(main_file)
     os.rename('{}/tmp.bak'.format(prj_dir), 'main.py')
-    os.remove('{}/tmp.bak'.format(prj_dir))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
