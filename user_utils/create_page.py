@@ -42,6 +42,7 @@ def main(argv):
     src_dir = ''
     (status, output) = subprocess.getstatusoutput('cp {}/pages/new_page.py {}/pages/{}.py'.format(src_dir, prj_root_dir, page_name))
     print(output)
+
     new_page_file = '{}/pages/{}.py'.format(prj_root_dir, page_name)
     with open(new_page_file, "r", encoding="utf-8") as f1, open("{}/tmp.bak".format(prj_root_dir), "w", encoding="utf-8") as f2:
         for line in f1:
@@ -50,6 +51,16 @@ def main(argv):
                newline = line.replace("/oonewpage_rule_not_set", page_rule)
             f2.write(newline)
     os.remove(new_page_file)
+    os.rename('{}/tmp.bak'.format(prj_root_dir), '{}.py'.format(page_name))
+    os.remove('{}/tmp.bak'.format(prj_root_dir))
+
+    with open(pages_init_file, "r", encoding="utf-8") as f1, open("{}/tmp.bak".format(prj_root_dir), "w", encoding="utf-8") as f2:
+        newline = "import pages.{}".format(page_name)
+        for line in f1:
+           f2.write(line)
+           if line.find('#import all pages') >= 0:
+               f2.write(newline)
+    os.remove(pages_init_file)
     os.rename('{}/tmp.bak'.format(prj_root_dir), '{}.py'.format(page_name))
     os.remove('{}/tmp.bak'.format(prj_root_dir))
 
