@@ -20,7 +20,7 @@ import numpy as np
 from flask import Blueprint, request
 from interfaces import *
 from requests import post
-from share import create_payload, extract_data, APIs, _getStr, day_2_week_number
+from share import create_payload, extract_data, APIs, _getStr, day_2_week_number, change_func_name
 from test_class import *
 import json
 import oocc_define as ooccd
@@ -28,26 +28,79 @@ import oocc_define as ooccd
 sys.setrecursionlimit(2000)
 
 
-class Response(AppearanceInf, PositionInf, PropertyInf):
+class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
 
     def __init__(self, **kwargs):
+        self._request = None
         self._response = None
+        '''
+        self._request = kwargs['req']
+        self._response = {'me': self._response['me']}
+        '''
 
     # AppearanceInf
-    def width(self, **kwargs):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    def width(self, width=None):
+        def _width_process(width):
+            if FormatBootstrap.is_width_class(width):
+                classes = FormatBootstrap.get_width_class(width)
+                if 'class' in self._response['data'].keys():
+                    classes = self._response['data']['class']
+                    if classes.find(width) < 0:
+                        classes = classes + ' ' + FormatBootstrap.get_width_class(width)
+                self._response['data']['class'] = classes
+            elif FormatBootstrap.is_width_px(width):
+                if 'data' in self._response:
+                    if 'style' in self._response['data']:
+                        self._response['data']['style']['width'] = width
+                    else:
+                        self._response['data']['style'] = {'width': width}
+                else:
+                    self._response['data'] = {'style': {'width': width}}
+            else:
+                raise RuntimeError('{}.width is passed in incorrect format: {}'.format(self.__class__.__name__, width))
+
+        if width is not None:
+            if isinstance(width, str):
+                _width_process(width=width)
+            elif isinstance(width, list):
+                for w in width:
+                    if FormatBootstrap.is_width_class(w):
+                        _width_process(w)
+        else:
+            ret_class = []
+            ret_style= None
+            if 'data' in self._request:
+                if 'style' in self._request['data']:
+                    style = self._request['data']['style']
+                    if 'width' in style.keys():
+                        ret_styles = style['width']
+                if 'class' in self._request['data']:
+                    classes = self._request['data']['class']
+                    for c in classes:
+                        if c in FormatBootstrap.COL_NAME.keys():
+                            ret_class.append(FormatBootstrap.COL_NAME[c])
+            return {'class': ret_class, 'style': ret_style}
 
     def height(self, **kwargs):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
 
-    def color(self, **kwargs):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    def color(self, color=None):
+        if color is not None:
+            if 'data' in self._response:
+                if 'style' in self._response['data']:
+                    self._response['data']['style']['color'] = color
+                else:
+                    self._response['data']['style'] = {'color': color}
+            else:
+                self._response['data'] = {'style': {'color': color}}
+        else:
+            if 'data' in self._request:
+                if 'style' in self._request['data']:
+                    if 'color' in self._request['data']['style']:
+                        return self._request['data']['style']['color']
+            return None
 
     def font(self, **kwargs):
         c_name = self.__class__.__name__
@@ -63,6 +116,20 @@ class Response(AppearanceInf, PositionInf, PropertyInf):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def hide(self, hide):
+        hide_ = ""
+        if hide:
+            hide_ = "none"
+
+        if 'data' in self._response:
+            if 'style' in self._response['data']:
+                self._response['data']['style']['display'] = hide_
+            else:
+                self._response['data']={'style':{'display':hide_}}
+        else:
+            self._response['data'] = {'style':{'display':hide_}}
+
     # End AppearanceInf
 
     # PositionInf
@@ -88,10 +155,19 @@ class Response(AppearanceInf, PositionInf, PropertyInf):
     # End PositionInf
 
     # PropertyInf
-    def value(self, **kwargs):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def value(self, value=None):
+        if value:
+            if 'data' in self._response:
+                self._response['data']['text'] = value
+            else:
+                self._response['data'] = {'text': value}
+        else:
+            if 'data' in self._request:
+                if 'val' in self._request['data']:
+                    return self._response['data']['text']
+            else:
+                return None
 
     def attrs(self, **kwargs):
         c_name = self.__class__.__name__
@@ -122,6 +198,13 @@ class Response(AppearanceInf, PositionInf, PropertyInf):
             return data
         return []
         # return {"status": "sucess", 'data': data['data'], 'me':data['me']}
+
+    def request(self, req):
+        self._request = req
+        self._response = {'me': req['me'], 'data':{}}
+
+    def response(self):
+        return self._response
 
 
 class ClientBase(metaclass=abc.ABCMeta):
@@ -983,41 +1066,32 @@ class Format(FormatInf):
         self.func_call(params)
     '''
     #End property
+"""
 
 
-class FormatBootstrap(Format):
+class FormatBootstrap():
 
-    '''
-    @staticmethod
-    def get_sub_classes(cls):
-
-        for subclass in cls.__subclasses__():
-            if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and (subclass.__name__.find('Inf') < 0) \
-                    and (subclass.__name__.find('WebPage') < 0) and (subclass.__name__.find('WebNav') < 0):
-                cls._SUBCLASSES[subclass.__name__] = subclass
-                cls.get_sub_classes(subclass)
-
-        return cls._SUBCLASSES
-    '''
+    COL_NAME = {'xs': 'col-xs-', 'sm': 'col-sm-', 'md': 'col-md-', 'lg': 'col-lg-'}
 
     @classmethod
-    def create_default_nav_items(cls):
-        menu = {
-            'title': {'name': 'OwwwO', 'action': cls.DEFAULT_URL},
-            'menu_list': [
-                {'name': 'test menu 1', 'action': cls.DEFAULT_URL},
-                {'name': 'test menu 2', 'action': cls.DEFAULT_URL}
-            ],
-            'login': {
-                'site_name': 'OwwwO',
-                'is_login': False,
-                'login_name': 'TestUser',
-                'login_href': cls.DEFAULT_URL,
-                'logout_href': cls.DEFAULT_URL
-            }
-        }
-        return menu
-"""
+    def get_width_class(cls, width):
+        assert cls.is_width_class(width)
+        width_cls = width[0:1]
+        width_num = width[2:]
+        return cls.COL_NAME[width_cls] + width_num
+
+    @classmethod
+    def is_width_class(cls, width):
+        assert (width)
+        if cls.check_width_format(width):
+            return False
+        else:
+            if width[0:1] in FormatBootstrap.COL_NAME.keys():
+                return True
+            else:
+                print('the width:"{}" is neighter in triditional '
+                      'format like "px" nor Bootstrap format like "xm", "sm","xs", "lg"')
+                return False
 
 
 class WebComponent(ComponentInf, ClientBase):
@@ -1594,8 +1668,60 @@ class WebComponentBootstrap(WebComponent,
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
     RESPONSE_MEMBER = ooccd.RESPONSE_MEMBER
 
+    def virtual_inherid(self, fathers, **kwargs):
+        '''
+        1. Get common functions of fathers, then dynamic create virtual functions for the ones not in my functions
+        2. Get father functions neither in common functions nor in my functions, dynamic create the functions in self,
+            with the father object pointer.
+
+        Or
+            traverse functions of fathers one by one, dynamically create virtual or child function and with possible father objects
+        '''
+
+        '''
+        Get each father function associate with the father names who have it
+        '''
+        if isinstance(self, WebPage):
+            print('virtual_inherid, find WebPage')
+        father_functions = {}
+        for father_nm, father_cls in fathers.items():
+            self._vtable[father_nm] = father_cls(component=self, **kwargs)
+            father_fnms = [f[0] for f in inspect.getmembers(father_cls, inspect.isfunction) if f[0].find('__') != 0]
+            for fnm in father_fnms:
+                if fnm not in father_functions.keys():
+                    father_functions[fnm]=[father_nm]
+                else:
+                    if father_nm not in father_functions[fnm]:
+                        father_functions[fnm].append(father_nm)
+        '''
+        Get my functions
+        '''
+        my_fnms = [f[0] for f in inspect.getmembers(self.__class__, inspect.isfunction) if f[0].find('__') != 0]
+        '''
+        Traverse father functions, dynamically create virtual functions
+        '''
+
+        for ffnm in father_functions.keys():
+            if ffnm == 'request':
+                print('find request')
+            if ffnm not in my_fnms:
+                def fn(self, *args, **kwargs):
+                    my_name = inspect.currentframe().f_code.co_name
+                    page = self._page
+                    vptr_ = page.get_vptr()
+                    if vptr_ not in father_functions[my_name]:
+                        raise RuntimeError('{} running with incorrect vptr:{}'.format(
+                            my_name, vptr_
+                        ))
+                    return getattr(self._vtable[vptr_], my_name)(*args, **kwargs)
+                change_func_name(fn,ffnm)
+                setattr(self, ffnm, types.MethodType(fn, self))
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._vtable={ooccd.RESPONSE_MEMBER: ResponseBootstrap(**kwargs)}
+        self.virtual_inherid(fathers={'_response':ResponseBootstrap}, **kwargs)
+
         '''
         self._derive_event_members(**kwargs)
         self._format = FormatBootstrap(**kwargs)
@@ -1671,6 +1797,10 @@ class WebComponentBootstrap(WebComponent,
     def disable(self, disable=None):
         params = {'disable': disable}
         return self.func_call(params=params)
+
+    def hide(self, hide):
+        params = {'hide': hide}
+        return self.func_call(params=params)
     # End appearance
 
     # Position
@@ -1693,8 +1823,11 @@ class WebComponentBootstrap(WebComponent,
 
     # Property.
     def value(self, value=None):
-        params = {'value': value}
-        return self.func_call(params=params)
+        if self._page.get_vptr() == ooccd.RESPONSE_MEMBER:
+            return self._vtable[ooccd.RESPONSE_MEMBER].value(value=value)
+        else:
+            params = {'value': value}
+            return self.func_call(params=params)
 
     def attrs(self, attrs=None):
         params = {'attrs': attrs}
@@ -1858,6 +1991,7 @@ class WebComponentBootstrap(WebComponent,
 
     @classmethod
     def check_width_format(cls, width):
+        assert(width)
         if width[-1:] != '%' and width[-2:] != 'px' and width != 'auto':
             return False
         return True
@@ -1868,6 +2002,9 @@ class WebComponentBootstrap(WebComponent,
             return False
         else:
             return True
+
+    def class_test(self):
+        return self.value(value='class {} from class test'.format(self.__class__.__name__))
     # End other functions
 
 
@@ -2160,10 +2297,13 @@ class WebPage(WebComponentBootstrap):
         return ret
 
     @classmethod
-    def register(cls, app, rule, top_menu, end_point=None, view_func=None):
+    def register(cls, app, rule, top_menu, end_point=None, view_func=None, title=None):
 
-        def get_page(top_menu=top_menu, rule=rule):
-            page = cls(nav_items=top_menu, url=rule)
+        def get_page(top_menu=top_menu, rule=rule, title=title):
+            title_ = title
+            if not title:
+                title_ = cls.__name__
+            page = cls(nav_items=top_menu, url=rule, value=title)
             html = page.render()
             return render_template_string(html)
 
@@ -2207,6 +2347,8 @@ class WebPage(WebComponentBootstrap):
         self._components = {}
         self.rendered = False
         self.__class__.INSTANCES.add(self)
+        self._vptr = ooccd.FORMAT_MEMBER
+        self._vptr_ori = [self._vptr]
 
     def __del__(self):
         self.__class__.INSTANCES.remove(self)
@@ -2448,17 +2590,21 @@ class WebPage(WebComponentBootstrap):
 
     def get_vptr(self):
         params = {}
-        return self.func_call(params=params)
+        self.func_call(params=params)
+        return self._vptr
 
     def set_vptr(self, vptr):
+        self._vptr = vptr
         params = {'vptr': vptr}
         return self.func_call(params=params)
 
     def keep_vptr_ori(self):
+        self._vptr_ori.append(self._vptr)
         params = {}
         return self.func_call(params=params)
 
     def restore_vptr_ori(self):
+        self._vptr = self._vptr_ori.pop()
         params = {}
         return self.func_call(params=params)
 
@@ -2471,7 +2617,6 @@ class ClassTestPage(WebPage):
 
         testing_class = page.testing_class
         testing_cls_name = testing_class.__name__
-        # testing_cls_name = testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else testing_class.__name__
         class_name = testing_class.__name__
         name_ = testing_cls_name
 
@@ -2518,6 +2663,7 @@ class ClassTestPage(WebPage):
             req['data'] = {'data': cls.test_request_data(), 'attrs':'align:'}
 
     def on_my_render_impl(self, req):
+        '''
         page = self
         if self.__class__.__name__ != 'WebPage':
             page = self._page
@@ -2526,6 +2672,20 @@ class ClassTestPage(WebPage):
             if r['me'] == testing_cls_name:
                 self.process_events(req=r)
 
+        return jsonify({'status': 'success', 'data': req})
+        '''
+        page = self
+        if self.__class__.__name__ != 'WebPage':
+            page = self._page
+        testing_cls = page.testing_class
+        testing_cls_name = testing_cls.__name__
+        testing_obj = page._components[testing_cls_name]['obj']
+        for r in req:
+            if r['me'] == testing_cls_name:
+                print('Got {} request:{}'.format(testing_obj.name(), r))
+                testing_obj.request(req=r)
+                testing_obj.class_test()
+                r['data'] = testing_obj.response()['data']
         return jsonify({'status': 'success', 'data': req})
 
 
@@ -2569,6 +2729,18 @@ class WebField(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webfield_val'
     VAL_FUNC_PARAMS = WebComponentBootstrap.BASE_VAL_FUNC_PARAMS
 
+    def value(self, value):
+        page = self._page
+        if page.get_vptr() == ooccd.RESPONSE_MEMBER:
+            if value:
+                if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
+                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['val'] = value
+                else:
+                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'val': value}
+        else:
+            params = {'value': value}
+            return self.func_call(params=params)
+
 
 class WebImg(WebComponentBootstrap):
 
@@ -2581,6 +2753,16 @@ class WebImg(WebComponentBootstrap):
             kwargs['value'] = value
         super().__init__(**kwargs)
 
+    def value(self, value):
+        page = self._page
+        if page.get_vptr() == ooccd.RESPONSE_MEMBER:
+            if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
+                self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['oovalue'] = value
+            else:
+                self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'oovalue': value}
+        else:
+            params = {'value': value}
+            return self.func_call(params=params)
     @classmethod
     def test_request(cls, methods=['GET']):
         # Create a testing page containing the component tested
@@ -2589,8 +2771,23 @@ class WebImg(WebComponentBootstrap):
             return cls.CLASS_TEST_HTML
 
         class TestPage(cls._PAGE_CLASS):
+
             def process_events_impl(self, req):
                 req['data']['oovalue'] = url_for('static', filename='img/demo.jpg')
+
+            def on_my_render_impl(self, req):
+                page = self._page
+                testing_cls = page.testing_class
+                testing_obj = page._components[testing_cls.__name__]['obj']
+                for r in req:
+                    if r['me'] == testing_cls.__name__:
+                        print('Got {} request: {}'.format(testing_cls.__name__, r))
+                        testing_obj.request(req=r)
+                        index = req.index(r)
+                        testing_obj.value(url_for('static', filename='img/demo.jpg'))
+                        r = testing_obj.response()
+                        req[index] = r
+                return jsonify({'status': 'success', 'data': req})
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
         page.testing_class = cls
@@ -2713,6 +2910,18 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
                         radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
                         with page.render_post_w():
                             radio.render_for_post()
+
+            def on_my_render_impl(self, req):
+                page = self._page
+                testing_cls = page.testing_class
+                testing_obj = page._components[testing_cls.__name__]
+                for r in req:
+                    if r['me'] == testing_cls.__name__:
+                        print('Got {} request: {}'.format(testing_cls.__name__, r))
+                        index = req.index(r)
+                        r['data'] = {'oovalue': '测试3'}
+                        req[index] = r
+                return jsonify({'status': 'success', 'data': req})
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
         page.testing_class = cls
@@ -2873,6 +3082,24 @@ class WebInput(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webinput_val'
 
+    def value(self, value=None):
+        page = self._page
+        if page.get_vptr() == ooccd.RESPONSE_MEMBER:
+
+            if value:
+                if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
+                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['val'] = value
+                else:
+                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'val': value}
+            else:
+                if 'data' in self._request:
+                    if 'val' in self._request['data']:
+                        return self._response['data']['val']
+                else:
+                    return None
+        else:
+            params = {'value': value}
+            return self.func_call(params=params)
 
 class WebInputGroup(WebComponentBootstrap):
     pass
@@ -2882,11 +3109,12 @@ class WebFormInline(WebComponentBootstrap):
     pass
 
 
-class WebSelect(WebComponentBootstrap):
+class WebSelect(WebSelectTest, WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webselect_val'
     VAL_FUNC_PARAMS = WebComponentBootstrap.VAL_FUNC_PARAMS
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -2932,6 +3160,7 @@ class WebSelect(WebComponentBootstrap):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class WebSelect2(WebSelect):
@@ -3023,7 +3252,7 @@ class WebLabel(WebDiv):
     VAL_FUNC_NAME = 'weblabel_val'
 
 
-class WebCheckbox(WebSpan):
+class WebCheckbox(WebCheckboxTest, WebSpan):
 
     VAL_FUNC_NAME = 'webcheckbox_val'
 
@@ -3031,6 +3260,7 @@ class WebCheckbox(WebSpan):
         params = {'checked': checked}
         self.func_call(params)
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -3054,7 +3284,7 @@ class WebCheckbox(WebSpan):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
-
+    '''
 
 class OODatePickerBase:
     
@@ -3192,7 +3422,7 @@ class OODatePickerBase:
         return datetime.datetime.strptime(dt_str, format)
 
 
-class OODatePickerSimple(WebInputGroup, OODatePickerBase):
+class OODatePickerSimple(OODatePickerSimpleTest, WebInputGroup, OODatePickerBase):
 
     def __init__(self, language='zh', value={'view': 'week',
                                              'start': dt.datetime.today().strftime('%Y %m %d')},
@@ -3207,7 +3437,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
         params = {'btn_only': btn_only, 'disable': disable}
         self.func_call(params)
 
-
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         # Create a testing page containing the component tested
@@ -3292,6 +3522,7 @@ class OODatePickerSimple(WebInputGroup, OODatePickerBase):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class OODialog(WebDiv):
@@ -3405,6 +3636,7 @@ class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
                 dt_ = dt.datetime.today().timestamp()
             _data['date'] = int(dt_)
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -3451,9 +3683,10 @@ class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
-class OODatePickerRange(OODatePickerSimple):
+class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
 
     def __init__(self, language='zh',
                  value={'view': 'week', 'start': dt.datetime.today().strftime('%Y %m %d'),
@@ -3465,6 +3698,7 @@ class OODatePickerRange(OODatePickerSimple):
         kwargs['place_holders'] = place_holders
         super().__init__(**kwargs)
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
 
@@ -3560,6 +3794,7 @@ class OODatePickerRange(OODatePickerSimple):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class WebSvg(WebComponentBootstrap):
@@ -4183,7 +4418,7 @@ class OOChatServer(OOChatServerTest, OOChatClient):
         return cls.CLASS_TEST_HTML
 
 
-class OOChartNVD3(WebSvg):
+class OOChartNVD3(OOChartNVD3Test, WebSvg):
 
     OOCHART_CLASSES = {}
     OOCHART_CREATE_FUNC_NAME = 'oochart_create'
@@ -4232,6 +4467,7 @@ class OOChartNVD3(WebSvg):
                   'duration': duration, 'simple': simple}
         return aobj.class_func_call(cls=cls.__name__, params=params)
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
 
@@ -4260,6 +4496,7 @@ class OOChartNVD3(WebSvg):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class OOChartLineFinder(OOChartNVD3):
@@ -5363,6 +5600,7 @@ class OOGeneralSelector(OOGeneralSelectorTest, WebBtnGroup):
 
         return jsonify({'status': 'success', 'data': data})
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
 
@@ -5441,6 +5679,7 @@ class OOGeneralSelector(OOGeneralSelectorTest, WebBtnGroup):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class OOBanner(OOBannerTest, WebDiv):
@@ -5502,6 +5741,7 @@ class OOBanner(OOBannerTest, WebDiv):
 
         return {'id': self.id(), 'imgs': imgs, 'draw_img': self.DRAW_IMG_FUNC_NAME, 'height': height}
 
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -5523,6 +5763,7 @@ class OOBanner(OOBannerTest, WebDiv):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class OOCalendar(OOCalendarTest, WebDiv):
@@ -6747,239 +6988,6 @@ class OOTable(OOTableTest, WebTable):
             self.declare_custom_global_func(fname=self.ON_CLICK_ROW_FUNC_NAME, fparams=self.ON_CLICK_ROW_FUNC_ARGS, fbody=self.ON_CLICK_ROW_FUNC_BODY)
 
         return self
-
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        print('class {} test_request is called'.format(cls.__name__))
-        if cls.CLASS_TEST_HTML:
-            return cls.CLASS_TEST_HTML
-
-        class TestPage(cls._PAGE_CLASS):
-
-            TEST_NAME1 = 'test_table_1'
-            TEST_NAME2 = 'test_table_2'
-            TEST_NAME3 = 'test_table_3'
-
-            @classmethod
-            def example_data_old(cls, tbl_cls=WebTable, schema_only=False):
-                '''
-                return {
-                    'schema':[
-                        {'name': 'Firstname','subhead':[{'name':'Firstname', 'style':'width:16%','attr':''},{'name':'Middlename','style':'width:16%', 'attr':''}]},
-                        {'name': 'Lastname','style':'width:32%'},
-                        {'name': 'Email','style': 'width:32%'},
-                        {'name': 'registered', 'style': 'width:4%', 'type':'checkbox'}
-                    ],
-                    'records':[
-                        ({'data':'John'},{'data':''},{'data':'Doe'},{'data':'john@example.com'},{'data':True, 'attr':''}),
-                        ({'data':'Mary'},{'data':''},{'data':'Moe'},{'data':'mary@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'July'},{'data':''},{'data':'Dooley'},{'data':'july@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Michael'}, {'data':''}, {'data':'Johnson'}, {'data':'michael@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Chris'}, {'data':''}, {'data':'Lee'}, {'data':'chris@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Mike'}, {'data':''}, {'data':'Brown'}, {'data':'Mike@example.com'},{'data':True, 'attr':''}),
-                        ({'data':'Mark'}, {'data':''}, {'data':'Williams'}, {'data':'mark@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Paul'}, {'data':''}, {'data':'Rodriguez'}, {'data':'paul@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'David'}, {'data':''}, {'data':'Jones'}, {'data':'david@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Daniel'}, {'data':''}, {'data':'Rodriguez'}, {'data':'daniel@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'James'}, {'data':''}, {'data':'Garcia'}, {'data':'james@example.com'},{'data':False, 'attr':'disabled=\"disabled\"'}),
-                        ({'data':'Maria'},{'data':''},{'data':'Lopez'},{'data':'maria@example.com'},{'data':True, 'attr':'disabled=\"disabled\"'})
-                    ]
-                } ,
-                '''
-
-                cols = [
-                    {'name': '事件', 'style': 'width:30%', 'attr': ''},
-                    {'name': '审批', 'style': 'width:20%', 'attr': '', 'type': 'checkbox'},
-                    {'name': '完成', 'style': '', 'attr': '', 'type': 'checkbox'},
-                    {'name': '审核', 'style': '', 'attr': '', 'type': 'checkbox'},
-                    {'name': '开始', 'style': '', 'attr': ''},
-                    {'name': '结束', 'style': '', 'attr': ''},
-                    {'name': '备份', 'style': '', 'attr': ''},
-                ]
-
-                schema = [
-                    {'name': '标题', 'class': 'text-center', 'subhead': cols}
-                ]
-
-                if schema_only:
-                    return schema
-
-                data = {
-                    'schema': schema,
-                    'records': []
-                }
-                for i in range(16):
-                    approve = True if random.randint(0, 1) else False
-                    done = True if random.randint(0, 1) else False
-                    check = True if random.randint(0, 1) else False
-
-                    start, end = randDatetimeRange()
-                    data['records'].append(
-                        (
-                            {'data': _getStr(random.randint(3, 6)),
-                             'attr': 'nowrap data-ootable-details="This is event name"'},
-                            {'data': approve, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                            {'data': done, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                            {'data': check, 'attr': "disabled=\"disabled\"" if random.randint(0, 1) else ""},
-                            {'data': start, 'attr': 'data-ootable-details="This is start date time"'},
-                            {'data': end, 'attr': 'data-ootable-details="This is end date time"'},
-                            {'data': _getStr(random.randint(10, 128)), 'attr': 'data-ootable-details="This is details"'}
-                        )
-                    )
-
-                return ' '.join(tbl_cls.html(data))
-
-            @classmethod
-            def example_data(cls, type=None, schema_only=False):
-
-                def example_data_img():
-                    schema = [
-                        {'name': ''},
-                        {'name': ''},
-                        {'name': ''}
-                    ]
-                    records = []
-                    for _ in range(random.randint(6, 10)):
-                        records.append((
-                            {'data': "!@#render_img!@#:". \
-                                         replace('!@#render_img!@#',
-                                                 OOTable.RENDER_IMG_KEY) + url_for('static', filename='img/demo.jpg')},
-                            {'data': _getStr(random.randint(3, 6))},
-                            {'data': _getStr(random.randint(3, 6))}
-                        ))
-                    setting = {
-                        'scrollY': '400px',
-                        'scrollX': True,
-                        'scrollCollapse': True,
-                        'paging': False,
-                        'searching': False,
-                        'destroy': True,
-                        'colReorder': False,
-                        'columnDefs': [],
-                    }
-                    return {'html': ''.join(OOTable.html({'schema': schema, 'records': records})), 'setting': setting}
-
-                def example_data_chart():
-                    schema = [
-                        {'name': ''},
-                        {'name': ''},
-                        {'name': ''}
-                    ]
-                    records = []
-                    for _ in range(10):
-                        records.append((
-                            {'data': ("!@#render_chart!@#:" + "mbar;oochart_multibar_example_data").replace(
-                                '!@#render_chart!@#', OOTable.RENDER_CHART_KEY)},
-                            {'data': _getStr(random.randint(3, 6))},
-                            {'data': _getStr(random.randint(3, 6))}
-                        ))
-                    setting = {
-                        'scrollY': '400px',
-                        'scrollX': True,
-                        'scrollCollapse': True,
-                        'paging': False,
-                        'searching': False,
-                        'destroy': True,
-                        'colReorder': False,
-                        'columnDefs': []
-                    }
-                    return {'html': ''.join(OOTable.html({'schema': schema, 'records': records})), 'setting': setting}
-
-                if type == 'img':
-                    return example_data_img()
-                elif type == 'chart':
-                    return example_data_chart()
-                else:
-                    data = {'html': cls.example_data_old(schema_only=schema_only)}
-                    data['setting'] = {
-                        'scrollY': '400px',
-                        'scrollX': True,
-                        'scrollCollapse': True,
-                        'paging': False,
-                        'searching': False,
-                        'destroy': True,
-                        'colReorder': False,
-                        'columnDefs': [],
-                        'border': True
-                    }
-                    return data
-
-            def place_components_impl(self):
-                page = self
-                testing_class = OOTable
-
-                with page.add_child(WebRow()) as r1:
-                    with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='400px')) as c1:
-                        with c1.add_child(testing_class(parent=page,
-                                                        mytype=['striped', 'hover', 'responsive'],
-                                                        name=self.TEST_NAME1,
-                                                        width='100%')) as test1:
-                            pass
-
-                with page.add_child(WebBr()):
-                    pass
-                with page.add_child(WebBr()):
-                    pass
-                with page.add_child(WebRow()) as r2:
-                    with r2.add_child(WebColumn(width=['md8'],
-                                                offset=['mdo2'], height='400px')) as c2:
-                        with c2.add_child(testing_class(parent=page,
-                                                        mytype=['striped', 'hover', 'responsive'],
-                                                        name=self.TEST_NAME2,
-                                                        width='100%')) as test2:
-                            pass
-
-                with page.add_child(WebBr()):
-                    pass
-                with page.add_child(WebBr()):
-                    pass
-                with page.add_child(WebRow()) as r3:
-                    with r3.add_child(WebColumn(width=['md8'],
-                                                offset=['mdo2'], height='400px')) as c3:
-                        with c3.add_child(testing_class(parent=page,
-                                                        mytype=['striped', 'hover', 'responsive'],
-                                                        name=self.TEST_NAME3,
-                                                        width='100%')) as test3:
-                            pass
-
-            def intro_events_impl(self):
-                page = self
-
-                test = page._components[self.TEST_NAME1]['obj']
-                test2 = page._components[self.TEST_NAME2]['obj']
-                test3 = page._components[self.TEST_NAME3]['obj']
-
-                with page.render_post_w():
-                    test.render_for_post()
-                    test2.render_for_post()
-                    test3.render_for_post()
-
-            def on_my_render_impl(self, req):
-                '''
-                req = None
-                if hasattr(self._page, '_action'):
-                    req = self._page._action.on_post()
-                else:
-                    req = self._page.on_post()
-                '''
-                for r in req:
-                    if r['me'] == self.TEST_NAME1:
-                        print('Got OOTable request data: {}'.format(r['data']))
-                        r['data'] = self.example_data(type='img')
-                    elif r['me'] == self.TEST_NAME2:
-                        r['data'] = self.example_data(type='chart')
-                    elif r['me'] == self.TEST_NAME3:
-                        r['data'] = self.example_data(type=None)
-
-                return jsonify({'status': 'success', 'data': req})
-
-        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
-        page.testing_class = cls
-        html = page.render()
-
-        cls.CLASS_TEST_HTML = render_template_string(html)
-        return cls.CLASS_TEST_HTML
 
 
 class OOTagGroup(WebTable):

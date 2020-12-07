@@ -1,10 +1,10 @@
 import os, sys, getopt, subprocess
 
-USAGE = 'Usage:' \
-        'under your project root directory, execute:' \
-        '"create_page.py -n <new page name> -u <new page rule url> [-p <your project root directory>]"' \
-        'Note:' \
-        '    page naming should follow the naming rule of class in Python.'
+USAGE = 'Usage:\n' \
+        'under your project root directory, execute:\n' \
+        '"create_page.py -n <new page name> -u <new page rule url> [-r <your project root directory>]"\n' \
+        'Note:\n' \
+        '    page naming should follow the naming rule of class in Python.\n'
 
 
 def main(argv):

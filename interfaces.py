@@ -53,6 +53,10 @@ class AppearanceInf(metaclass=abc.ABCMeta):
     def disable(self, disable=None):
         pass
 
+    @abc.abstractmethod
+    def hide(self, hide=False):
+        pass
+
 
 class PositionInf(metaclass=abc.ABCMeta):
 
