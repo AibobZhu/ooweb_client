@@ -112,6 +112,11 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
 
+    def icon(self, icon):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
     def disable(self, **kwargs):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
@@ -165,7 +170,7 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         else:
             if 'data' in self._request:
                 if 'val' in self._request['data']:
-                    return self._response['data']['text']
+                    return self._request['data']['text']
             else:
                 return None
 
@@ -1664,6 +1669,15 @@ class WebComponentBootstrap(WebComponent,
                             CommandInf,
                             ClassTest, ClientBase):
 
+    ICONS = {'tag': 'glyphicon glyphicon-tag', 'plus': 'glyphicon glyphicon-plus', 'home': 'glyphicon glyphicon-home',
+             'bullhorn': 'glyphicon glyphicon-bullhorn', 'user': 'glyphicon glyphicon-user',
+             'calendar': 'glyphicon glyphicon-calendar',
+             'comment': 'glyphicon glyphicon-comment',
+             'ok-circle': 'glyphicon glyphicon-ok-circle',
+             'login': 'glyphicon glyphicon-log-in',
+             'remove': 'glyphicon glyphicon-remove'
+             }
+
     ACTION_MEMBER = ooccd.ACTION_MEMBER
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
     RESPONSE_MEMBER = ooccd.RESPONSE_MEMBER
@@ -1702,8 +1716,6 @@ class WebComponentBootstrap(WebComponent,
         '''
 
         for ffnm in father_functions.keys():
-            if ffnm == 'request':
-                print('find request')
             if ffnm not in my_fnms:
                 def fn(self, *args, **kwargs):
                     my_name = inspect.currentframe().f_code.co_name
@@ -1792,6 +1804,10 @@ class WebComponentBootstrap(WebComponent,
 
     def border(self, border=None):
         params = {'border':border}
+        return self.func_call(params=params)
+
+    def icon(self, icon=None):
+        params = {'icon': icon}
         return self.func_call(params=params)
 
     def disable(self, disable=None):
@@ -2232,7 +2248,6 @@ class WebPage(WebComponentBootstrap):
     PAGE = None
 
     INSTANCES = set()
-
     '''
     Create an unique instance of page, which add a rule for on_post, and register current page view in app
     '''
@@ -2250,42 +2265,6 @@ class WebPage(WebComponentBootstrap):
             data = json.loads(request.form.get('data'))
             return data
         return []
-
-    '''
-    @classmethod
-    def get_page(cls, app):
-        """
-        if not cls.PAGE:
-            cls.PAGE = Page(default_url='view.index', nav=CustomPage.NAV, value=CustomPage.TITLE, app=view)
-            app.register_blueprint(blueprint=view, url_prefix=url_prefix)
-            print('app.run, app.url_map:{}'.format(pprint.pformat(app.url_map)))
-            print('app.run, app.view_functions:{}'.format(pprint.pformat(app.view_functions)))
-        return cls.PAGE
-        """
-        raise NotImplemented
-    '''
-
-    '''
-    def init_custom_nav_render(self, app):
-        app.extensions['nav_renderers']['bootstrap'] = (__name__, 'WebNav.CustomBootstrapRenderer')
-        app.extensions['nav_renderers'][None] = (__name__, 'WebNav.CustomBootstrapRenderer')
-
-    def top_navbar(self):
-        top_bar = self.base_navbar()
-        if 'login' in self._nav_items.keys():
-            if self._nav_items['login']['is_login']:
-                top_bar.right_items = (
-                    Subgroup(
-                        self._nav_items['login']['login_name'],
-                        WebNav.NavView('退出', self._nav_items['login']['logout_href'])
-                    ),
-                )
-            else:
-                top_bar.right_items = (
-                    WebNav.NavView(u'登录', self._nav_items['login']['login_href']),
-                )
-        return top_bar
-    '''
 
     @classmethod
     def on_page_render(cls):
@@ -2319,7 +2298,6 @@ class WebPage(WebComponentBootstrap):
         app.add_url_rule(rule=rule, endpoint=end_point_, view_func=view_func_, methods=['GET', 'POST'])
         app.add_url_rule(rule=rule+'/on_post', endpoint=end_point_on_, view_func=cls.on_page_render, methods=['POST'])
 
-
     def type_(self):
         return 'WebPage'
 
@@ -2349,22 +2327,11 @@ class WebPage(WebComponentBootstrap):
         self.__class__.INSTANCES.add(self)
         self._vptr = ooccd.FORMAT_MEMBER
         self._vptr_ori = [self._vptr]
+        self._cells = {}
 
     def __del__(self):
         self.__class__.INSTANCES.remove(self)
         super().__del__()
-
-    '''
-    def do_post(self):
-        req_ = self.on_post()
-
-        for i, r in enumerate(req_):
-            for name in self._components.keys():
-                if name == r['me']:
-                    self._components[name].action(req=r)
-
-        return jsonify({'status': 'success', 'data': req_})
-    '''
 
     def init_api(self,
                  app,page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
@@ -2407,26 +2374,6 @@ class WebPage(WebComponentBootstrap):
 
         except AssertionError:
             print("Add url rule error!")
-
-    '''
-    def init_page(self, app,
-                  page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
-
-        view = Blueprint(page_name, __name__)
-        view.config = view_config
-
-        try:
-            if view:
-                self.add_url_rule(app=view, extend=[
-                    {'rule': '/on_post', 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
-                app.register_blueprint(blueprint=view, url_prefix=url_prefix)
-            else:
-                cls.add_url_rule(app, extend=[
-                    {'rule': self.url_prefix, 'endpoint': endpoint, 'view_func': on_post, 'methods': ['POST']}])
-
-        except AssertionError:
-            print("Add url rule error!")
-    '''
 
     def place_components_impl(self):
         pass
@@ -2530,23 +2477,11 @@ class WebPage(WebComponentBootstrap):
 
     def events_trigger(self):
         print('WebPage.events_trigger')
-        '''
-        with self.render_post_w():
-            for name, component in self._components.items():
-                component.render_for_post()
-        '''
 
     def add_context_indent(self, indent=None):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
-
-    '''
-    def add_scripts(self, scripts=None):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} shouldn't been implemented on client side!".format(c_name, f_name))
-    '''
 
     def add_scripts_files(self, script_files):
         c_name = self.__class__.__name__
@@ -2608,6 +2543,9 @@ class WebPage(WebComponentBootstrap):
         params = {}
         return self.func_call(params=params)
 
+    def get_component(self, name):
+        return self._components[name]['obj']
+
 
 class ClassTestPage(WebPage):
 
@@ -2663,17 +2601,7 @@ class ClassTestPage(WebPage):
             req['data'] = {'data': cls.test_request_data(), 'attrs':'align:'}
 
     def on_my_render_impl(self, req):
-        '''
-        page = self
-        if self.__class__.__name__ != 'WebPage':
-            page = self._page
-        testing_cls_name = page.testing_class.__name__
-        for r in req:
-            if r['me'] == testing_cls_name:
-                self.process_events(req=r)
 
-        return jsonify({'status': 'success', 'data': req})
-        '''
         page = self
         if self.__class__.__name__ != 'WebPage':
             page = self._page
@@ -3092,14 +3020,14 @@ class WebInput(WebComponentBootstrap):
                 else:
                     self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'val': value}
             else:
-                if 'data' in self._request:
-                    if 'val' in self._request['data']:
-                        return self._response['data']['val']
-                else:
-                    return None
+                if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
+                    if 'val' in self._vtable[ooccd.RESPONSE_MEMBER]._response['data']:
+                        return self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['val']
+                return None
         else:
             params = {'value': value}
             return self.func_call(params=params)
+
 
 class WebInputGroup(WebComponentBootstrap):
     pass
@@ -7159,3 +7087,6 @@ class OODict(OODictTest, DictInf, WebComponentBootstrap):
         print(pprint.pformat(html))
         return render_template_string(html)
     '''
+
+class WebComponentDummy:
+    pass

@@ -50,6 +50,10 @@ class AppearanceInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def icon(self, icon=None):
+        pass
+
+    @abc.abstractmethod
     def disable(self, disable=None):
         pass
 
