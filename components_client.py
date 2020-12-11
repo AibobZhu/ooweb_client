@@ -1658,7 +1658,7 @@ class WebComponent(ComponentInf, ClientBase):
     '''
 
     BASE_VAL_FUNC_NAME = 'ooweb_base_val'
-    BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["all"]']
+    BASE_VAL_FUNC_PARAMS = ['that', 'data=null', 'trigger_event=false', 'return_parts=["val","text"]']
 
     VAL_FUNC_NAME = 'ooweb_val'
     VAL_FUNC_PARAMS = BASE_VAL_FUNC_PARAMS
@@ -2618,15 +2618,15 @@ class ClassTestPage(WebPage):
 
 
 class WebA(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'weba_val'
 
 
 class WebRow(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webrow_val'
 
 
 class WebColumn(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webcolumn_val'
 
 
 class WebHead1(WebComponentBootstrap):
@@ -2634,23 +2634,23 @@ class WebHead1(WebComponentBootstrap):
 
 
 class WebHead2(WebHead1):
-    pass
+    VAL_FUNC_NAME = 'webhead2_val'
 
 
 class WebHead3(WebHead1):
-    pass
+    VAL_FUNC_NAME = 'webhead3_val'
 
 
 class WebHead4(WebHead1):
-    pass
+    VAL_FUNC_NAME = 'webhead4_val'
 
 
 class WebHead5(WebHead1):
-    pass
+    VAL_FUNC_NAME = 'webhead5_val'
 
 
 class WebHead6(WebHead1):
-    pass
+    VAL_FUNC_NAME = 'webhead6_val'
 
 
 class WebField(WebComponentBootstrap):
@@ -2726,7 +2726,7 @@ class WebImg(WebComponentBootstrap):
 
 
 class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
-
+    VAL_FUNC_NAME = 'webbtntoggle_val'
     def toggle(self):
         '''
         context = self._get_objcall_context(func=inspect.stack()[0][3], caller_id=self.id(), params={})
@@ -2736,12 +2736,8 @@ class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
         return self.func_call(params)
 
 
-class WebBtnGroup(WebComponentBootstrap):
-    pass
-
-
-class WebBtnGroupVertical(WebBtnGroupVerticalTest, WebComponentBootstrap):
-    pass
+class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
+    VAL_FUNC_NAME = 'webbtngrp_val'
 
 
 class WebBtnToolbar(WebComponentBootstrap):
@@ -2769,7 +2765,7 @@ class WebBtnToolbar(WebComponentBootstrap):
 
 
 class WebBtn(WebBtnTest, WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webbtn_val'
     '''
     @classmethod
     def on_post(cls):
@@ -2860,7 +2856,7 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
 
 
 class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
-
+    VAL_FUNC_NAME = 'webbtndropdown_val'
     def set_options(self, options=None):
         params = {'options': options}
         self.func_call(params)
@@ -2999,11 +2995,11 @@ class WebQuickForm(WebComponentBootstrap):
 
 
 class WebFormGroup(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webformgrp_val'
 
 
 class WebInputGroup(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webinputgrp_val'
 
 
 class WebInput(WebComponentBootstrap):
@@ -3029,8 +3025,8 @@ class WebInput(WebComponentBootstrap):
             return self.func_call(params=params)
 
 
-class WebInputGroup(WebComponentBootstrap):
-    pass
+class WebBtnGroup(WebComponentBootstrap):
+    VAL_FUNC_NAME = 'webbtggrp_val'
 
 
 class WebFormInline(WebComponentBootstrap):
@@ -3097,11 +3093,11 @@ class WebSelect2(WebSelect):
 
 
 class WebSpan(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webspan_val'
 
 
 class WebB(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webb_val'
 
 
 class WebBr(WebComponentBootstrap):
@@ -3109,7 +3105,7 @@ class WebBr(WebComponentBootstrap):
 
 
 class WebHr(WebComponentBootstrap):
-    pass
+    VAL_FUNC_NAME = 'webhr_val'
 
 
 class WebUl(WebUlTest, WebComponentBootstrap):
@@ -3184,9 +3180,60 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
 
     VAL_FUNC_NAME = 'webcheckbox_val'
 
-    def check(self, checked=True):
-        params = {'checked': checked}
-        self.func_call(params)
+
+    def _set_label(self, label):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+
+        page = self._page
+        vptr = page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            self._vtable[vptr]._response['data']['text'] = label
+        else:
+            raise RuntimeError("{}.{} doesn't support ooccd.RESPONSE_MEMBER mode.".format(c_name, f_name))
+
+    def _set_checked(self, checked):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+
+        page = self._page
+        vptr = page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            self._vtable[vptr]._response['data']['checked'] = checked
+        else:
+            raise RuntimeError("{}.{} doesn't support ooccd.RESPONSE_MEMBER mode.".format(c_name, f_name))
+
+    def check(self, checked=None):
+        page = self._page
+        vptr = page.get_vptr()
+        assert (isinstance(checked, bool) or checked is None)
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if checked is not None:
+                self._set_checked(checked=checked)
+            else:
+                if 'checked' in self._vtable[vptr]._request:
+                    return self._vtable[vptr]._request['data']['checked']
+                else:
+                    return None
+        else:
+            params = {'checked': checked}
+            self.func_call(params)
+
+    def label(self, label=None):
+        page = self._page
+        vptr = page.get_vptr()
+        assert (isinstance(label, str) or label is None)
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if label is not None:
+                self._set_label(label=label)
+            else:
+                if 'label' in self._vtable[vptr]._request['data']:
+                    return self._vtable[vptr]._request['data']['label']
+                else:
+                    return None
+        else:
+            params = {'label':label}
+            self.func_call(params=params)
 
     '''
     @classmethod
@@ -3213,6 +3260,7 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
     '''
+
 
 class OODatePickerBase:
     
@@ -3351,6 +3399,7 @@ class OODatePickerBase:
 
 
 class OODatePickerSimple(OODatePickerSimpleTest, WebInputGroup, OODatePickerBase):
+    VAL_FUNC_NAME = 'oodatepickersimple_val'
 
     def __init__(self, language='zh', value={'view': 'week',
                                              'start': dt.datetime.today().strftime('%Y %m %d')},
@@ -3466,6 +3515,7 @@ class OODialog(WebDiv):
 
 
 class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
+    VAL_FUNC_NAME = 'oodatepickericon_val'
 
     @classmethod
     def get_dates(cls, _data):
@@ -3615,7 +3665,7 @@ class OODatePickerIcon(OODatePickerIconTest, OODatePickerSimple):
 
 
 class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
-
+    VAL_FUNC_NAME = 'oodatepickerrange_val'
     def __init__(self, language='zh',
                  value={'view': 'week', 'start': dt.datetime.today().strftime('%Y %m %d'),
                         'end': dt.datetime.today().strftime('%Y %m %d')}, views=['day', 'week', 'month'],
@@ -3726,7 +3776,7 @@ class OODatePickerRange(OODatePickerRangeTest, OODatePickerSimple):
 
 
 class WebSvg(WebComponentBootstrap):
-
+    VAL_FUNC_NAME = 'websvg_val'
     def id(self, _id=None):
         if not _id:
             if not hasattr(self, '_id') or not self._id:
@@ -5462,6 +5512,7 @@ class OOGeneralSelector(OOGeneralSelectorTest, WebBtnGroup):
         on_event_w: own events: 'select', response function params: 'a', 'btn', 'me'
 
     '''
+    VAL_FUNC_NAME = 'oogselector_val'
 
     RENDER_FUNC_NAME = 'oogselector_render'
     RENDER_FUNC_ARGS = ['that', 'url']
