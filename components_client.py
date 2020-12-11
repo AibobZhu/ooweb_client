@@ -2740,6 +2740,25 @@ class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
 
 
+    def value(self, value=None):
+        c_name = self.__class__.__name__
+        f_name = inspect.currentframe().f_code.co_name
+
+        page = self._page
+        vptr = page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if value is not None:
+                raise NotImplementedError("{}.{} doesn't support RESPONSE_MEMBER "
+                                          "mode with param 'value' is not None. ".format(c_name, f_name))
+            else:
+                if 'data' in self._vtable[vptr]._request:
+                    return self._vtable[vptr]._request['data']
+                return None
+        else:
+            params = {'value':value}
+            self.func_call(params=params)
+
+
 class WebBtnToolbar(WebComponentBootstrap):
 
     '''

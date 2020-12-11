@@ -386,10 +386,10 @@ class WebBtnGroupTest(ClassTest):
         TEST_OBJ2='test_obj2'
         TEST_OBJ3='test_obj3'
         TEST_OBJ4='test_obj4'
-        TestBtn1 = 'test_btn1'
-        TestBtn2 = 'test_btn2'
-        TestValue1 = 'test_value1'
-        TestValue2 = 'test_value2'
+        GetValueBtn1 = 'getvalue_btn1'
+        GetValueBtn2 = 'getvalue_btn2'
+        ShowValue1 = 'show_value1'
+        ShowValue2 = 'show_value2'
 
         def place_components_impl(self):
             page = self
@@ -433,13 +433,14 @@ class WebBtnGroupTest(ClassTest):
                             pass
                         with test_obj3.add_child(WebCheckbox(value='TestCheckbox2', mytype=['horizontal'])) as testcheckbox2:
                             pass
+
             with page.add_child(WebRow()) as r3_1:
                 with r3_1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c3_1:
-                    with c3_1.add_child(WebBtn(name=TestBtn1, value='Get button group values')) as testbtn1:
+                    with c3_1.add_child(WebBtn(name=GetValueBtn1, value='Get button group values')) as testbtn1:
                         pass
             with page.add_child(WebRow()) as r3_2:
                 with r3_2.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c3_2:
-                    with c3_2.add_child(WebHead5(name=TestValue1)):
+                    with c3_2.add_child(WebHead5(name=ShowValue1)):
                         pass
 
             with page.add_child(WebBr()):
@@ -456,65 +457,76 @@ class WebBtnGroupTest(ClassTest):
                             pass
             with page.add_child(WebRow()) as r5:
                 with r5.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c5:
-                    with c5.add_child(WebBtn(name=TestBtn2, value='Get button group values 2')) as testbtn2:
+                    with c5.add_child(WebBtn(name=GetValueBtn2, value='Get button group values 2')) as testbtn2:
                         pass
             with page.add_child(WebRow()) as r6:
                 with r6.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c6:
-                    with c6.add_child(WebHead5(name=TestValue2)):
+                    with c6.add_child(WebHead5(name=ShowValue2)):
                         pass
 
         def intro_events_impl(self):
-            super().intro_events_impl()
             page = self
-            test_obj1 = page._components[TEST_OBJ1]['obj']
-            test_obj2 = page._components[TEST_OBJ2]['obj']
-            testbtn1 = page._components[TestBtn1]['obj']
-            testbtn2 = page._components[TestBtn2]['obj']
-            testvalue1 = page._components[TestValue1]['obj']
-            testvalue2 = page._components[TestValue2]['obj']
-            with testbtn1.on_event_w('click'):
+            test_obj3 = page._components[TEST_OBJ3]['obj']
+            test_obj4 = page._components[TEST_OBJ4]['obj']
+            getvalue_btn1 = page._components[GetValueBtn1]['obj']
+            getvalue_btn2 = page._components[GetValueBtn2]['obj']
+            showvalue1 = page._components[ShowValue1]['obj']
+            showvalue2 = page._components[ShowValue2]['obj']
+            with getvalue_btn1.on_event_w('click'):
                 with page.render_post_w():
-                    test_obj1.render_for_post()
-                    testvalue1.render_for_post()
-            with testbtn2.on_event_w('click'):
+                    test_obj3.render_for_post()
+                    showvalue1.render_for_post()
+            with getvalue_btn2.on_event_w('click'):
                 with page.render_post_w():
-                    test_obj2.render_for_post()
-                    testvalue2.render_for_post()
+                    test_obj4.render_for_post()
+                    showvalue2.render_for_post()
 
         def on_my_render_impl(self, req):
             page = self
 
             testing_cls = page.testing_class
             testing_cls_name = testing_cls.__name__
-            test3_value = None
-            test4_value = None
+            test3_value = ''
+            test4_value = ''
             for r in req:
-                if r['me'] == TestBtn1:
-                    pass
-                elif r['me'] == TestBtn2:
-                    pass
+                if r['me'] == GetValueBtn1:
+                    print('{} got request:{}'.format(GetValueBtn1, pprint.pformat(r)))
+                elif r['me'] == GetValueBtn2:
+                    print('{} got request:{}'.format(GetValueBtn2, pprint.pformat(r)))
                 elif r['me'] == TEST_OBJ3:
                     print('{} got request:{}'.format(TEST_OBJ3, pprint.pformat(r)))
                     test_obj3 = page._components[TEST_OBJ3]['obj']
                     test_obj3.request(req=r)
-                    test3_value=test_obj3.value()
+                    test3_value_=test_obj3.value()
+                    for v in test3_value_:
+                        if v['element_type'] == 'WebCheckbox':
+                            test3_value += '{}:{},  '.format(v['label'],v['checked'])
+                    test3_value = test3_value.rstrip()
+                    test3_value = test3_value[:-1]
+
                 elif r['me'] == TEST_OBJ4:
                     print('{} got reqeust:{}'.format(TEST_OBJ4, pprint.pformat(r)))
                     test_obj4 = page._components[TEST_OBJ4]['obj']
                     test_obj4.request(req=r)
-                    test4_value = test_obj4.value()
-                elif r['me'] == TestValue1:
-                    print('{} got request:{}'.format(TestValue1, pprint.pformat(r)))
-                    testvalue_obj1 = page._components[TestValue1]['obj']
-                    testvalue_obj1.request(req=r)
-                    #testvalue_obj1.value(test3_value)
-                    #r['data'] = testvalue_obj1.response()['data']
-                elif r['me'] == TestValue2:
-                    print('{} got request:{}'.format(TestValue2, pprint.pformat(r)))
-                    testvalue_obj2 = page._components[TestValue2]['obj']
-                    testvalue_obj2.request(req=r)
-                    #testvalue_obj2.value(test4_value)
-                    #r['data'] = testvalue_obj2.response()['data']
+                    test4_value_ = test_obj4.value()
+                    for v in test4_value_:
+                        if v['element_type'] == 'WebCheckbox':
+                            test4_value += '{}:{},  '.format(v['label'],v['checked'])
+                    test4_value = test4_value.rstrip()
+                    test4_value = test4_value[:-1]
+
+                elif r['me'] == ShowValue1:
+                    print('{} got request:{}'.format(ShowValue1, pprint.pformat(r)))
+                    showvalue_obj1 = page._components[ShowValue1]['obj']
+                    showvalue_obj1.request(req=r)
+                    showvalue_obj1.value(test3_value)
+                    r['data'] = showvalue_obj1.response()['data']
+                elif r['me'] == ShowValue2:
+                    print('{} got request:{}'.format(ShowValue2, pprint.pformat(r)))
+                    showvalue_obj2 = page._components[ShowValue2]['obj']
+                    showvalue_obj2.request(req=r)
+                    showvalue_obj2.value(test4_value)
+                    r['data'] = showvalue_obj2.response()['data']
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -524,6 +536,7 @@ class WebBtnGroupTest(ClassTest):
                 super().__init__(**kwargs)
                 setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
                         value='class {} test'.format(cls.__name__))
@@ -697,27 +710,48 @@ class WebBtnTest(ClassTest):
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
+
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
-        WebPage = cls._PAGE_CLASS
-        class MyPage(WebPage):
-            def intro_events_impl(self):
-                page = self
-                testing_class = page.testing_class
+        def intro_events_impl(self):
+            page = self
+            testing_class = page.testing_class
 
-                test_obj = page._components[testing_class.__name__]['obj']
-                WebBtn = testing_class
+            test_obj = page._components[testing_class.__name__]['obj']
+            WebBtn = testing_class
 
+            with page.render_post_w():
+                test_obj.render_for_post()
+            with test_obj.on_event_w('click'):
+                test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
                 with page.render_post_w():
                     test_obj.render_for_post()
-                with test_obj.on_event_w('click'):
-                    test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
-                    with page.render_post_w():
-                        test_obj.render_for_post()
 
-        page = MyPage(url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))
+        def on_my_events_impl(self, req):
+            page = self._page
+            testing_cls = page.testing_class
+            testing_obj = self._components[testing_cls.__name__]['obj']
+            for r in req:
+                if r['me'] == testing_cls.__name__:
+                    print('{} got request:{}'.format(testing_cls.__name__, pprint.pformat(r)))
+                    testing_obj.request(r)
+                    testing_obj.value('class {} testing'.format(testing_cls.__name__))
+                    r['data'] = testing_obj.response()['data']
 
+            return jsonify({'status':'success', 'data':req})
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                setattr(self, 'on_my_events_impl', types.MethodType(intro_events_impl, self))
+
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
+        page.testing_class = cls
         html = page.render()
 
         cls.CLASS_TEST_HTML = render_template_string(html)
