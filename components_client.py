@@ -1374,21 +1374,31 @@ class WebComponent(ComponentInf, ClientBase):
         else:
             self._name = self.name()
 
+        self._children = set()
+        if 'children' in kwargs:
+            self._children = kwargs['children']
+
+        kwargs['name'] = self.name()
+        kwargs['id'] = self.id()
+        if hasattr(self, '_nav_items'):
+            kwargs['nav'] = self._nav_items
+        if self.__class__.__name__.find("WebPage") != 0:
+            kwargs['test'] = test
+        else:
+            kwargs['test'] = False
+
+        if hasattr(self, '_value') and 'value' not in kwargs:
+            kwargs['value'] = self._value
+
+        context = self._get_objcall_context(func=self.type_(), params=kwargs)
+        # self._mycont = self.add_context(context)
+        self._mycont = [context]
+        self.add_context(context)
+        self._components = None
+
         self._parent = None
         if 'parent' in kwargs:
             self._parent = kwargs['parent']
-
-        '''
-        if page:
-            assert(isinstance(page, WebPage))
-        elif isinstance(self, WebPage):
-            page = self
-        else:
-            wrapper_frame = sys._getframe(2)
-            page = wrapper_frame.f_locals['current_page']
-        assert(page)
-        self._page = page
-        '''
 
         page = None
         if 'page' in kwargs and kwargs['page']:
@@ -1415,28 +1425,6 @@ class WebComponent(ComponentInf, ClientBase):
         assert (page)
         self._page = page
         kwargs['page_id'] = page.id()
-
-        self._children = set()
-        if 'children' in kwargs:
-            self._children = kwargs['children']
-
-        kwargs['name'] = self.name()
-        kwargs['id'] = self.id()
-        if hasattr(self, '_nav_items'):
-            kwargs['nav'] = self._nav_items
-        if self.__class__.__name__.find("WebPage") != 0:
-            kwargs['test'] = test
-        else:
-            kwargs['test'] = False
-
-        if hasattr(self, '_value') and 'value' not in kwargs:
-            kwargs['value'] = self._value
-
-        context = self._get_objcall_context(func=self.type_(), params=kwargs)
-        # self._mycont = self.add_context(context)
-        self._mycont = [context]
-        self.add_context(context)
-        self._components = None
 
     def set_api(self):
         if hasattr(self, "app") and self.app:
@@ -2738,7 +2726,6 @@ class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
 
 class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
-
 
     def value(self, value=None):
         c_name = self.__class__.__name__
@@ -6296,8 +6283,10 @@ class WebTabItem(WebDiv):
     pass
 
 
-class WebTab(WebUl):
+class WebTab(WebTabTest, WebUl):
 
+    VAL_FUNC_NAME = 'webtab_val'
+    """
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -6393,10 +6382,12 @@ class WebTab(WebUl):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    """
 
 
 class WebTabContain(WebDiv):
-    pass
+
+    VAL_FUNC_NAME = 'webtabcontain_val'
 
 
 class WebTable(WebTableTest, WebComponentBootstrap):
@@ -6988,7 +6979,7 @@ class OOTable(OOTableTest, WebTable):
         return self
 
 
-class OOTagGroup(WebTable):
+class OOTagGroup(OOTagGroupTest, WebTable):
     SETTING = {
         'paging': False,
         'scrollY': '500px',
@@ -6999,50 +6990,13 @@ class OOTagGroup(WebTable):
 
     COL_NUM = 3
 
-    HTML_URL = '/ootaggroup/ootaggroup_html'
+    #HTML_URL = '/ootaggroup/ootaggroup_html'
 
     def __init__(self, value=[], col_num=0, **kwargs):
         super().__init__(**kwargs)
         self._value = value
         if col_num:
             OOTagGroup.COL_NUM = col_num
-
-    @classmethod
-    def _example_setting(cls):
-        return {
-            'paging': False,
-            'scrollY': '500px',
-            'scrollX': True,
-            'searching': True,
-            'scrollCollapse': True,
-        }
-
-    @classmethod
-    def _example_data(cls, schema_only=False):
-        data = {
-            'schema': [],
-            'records': []
-        }
-
-        for j in range(cls.COL_NUM):
-            data['schema'].append({"name": ""})
-
-        for i in range(2):
-            approve = True if random.randint(0, 1) else False
-            done = True if random.randint(0, 1) else False
-            check = True if random.randint(0, 1) else False
-
-            start, end = randDatetimeRange()
-            td = []
-            for i in range(len(data['schema'])):
-                with WebCheckbox(value=_getStr(random.randint(2, 5))) as locals()["wc" + str(i)]:
-                    pass
-                locals()['wc' + str(i)].set_api()
-                wc_content = locals()['wc' + str(i)].render_content()
-                td.append({"data": wc_content['content'], "attr": "nowrap"})
-                del locals()['wc' + str(i)]
-            data['records'].append(td)
-        return data
 
     def val(self, val={}):
         params = {'value': val}

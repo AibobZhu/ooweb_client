@@ -7,6 +7,7 @@ import pprint
 import random
 from share import randDatetimeRange, _getStr
 import oocc_define as ooccd
+import pickle
 
 
 class MinXin:
@@ -390,6 +391,9 @@ class WebBtnGroupTest(ClassTest):
         GetValueBtn2 = 'getvalue_btn2'
         ShowValue1 = 'show_value1'
         ShowValue2 = 'show_value2'
+        DYN_OBJ = 'dynamic_object'
+        DYN_BTN = 'dynamic_btn'
+        DYN_VALUE = 'dynamic_value'
 
         def place_components_impl(self):
             page = self
@@ -464,14 +468,43 @@ class WebBtnGroupTest(ClassTest):
                     with c6.add_child(WebHead5(name=ShowValue2)):
                         pass
 
+            with page.add_child(WebRow()) as dyn_title_r:
+                with dyn_title_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_title_c:
+                    with dyn_title_c.add_child(WebHead3(value='Dynamically create and add checkboxes in a WebBtnGroup:')):
+                        pass
+
+            with page.add_child(WebRow()) as dyn_r:
+                with dyn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_c:
+                    with dyn_c.add_child(this_class(name=DYN_OBJ)) as dyn_obj:
+                        dyn_checkboxes=['dynamic_checkbox1', 'dynamic_checkbox2', 'dynamic_checkbox3']
+                        for dc in dyn_checkboxes:
+                            with dyn_obj.add_child(WebCheckbox(value=dc)):
+                                pass
+
+            with page.add_child(WebRow()) as dyn_btn_r:
+                with dyn_btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_btn_c:
+                    with dyn_btn_c.add_child(WebBtn(name=DYN_BTN, value='Get WebBtnGroup values')) as dyn_btn:
+                        pass
+
+            with page.add_child(WebRow()) as dyn_value_r:
+                with dyn_value_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_value_c:
+                    with dyn_value_c.add_child(WebHead5(name=DYN_VALUE)):
+                        pass
+
         def intro_events_impl(self):
             page = self
             test_obj3 = page._components[TEST_OBJ3]['obj']
             test_obj4 = page._components[TEST_OBJ4]['obj']
+            dyn_obj = page._components[DYN_OBJ]['obj']
+
             getvalue_btn1 = page._components[GetValueBtn1]['obj']
             getvalue_btn2 = page._components[GetValueBtn2]['obj']
+            getvalue_btn3 = page._components[DYN_BTN]['obj']
+
             showvalue1 = page._components[ShowValue1]['obj']
             showvalue2 = page._components[ShowValue2]['obj']
+            showvalue3 = page._components[DYN_VALUE]['obj']
+
             with getvalue_btn1.on_event_w('click'):
                 with page.render_post_w():
                     test_obj3.render_for_post()
@@ -480,6 +513,10 @@ class WebBtnGroupTest(ClassTest):
                 with page.render_post_w():
                     test_obj4.render_for_post()
                     showvalue2.render_for_post()
+            with getvalue_btn3.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_obj.render_for_post()
+                    showvalue3.render_for_post()
 
         def on_my_render_impl(self, req):
             page = self
@@ -488,6 +525,8 @@ class WebBtnGroupTest(ClassTest):
             testing_cls_name = testing_cls.__name__
             test3_value = ''
             test4_value = ''
+            dyn_value = ''
+
             for r in req:
                 if r['me'] == GetValueBtn1:
                     print('{} got request:{}'.format(GetValueBtn1, pprint.pformat(r)))
@@ -503,7 +542,6 @@ class WebBtnGroupTest(ClassTest):
                             test3_value += '{}:{},  '.format(v['label'],v['checked'])
                     test3_value = test3_value.rstrip()
                     test3_value = test3_value[:-1]
-
                 elif r['me'] == TEST_OBJ4:
                     print('{} got reqeust:{}'.format(TEST_OBJ4, pprint.pformat(r)))
                     test_obj4 = page._components[TEST_OBJ4]['obj']
@@ -514,7 +552,6 @@ class WebBtnGroupTest(ClassTest):
                             test4_value += '{}:{},  '.format(v['label'],v['checked'])
                     test4_value = test4_value.rstrip()
                     test4_value = test4_value[:-1]
-
                 elif r['me'] == ShowValue1:
                     print('{} got request:{}'.format(ShowValue1, pprint.pformat(r)))
                     showvalue_obj1 = page._components[ShowValue1]['obj']
@@ -527,6 +564,21 @@ class WebBtnGroupTest(ClassTest):
                     showvalue_obj2.request(req=r)
                     showvalue_obj2.value(test4_value)
                     r['data'] = showvalue_obj2.response()['data']
+                elif r['me'] == DYN_OBJ:
+                    dyn_obj = page._components[DYN_OBJ]['obj']
+                    print('{} got request:{}'.format(dyn_obj.name(), pprint.pformat(r)))
+                    dyn_obj.request(req=r)
+                    for v in dyn_obj.value():
+                        if v['element_type'] == 'WebCheckbox':
+                            dyn_value += '<{} checked:{}>  '.format(v['label'], v['checked'])
+                    new_dyn_checkbox = ['NewCheckbox1', 'NewCheckbox2', 'NewCheckbox3']
+
+                elif r['me'] == DYN_VALUE:
+                    dyn_value_obj = page._components[DYN_VALUE]['obj']
+                    print('{} got request:{}'.format(dyn_value_obj.name(), pprint.pformat(r)))
+                    dyn_value_obj.request(req=r)
+                    dyn_value_obj.value(dyn_value)
+                    r['data'] = dyn_value_obj.response()['data']
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -1385,55 +1437,6 @@ class OODatePickerSimpleTest(ClassTest):
             with page.render_post_w():
                 test_obj.render_for_post(trigger_event=False)
 
-        def process_events_impl(self, req):
-            r = req
-            lang = r['data']['lang']
-            format_ = None
-            test_cls = OODatePickerSimple
-            if r['data']['select'] == '周':
-                start = None if not r['data']['viewDate'] else r['data']['viewDate'].split('T')[0]
-                if start:
-                    # USE cls FORMATS here
-                    print('OODatepickerSimple got week start: {}'.format(start))
-                    format_ = test_cls.FORMATS[lang]['week']['to_format']
-                    # dt = datetime.datetime.strptime(start, "%Y-%m-%d")
-                    try:
-                        dt = datetime.strptime(start, format_)
-                    except ValueError:
-                        dt = datetime.today()
-                    dt = dt.timestamp()
-                else:
-                    dt = datetime.today().timestamp()
-                r['data']['date'] = int(dt)
-            elif r['data']['select'] == '日':
-                start = None if not r['data']['date'] else r['data']['date']
-                if start:
-                    if lang == 'zh':
-                        format_ = test_cls.DAY_FORMAT_ZH[1]
-                    else:
-                        format_ = test_cls.DAY_FORMAT_EN[1]
-                    try:
-                        dt = datetime.strptime(start, format_).timestamp()
-                    except ValueError:
-                        dt = datetime.today().timestamp()
-                else:
-                    dt = datetime.today().timestamp()
-                r['data']['date'] = int(dt)
-            else:
-                start = None if not r['data']['date'] else r['data']['date']
-                if start:
-                    if lang == 'zh':
-                        format_ = test_cls.MONTH_FORMAT_ZH[1]
-                    else:
-                        format_ = test_cls.MONTH_FORMAT_EN[1]
-                    try:
-                        dt = datetime.strptime(start, format_).timestamp()
-                    except ValueError:
-                        dt = datetime.today().timestamp()
-                else:
-                    dt = datetime.today().timestamp()
-                r['data']['date'] = int(dt)
-
         def on_my_render_impl(self, req):
             page = self._page
             test_cls = page.testing_class
@@ -1770,7 +1773,7 @@ class OODatePickerRangeTest(ClassTest):
             test_obj = page._components[test_cls.__name__]['obj']
             for r in req:
                 if r['me'] == test_cls.__name__:
-                    print('{} got request:{}'.format(test_obj.name(), ppring.pformat(r)))
+                    print('{} got request:{}'.format(test_obj.name(), pprint.pformat(r)))
                     lang = r['data']['lang']
                     format = None
                     start = None
@@ -1848,7 +1851,7 @@ class OOBannerTest(ClassTest):
                 print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
                 test_obj = self._components['OOBanner']['obj']
                 banner = test_obj._get_banner()
-                new_html = render_template_string(FormatBootstrap.CAROUSEL_HTML,banner=banner)
+                new_html = render_template_string(test_obj.CAROUSEL_HTML,banner=banner)
                 req['data']['html'] = new_html
 
             def on_my_render_impl(self, req):
@@ -1863,7 +1866,7 @@ class OOBannerTest(ClassTest):
                         print('{} got request:{}'.format(testing_obj.name(), pprint.pformat(r)))
                         testing_obj.request(req=r)
                         banner = testing_obj._get_banner()
-                        new_html = render_template_string(FormatBootstrap.CAROUSEL_HTML, banner=banner)
+                        new_html = render_template_string(testing_obj.CAROUSEL_HTML, banner=banner)
                         response = testing_obj._vtable[ooccd.RESPONSE_MEMBER]._response
                         if 'data' not in response:
                             response['data'] = {}
@@ -2271,29 +2274,32 @@ class WebTabTest(ClassTest):
                 with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
                     with c1.add_child(cls(parent=page, name=self.tab_name, ul_list=[
                         {'name': self.tab_item1_name, 'href': '#' + self.tab_item1_name},
-                        {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name},
-                        {'name': self.tab_item3_name, 'href': '#' + self.tab_item3_name, 'active': True},
+                        {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name, 'active': True},
+                        {'name': self.tab_item3_name, 'href': '#' + self.tab_item3_name},
                     ])) as test:
                         pass
                     with c1.add_child(WebTabContain(parent=page, name=self.tab_contain_name)) as contain:
-                        with contain.add_child(
-                                WebTabItem(id=self.tab_item1_name, name=self.tab_item1_name)) as item1:
-                            with item1.add_child(
-                                    WebHead3(name=self.tab_contain1_name,
-                                             value=self.tab_contain1_name)) as contain1:
+                        with contain.add_child(WebTabItem(
+                                id=self.tab_item1_name,
+                                name=self.tab_item1_name)) as item1:
+                            with item1.add_child(WebHead3(
+                                    name=self.tab_contain1_name,
+                                    value=self.tab_contain1_name)) as contain1:
                                 pass
-                        with contain.add_child(
-                                WebTabItem(id=self.tab_item2_name, name=self.tab_item2_name)) as item2:
-                            with item2.add_child(
-                                    WebHead3(name=self.tab_contain2_name,
-                                             value=self.tab_contain2_name)) as contain2:
+                        with contain.add_child(WebTabItem(
+                                id=self.tab_item2_name,
+                                name=self.tab_item2_name)) as item2:
+                            with item2.add_child(WebHead3(
+                                    name=self.tab_contain2_name,
+                                    value=self.tab_contain2_name)) as contain2:
                                 pass
-                        with contain.add_child(
-                                WebTabItem(id=self.tab_item3_name, name=self.tab_item3_name,
-                                           ootype=['active'])) as item3:
-                            with item3.add_child(
-                                    WebHead3(name=self.tab_contain3_name,
-                                             value=self.tab_contain3_name)) as contain3:
+                        with contain.add_child(WebTabItem(
+                                id=self.tab_item3_name,
+                                name=self.tab_item3_name,
+                                mytype=['active'])) as item3:
+                            with item3.add_child(WebHead3(
+                                    name=self.tab_contain3_name,
+                                    value=self.tab_contain3_name)) as contain3:
                                 pass
 
         def intro_events_impl(self):
@@ -2317,21 +2323,14 @@ class WebTabTest(ClassTest):
                     contain.render_for_post()
 
         def on_my_render_impl(self, req):
-            '''
-            WebPage = self._PAGE_CLASS
-            req = None
-            if hasattr(self._page, '_action'):
-                req = self._page._action.on_post()
-            else:
-                req = self._page.on_post()
-            '''
+            page = self._page
             for r in req:
                 if r['me'] == self.tab_name:
                     print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
                     r['data'] = self.tab_item2_name
-                if r['me'] == self.tab_contain_name:
-                    print('{} got tab contain active page: {}'.format(self.tab_contain_name, pprint.pformat(r['data'])))
-                    r['data'] = self.tab_item2_name
+                elif r['me'] == self.tab_contain_name:
+                    print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
+                    r['data']['active_id'] = self.tab_item2_name
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
@@ -2722,6 +2721,80 @@ class OOTableTest(ClassTest):
         return cls.CLASS_TEST_HTML
 
 
+class OOTagGroupTest(ClassTest):
+
+
+    def example_setting(self):
+        return {
+            'paging': False,
+            'scrollY': '500px',
+            'scrollX': True,
+            'searching': True,
+            'scrollCollapse': True,
+        }
+
+    def example_data(self, schema_only=False):
+        page = self._page
+        WebCheckbox = page._SUBCLASSES['WebCheckbox']['class']
+        OOTable = page._SUBCLASSES['OOTable']['class']
+
+        data = {
+            'schema': [],
+            'records': []
+        }
+
+        for j in range(self.COL_NUM):
+            data['schema'].append({"name": ""})
+
+        for i in range(2):
+            approve = True if random.randint(0, 1) else False
+            done = True if random.randint(0, 1) else False
+            check = True if random.randint(0, 1) else False
+
+            start, end = randDatetimeRange()
+            td = []
+            for i in range(len(data['schema'])):
+                with WebCheckbox(page='no page', value=_getStr(random.randint(2, 5))) as locals()["wc" + str(i)]:
+                    pass
+                locals()['wc' + str(i)].set_api()
+                wc_content = locals()['wc' + str(i)].render_content()
+                td.append({"data": wc_content['content'], "attr": "nowrap"})
+                del locals()['wc' + str(i)]
+            data['records'].append(td)
+        return {'html': OOTable.html(data), 'setting':self.example_setting()}
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        class TestPage(cls._PAGE_CLASS):
+
+            @classmethod
+            def example_data(cls):
+                pass
+
+            def on_my_render_impl(self, req):
+                page = self
+                testing_class = page.testing_class
+                testing_obj = page._components[testing_class.__name__]['obj']
+
+                for r in req:
+                    if r['me'] == testing_class.__name__:
+                        print('{} got request: {}'.format(testing_obj.name(), pprint.pformat(r)))
+                        r['data'] = {'html': testing_obj.example_data(), 'setting':testing_obj.example_setting()}
+
+                return jsonify({'status': 'success', 'data': req})
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
+
 class OOChatClientTest(ClassTest):
 
     testing_cls_name = 'oochatclient'
@@ -3062,6 +3135,7 @@ exclude_classes = ['OOCalendarBar',
                       'ServerChatNM',
                       'ClassTestPage',
                       'WebPage']
+
 
 def test_home(app, PageClass, testing_classes):
 
