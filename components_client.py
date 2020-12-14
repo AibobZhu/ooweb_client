@@ -2807,11 +2807,13 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
                 name = page.testing_class.testing_cls_name
                 WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
 
-                with page.add_child(WebBtnRadio(name=name, mytype=['inline'],
-                                                items=[{'label': '测试1', 'checked': ''},
-                                                       {'label': '测试测试测试2'},
-                                                       {'label': '测试3'}])) as radio:
-                    pass
+                with page.add_child(WebRow()) as r:
+                    with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                        with c.add_child(WebBtnRadio(name=name, mytype=['inline'],
+                                                        items=[{'label': '测试1', 'checked': ''},
+                                                               {'label': '测试测试测试2'},
+                                                               {'label': '测试3'}])) as radio:
+                            pass
 
             def process_events_impl(self, req):
                 print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
@@ -3119,56 +3121,6 @@ class WebUl(WebUlTest, WebComponentBootstrap):
 class WebDatalist(WebDatalistTest, WebSelect):
 
     VAL_FUNC_NAME = 'webdatalist_val'
-
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        print('class {} test_request is called'.format(cls.__name__))
-        if cls.CLASS_TEST_HTML:
-            return cls.CLASS_TEST_HTML
-
-        class TestPage(cls._PAGE_CLASS):
-
-            def place_components_impl(self):
-                page = self
-                this_class = page.testing_class
-                TEST_ID = 'test_id'
-                INPUT_NAME = 'test_input'
-                name_ = this_class.__name__
-                WebRow = page._SUBCLASSES['WebRow']['class']
-                WebColumn = page._SUBCLASSES['WebColumn']['class']
-                WebInput = page._SUBCLASSES['WebInput']['class']
-                with page.add_child(WebRow()) as r1:
-                    with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                        with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
-                            options = [{'text': 'option1'},
-                                       {'text': 'option2'},
-                                       {'selected': True, 'text': 'option3'}]
-                            with input.add_child(
-                                    this_class(parent=page, name=name_, id=TEST_ID, options=options)) as test:
-                                pass
-
-            def intro_events_impl(self):
-                page = self
-                input = page._components['test_input']['obj']
-                test_obj = page._components['WebDatalist']['obj']
-                with page.render_post_w():
-                    test_obj.render_for_post()
-
-            def process_events_impl(self, req):
-                print('Class testing, WebDatalist got req:{}'.format(req['data']))
-
-                options = [{'text': 'OptionResetByOnPost1'},
-                           {'text': 'OptionResetByOnPost2'},
-                           {'text': 'OptionResetByOnPost3', 'selected': 'true'}]
-                req['data'] = {'options': options}
-
-
-        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
-        page.testing_class = cls
-        html = page.render()
-
-        cls.CLASS_TEST_HTML = render_template_string(html)
-        return cls.CLASS_TEST_HTML
 
 
 class WebDiv(WebComponentBootstrap):

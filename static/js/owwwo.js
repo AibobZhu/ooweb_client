@@ -838,21 +838,33 @@ function ootaggroup_val(that, data=null, trigger_event=false, return_parts=["val
     let tags = data_.tags;
     if (checked === "checked"){
         if(!tags){
-            var ret = [];
-            $("#"+id+" :checked").parent().children("label").each(function(){
-                ret.push($.trim($(this).text()));
+            var checked_values = [];
+            $("#"+id+" :checked").each(function(){
+                let label = $.trim($(this).parent().parent().find('label').text())
+                checked_values.push(label);
             });
-            return ret.join("  ");
+            checked_values = checked_values.join(" ");
+            let ret = {}
+            ret.checked_values = checked_values
+            ret.me = that2.prop('name')
+            ret.element_type = 'OOTagGroup'
+            return ret
         }else{
             ;
         };
     }else if(checked === "unchecked"){
         if(!tags){
-            var ret = [];
-            $("#"+id+" :unchecked").parent().children("label").each(function(){
-                ret.push($.trim($(this).text()));
+            var unchecked_values = [];
+            $("#"+id+" :unchecked").each(function(){
+                let label = $.trim($(this).parent().parent().find('label').text())
+                unchecked_values.push(label);
             });
-            return ret.join("  ");
+            unchecked_values = unchecked_values.join(" ");
+            let ret = {}
+            ret.unchecked_values = unchecked_values
+            ret.me = that2.prop('name')
+            ret.element_type = 'OOTagGroup'
+            return ret
         }else{
             ;
         };

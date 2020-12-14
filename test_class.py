@@ -988,18 +988,14 @@ class WebSelectTest(ClassTest):
                 with page.render_post_w():
                     test_obj.render_for_post()
 
-        def process_events_impl(self, req):
-            print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
-            req['data'] = {'options': [{'text': 'OptionResetByOnPost1'},
-                                       {'text': 'OptionResetByOnPost2'},
-                                       {'text': 'OptionResetByOnPost3', 'selected': 'true'}]}
-
         class TestPage(cls._PAGE_CLASS):
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
+                '''
                 setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                '''
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))
         page.testing_class = cls
@@ -1085,7 +1081,7 @@ class WebDatalistTest(ClassTest):
             WebColumn = page._SUBCLASSES['WebColumn']['class']
             WebInput = page._SUBCLASSES['WebInput']['class']
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET, height='200px')) as c1:
                     with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
                         options = [{'text': 'option1'},
                                    {'text': 'option2'},
@@ -1100,14 +1096,6 @@ class WebDatalistTest(ClassTest):
             test_obj = page._components['WebDatalist']['obj']
             with page.render_post_w():
                 test_obj.render_for_post()
-
-        def process_events_impl(self, req):
-            print('Class testing, WebDatalist got req:{}'.format(req['data']))
-
-            options = [{'text': 'OptionResetByOnPost1'},
-                       {'text': 'OptionResetByOnPost2'},
-                       {'text': 'OptionResetByOnPost3', 'selected': 'true'}]
-            req['data'] = {'options': options}
 
         def on_my_render_impl(self, req):
             page = self
@@ -2751,7 +2739,10 @@ class OOTagGroupTest(ClassTest):
             start, end = randDatetimeRange()
             td = []
             for i in range(len(data['schema'])):
-                with WebCheckbox(page='no page', value=_getStr(random.randint(2, 5))) as locals()["wc" + str(i)]:
+                with WebCheckbox(   page='no page',
+                                    value=_getStr(random.randint(2, 5)),
+                                    checked=True
+                                 ) as locals()["wc" + str(i)]:
                     pass
                 locals()['wc' + str(i)].set_api()
                 wc_content = locals()['wc' + str(i)].render_content()
@@ -2766,6 +2757,44 @@ class OOTagGroupTest(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        testing_btn = 'testing_btn'
+
+        def place_components_impl(self):
+            page = self
+            testing_class = page.testing_class
+            WebBtn = page._SUBCLASSES['WebBtn']['class']
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+            WebBr = page._SUBCLASSES['WebBr']['class']
+
+            with page.add_child(WebRow()) as r:
+                with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                    with c.add_child(testing_class(name=testing_class.__name__)) as testing_obj:
+                        pass
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c2:
+                    with c2.add_child(WebBtn(name=testing_btn, value='Get checked values')) as btn:
+                        pass
+
+        def intro_events_impl(self):
+            page = self
+            testing_cls = page.testing_class
+            testing_obj = page._components[testing_cls.__name__]['obj']
+            testing_btn_obj = page._components[testing_btn]['obj']
+            LVar = page._SUBCLASSES['LVar']['class']
+
+            with page.render_post_w():
+                testing_obj.render_for_post()
+
+            with testing_btn_obj.on_event_w('click'):
+                with LVar(parent=page, var_name='data') as value:
+                    testing_obj.value()
+                testing_obj.alert('"All the checked tags: " + data.checked_values')
+                with page.render_post_w():
+                    testing_obj.render_for_post()
+
         def on_my_render_impl(self, req):
             page = self
             testing_class = page.testing_class
@@ -2773,8 +2802,9 @@ class OOTagGroupTest(ClassTest):
 
             for r in req:
                 if r['me'] == testing_class.__name__:
-                    print('{} got request: {}'.format(testing_obj.name(), pprint.pformat(r)))
-                    r['data'] = {'html': testing_obj.example_data()['html'], 'setting': testing_obj.example_setting()}
+                    if 'checked_values' in r['data']:
+                        print('{} got checked values: {}'.format(testing_obj.name(), r['data']['checked_values']))
+                        r['data'] = {'html': testing_obj.example_data()['html'], 'setting': testing_obj.example_setting()}
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -2786,8 +2816,9 @@ class OOTagGroupTest(ClassTest):
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
+                setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
-
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
 
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
