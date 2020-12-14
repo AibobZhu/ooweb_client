@@ -1845,38 +1845,38 @@ class OOBannerTest(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        def intro_events_impl(self):
+            page = self
+            testing_class = page.testing_class
+            testing_obj = page._components[testing_class.__name__]['obj']
+            with page.render_post_w():
+                testing_obj.render_for_post(return_parts=['val'])
+        def on_my_render_impl(self, req):
+            page = self
+            if self.__class__.__name__ != 'WebPage':
+                page = self._page
+            testing_cls = page.testing_class
+            testing_cls_name = testing_cls.__name__
+            testing_obj = page._components[testing_cls_name]['obj']
+            for r in req:
+                if r['me'] == testing_cls_name:
+                    print('{} got request:{}'.format(testing_obj.name(), pprint.pformat(r)))
+                    testing_obj.request(req=r)
+                    banner = testing_obj._get_banner()
+                    new_html = render_template_string(testing_obj.CAROUSEL_HTML, banner=banner)
+                    response = testing_obj._vtable[ooccd.RESPONSE_MEMBER]._response
+                    if 'data' not in response:
+                        response['data'] = {}
+                    response['data']['html'] = new_html
+                    r = response
+            return jsonify({'status': 'success', 'data': req})
+
         class TestPage(cls._PAGE_CLASS):
-
-            def process_events_impl(self, req):
-                print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
-                test_obj = self._components['OOBanner']['obj']
-                banner = test_obj._get_banner()
-                new_html = render_template_string(test_obj.CAROUSEL_HTML,banner=banner)
-                req['data']['html'] = new_html
-
-            def on_my_render_impl(self, req):
-                page = self
-                if self.__class__.__name__ != 'WebPage':
-                    page = self._page
-                testing_cls = page.testing_class
-                testing_cls_name = testing_cls.__name__
-                testing_obj = page._components[testing_cls_name]['obj']
-                for r in req:
-                    if r['me'] == testing_cls_name:
-                        print('{} got request:{}'.format(testing_obj.name(), pprint.pformat(r)))
-                        testing_obj.request(req=r)
-                        banner = testing_obj._get_banner()
-                        new_html = render_template_string(testing_obj.CAROUSEL_HTML, banner=banner)
-                        response = testing_obj._vtable[ooccd.RESPONSE_MEMBER]._response
-                        if 'data' not in response:
-                            response['data'] = {}
-                        response['data']['html'] = new_html
-                        r = response
-                return jsonify({'status': 'success', 'data': req})
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
-                setattr(self, 'on_my_render_impl', types.MethodType(self.on_my_render_impl, self))
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
                         value='class {} test'.format(cls.__name__))
@@ -2306,10 +2306,7 @@ class WebTabTest(ClassTest):
 
             page = self
             testing_class = page.testing_class
-            '''
-            testing_cls_name = page.testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
-                testing_class.__name__
-            '''
+
             test = page._components[self.tab_name]['obj']
             contain = page._components[self.tab_contain_name]['obj']
 
@@ -2327,10 +2324,10 @@ class WebTabTest(ClassTest):
             for r in req:
                 if r['me'] == self.tab_name:
                     print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
-                    r['data'] = self.tab_item2_name
+                    r['data']['active_tab'] = self.tab_item2_name
                 elif r['me'] == self.tab_contain_name:
                     print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
-                    r['data']['active_id'] = self.tab_item2_name
+                    r['data']['active_tab'] = self.tab_item2_name
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
@@ -2769,23 +2766,29 @@ class OOTagGroupTest(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        def on_my_render_impl(self, req):
+            page = self
+            testing_class = page.testing_class
+            testing_obj = page._components[testing_class.__name__]['obj']
+
+            for r in req:
+                if r['me'] == testing_class.__name__:
+                    print('{} got request: {}'.format(testing_obj.name(), pprint.pformat(r)))
+                    r['data'] = {'html': testing_obj.example_data()['html'], 'setting': testing_obj.example_setting()}
+
+            return jsonify({'status': 'success', 'data': req})
+
         class TestPage(cls._PAGE_CLASS):
 
             @classmethod
             def example_data(cls):
                 pass
 
-            def on_my_render_impl(self, req):
-                page = self
-                testing_class = page.testing_class
-                testing_obj = page._components[testing_class.__name__]['obj']
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
 
-                for r in req:
-                    if r['me'] == testing_class.__name__:
-                        print('{} got request: {}'.format(testing_obj.name(), pprint.pformat(r)))
-                        r['data'] = {'html': testing_obj.example_data(), 'setting':testing_obj.example_setting()}
 
-                return jsonify({'status': 'success', 'data': req})
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request')
         page.testing_class = cls

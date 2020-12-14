@@ -17,6 +17,930 @@ function ooattr(that) {
 }
 */
 
+function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if(typeof data != 'undefined' && data != null){
+           if($.type(data) == 'object'){
+             let that2 = $('#'+that.attr('id'));
+             if('style' in data){
+               for(var key in data['style']){
+                   that2.css(key, data['style'][key]);
+               };
+             };
+             if('attr' in data){
+               for(var key in data['attr']){
+                   that2.attr(key, data['attr'][key]);
+               };
+             };
+             if('remove_class' in data){
+               for(var i in data['remove_class']){
+                   that2.removeClass(data['remove_class'][i]);
+               }
+             };
+             if('add_class' in data){
+               for(var i in data['add_class']){
+                   that2.addClass(data['add_class'][i]);
+               };
+             };
+             if('text' in data){
+               that2.text(data['text']);
+             };
+             if('html' in data){
+               that2.html(data['html']);
+             };
+             if('val' in data){
+               that2.val(data['val']);
+             };
+           };
+        }else{
+           let styles = oocss(that);
+           let attr = that.data();
+           let data_attr = {}
+           for(var key in attr){
+               data_attr['data-'+key] = attr[key];
+           };
+           let klass = that.prop('className');
+           if(typeof(klass) == 'string'){
+               klass = klass.split(' ');
+           }else{
+               klass = '';
+           };
+           let value = that.val();
+           let text = that.text().trim();
+           let html = '';
+           if (typeof that.html() !== 'undefined'){
+               html = that.html().trim();
+           };
+           var return_value = {'id': that.attr('id'), 'name': that.attr('name')};
+           if((return_parts != null)&&(return_parts != 'undefined')){
+               if((return_parts.length == 1)&&(return_parts[0] === 'all')){
+                   $.extend(return_value, {'style':styles, 'attr': data_attr, 'class':klass, 'val': value, 'text': text, 'html': html});
+               }else{
+                   if(is_in_list(return_parts, 'style')){
+                       $.extend(return_value, {'style': styles});
+                   };
+                   if(is_in_list(return_parts, 'attr')){
+                       $.extend(return_value, {'attr': attr});
+                   };
+                   if(is_in_list(return_parts, 'class')){
+                       $.extend(return_value, {'class': klass});
+                   };
+                   if(is_in_list(return_parts, 'val')){
+                       $.extend(return_value, {'val': value});
+                   };
+                   if(is_in_list(return_parts, 'text')){
+                       $.extend(return_value, {'text': text})
+                   };
+                   if(is_in_list(return_parts, 'html')){
+                       $.extend(return_value, {'html': html})
+                   };
+               };
+           };
+           return return_value;
+    }
+}
+
+function ooweb_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    return ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+}
+
+function var_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if (data == null || data === undefined){
+       return that;
+    }else{
+       that = data;
+    }
+}
+
+function webbtnradio_on_change(event, that){
+    radio = $(that).parent().parent();
+    radio.find('input').prop('checked', false);
+    radio.find('input').attr('data-checked', false);
+    $(that).prop('checked',true);
+    $(that).attr('data-checked',true);
+}
+
+function webbtnradio_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#'+that.attr('id'));
+    if(typeof data != 'undefined' && data != null){
+       that2.find('input').each(function(){
+           let v = $(this).attr('data-value');
+           if(('oovalue' in data && v === data.oovalue) || ('select' in data && v === data.select)){
+               that.find('input').prop('checked', false);
+               that.find('input').attr('data-checked', false);
+               $(this).attr('data-checked', true);
+               $(this).prop('checked', true);
+               if('oovalue' in data){
+                   delete data.oovalue;
+               }
+               if('select' in data){
+                   delete data.select;
+               }
+           };
+       });
+       return ooweb_base_val(that=that2, data=data);
+    }else{
+       let val = null;
+       that2.find('input').each(function(){
+           let v = $(this).attr('data-checked');
+           if(v === 'true'){
+               val = $(this).attr('data-value');
+           };
+       });
+       let base_value=ooweb_base_val(that=that2);
+       base_value.select = val;
+       base_value.oovalue = val;
+        if(typeof base_value != 'undefined' && base_value != null){
+            base_value.element_type='WebBtnRadio';
+        };
+       return base_value;
+    };
+}
+
+function webcomponent_draw_img(img, height){
+    $(img).jqthumb({
+       classname: "jqthumb",
+       width : "100%",
+       height : height,
+       position : {y: "50%", x: "50%"},
+       zoom : "1",
+       method : "auto"
+    });
+}
+
+function webdiv_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebDiv';
+    };
+    return ret;
+}
+
+function webrow_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebRow';
+    };
+    return ret;
+}
+
+function webcolumn_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebColumn';
+    };
+    return ret;
+}
+
+function webhead1_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead1';
+    };
+    return ret;
+}
+
+function webhead2_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead2';
+    };
+    return ret;
+}
+
+function webhead3_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead3';
+    };
+    return ret;
+}
+
+function webhead4_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead4';
+    };
+    return ret;
+}
+
+function webhead5_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead5';
+    };
+    return ret;
+}
+
+function webhead6_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHead6';
+    };
+    return ret;
+}
+
+function webfield_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#' + that.attr('id'));
+    if(typeof data != 'undefined' && data != null){
+       if('val' in data){
+           that2.find('legend').text(data['val']);
+       };
+       delete data['val'];
+       if('text' in data){
+           delete data['text'];
+       };
+    };
+    ret = ooweb_base_val(that=that2, data=data);
+    if(typeof data == 'undefined' || data == null){
+       ret['textfield_text'] = that2.find('legend').text();
+    };
+    if(typeof ret !== 'undefined' && ret !== null){
+        ret.element_type = 'WebField';
+    };
+    return ret;
+}
+
+function webi_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebI';
+    };
+    return ret;
+}
+
+function webimg_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#' + that.attr('id'));
+    if(typeof data != 'undefined' && data != null){
+       if($.type(data) == 'object'){
+           if('oovalue' in data){
+               if('attr' in data){
+                   data.attr.src = data.oovalue;
+               }else{
+                   data = {'attr':{'src':data.oovalue}};
+               }
+           }
+           if('value' in data){
+               if('attr' in data){
+                   data.attr.src = data.value;
+               }else{
+                   data = {'attr':{'src': data.value}};
+               }
+           }
+       }
+       ooweb_base_val(that=that2, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    }else{
+        let ret = ooweb_base_val(that=that2, data=data);
+        if(typeof ret != 'undefined' && ret != null){
+            ret.element_type='WebImg';
+        };
+        return ret;
+    }
+}
+
+function webb_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebB';
+    };
+    return ret;
+}
+
+function webhr_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebHr';
+    };
+    return ret;
+}
+
+function webbtn_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#' + that.attr('id'));
+    if (data == null || data === undefined){
+        let ret = ooweb_base_val(that=that2);
+        if(typeof ret != 'undefined' && ret != null){
+            ret.element_type='WebBtn';
+        };
+        return ret;
+    }else{
+       if(typeof(data) === 'object'){
+           if('oovalue' in data){
+               that2.text(data.oovalue);
+               if('text' in data){
+                   delete data.text;
+               };
+               if('val' in data){
+                   delete data.val;
+               };
+               if('value' in data){
+                   delete data.value;
+               };
+           }
+           if('value' in data){
+               that2.text(data.value);
+               if('text' in data){
+                   delete data.text;
+               };
+               if('val' in data){
+                   delete data.val;
+               };
+               if('oovalue' in data){
+                   delete data.oovalue;
+               };
+           }
+           if('text' in data){
+               that2.text(data.text);
+               delete data.text;
+               if('val' in data){
+                   delete data.val;
+               }
+               if('value' in data){
+                   delete data.value;
+               };
+           }
+           if('val' in data){
+               that2.text(data.val);
+               delete data.val;
+               if('value' in data){
+                   delete data.value;
+               };
+           }
+           if('value' in data){
+               that2.text(data.value);
+               delete data.value;
+           };
+           ooweb_base_val(that=that2, data=data);
+       }else{
+           that2.text(data);
+       }
+       that2.change();
+    };
+}
+
+function webbtntoggle_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = webbtn_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type='WebBtnToggle';
+    };
+    return ret;
+}
+
+function webselect_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if(typeof data != 'undefined' && data != null){
+       that = $('#'+String(that.attr('id')));
+       if('options' in data){
+           that.empty();
+           for(var i=0, len=data['options'].length; i<len; i++){
+               let option = data['options'][i];
+               if('option_group' in option){
+                   that.append('<optgroup label=\"' + option['label'] + '\"');
+               }else{
+                   let optstr = '<option ';
+                   if('value' in option){
+                       optstr = optstr + ' value=\"'+option['value'] + '\"';
+                   };
+                   if(('selected' in option) && (option['selected'] === 'true' || option['selected'] === true)){
+                       optstr = optstr + ' selected ';
+                   };
+                   if('attr' in option){
+                       for(var a in option['attr']){
+                           optstr = optstr + ' ' + a + '=' + option['attr'][a] + ' ';
+                       }
+                   };
+                   if('style' in option){
+                       optstr = optstr + ' style=\"';
+                       for(var s in option['style']){
+                           optstr = optstr + s + ':' + option['style'][s] + ';';
+                       };
+                       optstr = optstr + '\" '
+                   };
+                   if('classes' in option){
+                       optstr = optstr + ' class=\"'
+                       for(var ci =0, len = option['classes'].length; ci < len; ci++){
+                           optstr = optstr + option['classes'][ci] + ' ';
+                       };
+                       optstr = optstr + '\" ';
+                   };
+                   optstr = optstr + '>'
+                   if('text' in option){
+                       optstr = optstr + option['text'];
+                   };
+                   that.append(optstr + '</option>');
+               };
+           }
+       };
+       ooweb_base_val(that, data);
+    }else{
+       let val = ooweb_base_val(that=that);
+       val['selected'] = that.find(':selected').text().trim();
+       val.element_type='WebSelect';
+       return val;
+    }
+}
+
+function webdatalist_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = webselect_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebDatalist';
+    };
+    return ret;
+}
+
+function webspan_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebSpan';
+    };
+    return ret;
+}
+
+function weba_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebA';
+    };
+    return ret;
+}
+
+function webli_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebLi';
+    };
+    return ret;
+}
+
+function webul_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#'+String(that.attr('id')));
+    if(typeof data != 'undefined' && data != null){
+       let lis = that2.find('li');
+       if('oovalue' in data){
+           that2.text(data.oovalue);
+           if('text' in data){
+               delete data.text;
+           }
+           that2.append(lis);
+       }
+       if('text' in data){
+           that2.text(data.text);
+           delete data.text;
+           that2.append(lis);
+       }
+       ooweb_base_val(that=that2, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    }else{
+        let ret = ooweb_base_val(that=that2);
+        if(typeof ret != 'undefined' && ret != null){
+            ret.element_type='WebUl';
+        };
+        return ret;
+    }
+}
+
+function webinput_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebInput';
+    };
+    return ret;
+}
+
+function weblabel_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'WebLabel';
+    };
+    return ret;
+}
+
+function webcheckbox_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if(typeof data != 'undefined' && data != null){
+       if($.type(data) == 'object'){let that_ = $('#'+that.attr('id'));
+         if('checked' in data){
+            if(data.checked){
+               that.find('input').prop('checked',true);
+            }else{
+               that.find('input').prop('checked',false);
+            };
+         };
+         if('text' in data){
+           let label = that_.find('label');
+           label.text(data.text);
+           delete data.text;
+         };
+         if('html' in data){
+           delete data.html;
+         };
+         if('val' in data){
+           delete data.val;
+         };
+       };
+       ooweb_base_val(that=that, data=data);
+    }else{
+       ret = ooweb_base_val(that=that);
+       ret['checked'] = that.find('input').prop('checked');
+       let label = that.find('label');
+       ret['label'] = label.text().trim();
+       ret.element_type = 'WebCheckbox';
+       return ret;
+    }
+}
+
+function webbtndd_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#' + String(that.attr('id')));
+    if (data == null || data === undefined){
+       let ret = {};
+       ret['text'] = that2.text().trim();
+       ret.element_type = 'WebBtnDropdown';
+       return ret;
+    }else{
+       let span = $(that2.find('span')[0]);
+       if(data.hasOwnProperty('select')){
+           that2.text(data.select);
+       }else if ((data.hasOwnProperty('text') || (data.hasOwnProperty('name')))){
+           that2.text(data.text);
+       };
+       if(data.hasOwnProperty('options') && data.options instanceof Array ){
+           webbtndd_set_options(that2, data.options);
+       };
+       if(typeof(data) == 'string'){
+           that2.text(data);
+       };
+       that2.append(span);
+       that2.change();
+    };
+}
+
+function webbtggrp_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#' + that.attr('id'));
+    if (data == null || typeof data == 'undefined'){
+        let children_values = Array();
+        that2.children().each(function(){
+            if($(this).find('input').length==1){
+               children_values.push(webcheckbox_val(that=$(this), data=null));
+            };
+            if($(this).is('button')){
+               children_values.push(webbtn_val(that=$(this), data=null));
+            };
+        });
+        let ret = {};
+        ret.children_values = ret_values;
+        ret.element_type = 'WebBtnGroup';
+        ret.me = that2.prop('name');
+        return ret;
+    }else{
+        let ret = ooweb_base_val(that=that2, data=data, trigger_event=trigger_event, return_parts=return_parts);
+        if(typeof ret != 'undefined' && ret != null){
+            ret.element_type='WebBtnGroup';
+        };
+        return ret;
+    };
+}
+
+function oogeneral_selector_val_by_btn(btn_id){
+    var $gselector = $($("#"+btn_id).parent().parent());
+    var ret = [];
+    $gselector.find("button").each(function(i,v){
+           ret.push($(v).text().trim());
+       }
+    )
+    return ret;
+}
+
+function oogeneral_selector_btn_change($btn, $gs){
+    var found = false;
+    $gs.find('button').each(function(index,e){
+       if($btn.attr('id') == $(e).parent().attr('id')){
+           found = true;
+       }else if(found){
+           let $span = $(e).find('span');
+           $(e).text($(e).data('value'));
+           $(e).append($span);
+       };
+    });
+}
+
+function oogselector_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if((typeof data != 'undefined') && (data instanceof Array) && (data != null)){
+       for(let i in data){
+           let value = data[i];
+           let text = '';
+           if(value.hasOwnProperty('select') && value.select != '' && value.select != null ){
+               text = value.select;
+           }else{
+               text = value.name;
+           };
+           let btn_grp = $(that.children()[i]);
+           let btn = $(btn_grp.find('button')[0]);
+           let span = $(btn_grp.find('span')[0]);
+           btn.text(text);
+           btn.append(span);
+           if(value.hasOwnProperty('options') && value.options instanceof Array ){
+               let ul = $(btn_grp.children('ul')[0]);
+               ul.empty();
+               if(value.options.length >0 ){
+                   value.options.forEach(function(val){
+                       ul.append('<li><a>' + val.name + '</a></li>');
+                   });
+                   btn.removeAttr('disabled');
+               }else{
+                   btn.attr('disabled','disabled');
+               };
+           };
+       };
+       if(trigger_event){
+           that.change();
+       };
+    }else{
+       var ret = [];
+       that.children().each(function(){
+           let btn = $(this).find('button');
+           let options = [];
+           let ul = $(this).find('ul');
+           ul.find('a').each(function(){
+               options.push({'name':$(this).text().trim(),'href':$(this).attr('href')});
+           });
+           ret.push({'select':btn.text().trim(),'name':btn.attr('data-value'),'options':options});
+       });
+       ret.element_type = 'OOGeneralSelector';
+       return ret;
+    };
+}
+
+function oogselector_render(that, url){
+    let data = {'data':oogselector_val(that), 'me':that.name()};
+    let data_j = JSON.stringify(data);
+    $.post(url, {'data':data_j}, function(response,status){
+        if (status == 'success'){
+            let data = response.data;
+            oogselector_val(that, data, false);
+        };
+    });
+}
+
+function oodatepickersimple_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'OODatePickerSimple';
+    };
+    return ret;
+}
+
+function oodatepickericon_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'OODatePickerIcon';
+    };
+    return ret;
+}
+
+function oodatepickerrange_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'OODatePickerRange';
+    };
+    return ret;
+}
+
+function oobanner_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+    if(typeof ret != 'undefined' && ret != null){
+       ret.element_type = 'OOBanner';
+    };
+    return ret;
+}
+
+function oocalendar_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let calendar = that.data('calendar');
+    if (data == null){
+       let view = calendar.options.view;
+       let title = calendar.getTitle();
+       let start = calendar.options.position.start.getTime();
+       let end = calendar.options.position.end.getTime();
+       let ret = {};
+       ret.element_type='OOCalendar';
+       ret.start=start;
+       ret.end=end;
+       ret.title=title;
+       ret.view=view;
+       return ret;
+    }else{
+       let data_ = data;
+       let view_ = data_.view;
+       let hierarchy_ = data_.hierarchy;
+       oocalendar_chane_event_trigger = false;
+       calendar.update_events(extra_data=hierarchy_);
+       oocalendar_chane_event_trigger = true;
+    }
+}
+
+function webtab_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if(typeof data != 'undefined' && data != null){
+        if('active_tab' in data){
+            that.find('li').removeClass('active');
+            that.find('[data-value=\"'+data.active_tab+'\"]').parent().addClass('active');
+            that.find('[data-toggle=\"tab\"]').attr('aria_expanded', 'false');
+            that.find('[data-value=\"'+data.active_tab+'\"]').attr('aria_expanded','true');
+        }
+    }else{
+       let val = that.find('.active').text().trim();
+       let ret = {};
+       ret.active_tab=val;
+       ret.element_type='WebTab';
+       return ret;
+    }
+}
+
+function webtabcontain_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let that2 = $('#'+that.prop('id'));
+    if(typeof data != 'undefined' && data != null){
+        if('active_tab' in data){
+            that2.find('.tab-pane').removeClass('active');
+            that2.find('.tab-pane').removeClass('in');
+            $('#'+data.active_tab).addClass('active');
+            $('#'+data.active_tab).addClass('in');
+        };
+    }else{
+       let val = that2.find('.active').attr('id');
+       let ret = {};
+       ret.active_tab=val;
+       ret.element_type='WebTabContain';
+       return ret;
+    }
+}
+
+function webtable_render(id, data){
+    $('#'+id).empty();
+    $('#'+id).append(data.html);
+}
+
+function webtable_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let id = that.attr('id');
+    if((data === null)||(typeof data == 'undefined')){
+        return null;
+    };
+    return webtable_render(id,data=data);
+}
+const OOTABLE_RENDER_IMG_KEY = 'ootable_render_img'
+const OOTABLE_RENDER_CHART_KEY = 'ootable_chart_img'
+
+function ootable_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    if(data == null || data === undefined || !('setting' in data)){
+        return {'value':ooweb_base_val(that),'element_type':'OOTable'};
+    };
+    let setting = data.setting;
+    if(that.children().length != 0){
+       that.DataTable().clear();
+       that.DataTable().destroy();
+       that.empty();
+    };
+    that.append(data.html);
+    if('columnDefs' in setting){
+       setting.columnDefs.push({'targets':'_all','data':undefined, 'render':ootable_cell_render, createdCell:ootable_created_cell_render});
+    }else{
+       setting.columnDefs = [{"targets":"_all","data":undefined,"render":ootable_cell_render, createdCell:ootable_created_cell_render}];
+    };
+    let table = that.DataTable(setting);
+    that.on('expand-row.bs.table', function (e,index, row, $detail){
+                                       alert(JSON.stringify(row));
+                                   });
+    table.draw();
+    if(data.html.includes(OOTABLE_RENDER_IMG_KEY) || data.html.includes(OOTABLE_RENDER_CHART_KEY)){
+       let tr_num = data.html.split('<tr').length - 1;
+       let seconds = tr_num * 230;
+       setTimeout(function(){
+           that.DataTable().draw();
+           that.trigger('draw_done');
+       }.bind(that,data),seconds);
+    }else{
+       that.trigger('draw_done');
+    };
+    delete data['html'];
+    ooweb_base_val(that, data);
+}
+
+function ootaggroup_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let data_={};
+    if(data === null){
+       data_ = {'html':null,'checked':'checked', 'tags':false};
+    }else{
+       data_ = data;
+    };
+    let html = data_.html;
+    var id = that.attr('id');
+    var that2 = $('#'+String(id));
+    if(html){
+        that2.empty();
+        that2.html(html);
+    };
+    let checked = data_.checked;
+    if(checked === undefined || checked === null){
+        return;
+    };
+    let tags = data_.tags;
+    if (checked === "checked"){
+        if(!tags){
+            var ret = [];
+            $("#"+id+" :checked").parent().children("label").each(function(){
+                ret.push($.trim($(this).text()));
+            });
+            return ret.join("  ");
+        }else{
+            ;
+        };
+    }else if(checked === "unchecked"){
+        if(!tags){
+            var ret = [];
+            $("#"+id+" :unchecked").parent().children("label").each(function(){
+                ret.push($.trim($(this).text()));
+            });
+            return ret.join("  ");
+        }else{
+            ;
+        };
+    }else if(checked === true){
+        that2.find('input').prop('checked',true);
+    }else if(checked === false){
+        that2.find('input').prop('checked',false);
+    }else if(checked instanceof Array){
+       that2.find('input').prop('checked',false);
+       let length = checked.length;
+       for(let i=0;i<length;i++){
+           let search = 'label:contains(' + checked[i] + ')';
+           let label = $(search);
+           let parent = label.parent();
+           let input = parent.find('input');
+           input.prop('checked',true);
+       };
+    };
+}
+
+const OOCHAT_BODY = 'oochat_body_'
+const OOCHAT_SEND_INPUT = 'oochat_send_input_'
+const OOCHAT_SEND_BTN = 'oochat_send_btn_'
+
+function oochat_message(data, me){
+    let klass='';
+    let styles='';
+    let room='';
+    let who='';
+    if(data['to']===me){
+       klass='pull-left';
+       styles={'background-colour': '#f4429b'};
+       room=me;
+       who=data['from'];
+    }else if(data['from']===me){
+       klass='pull-right';
+       styles={'background-color': '#f7f7d6'};
+       room=me;
+       who=data['from'];
+    }else{
+       return;
+    };
+    $room = $('.panel-body');
+    $room.append('<div class=\"clearfix\" style=\"\"><blockquote class=\"'+klass+'\" style=\"'+styles+'\"><b>'+who+':</b>'+data['message']+'</blockquote></div>');
+}
+
+function oochatclient_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+
+    let body_name = OOCHAT_BODY + that.prop('name')
+    let body_id = body_name
+    let send_input_name = OOCHART_SEND_INPUT + that.prop('name')
+    let send_input_id = send_input_name
+    let send_btn_name = OOCHART_SEND_BTN + that.prop('name')
+    let send_btn_id = send_btn_name
+
+    if(typeof data != 'undefined' && data != null){
+       var datai = null;
+       for(var i=0, len=data.length; i<len; i++){
+           datai = data[i];
+           if((datai !== null)&&(typeof datai !== 'undefined')){
+               if(datai['me']==body_name){
+                   webdiv_val(that=$('#'+body_id), data=datai['data']);
+               }else if(datai['me']==send_input_name){
+                   webinput_val(that=$('#'+send_input_id), data=datai['data']);
+               }else if(datai['me']==send_btn_name){
+                   webbtn_val(that=$('#'+body_id), data=datai['data']);
+               };
+           };
+       };
+    }else{
+       let val = [ {
+                       'me':body_name, 'data':webdiv_val(that=$('#'+body_id)), 'element_type':'oochatclient_body'
+                   },
+                   {
+                       'me':send_input_name, 'data':webinput_val(that=$('#'+send_input_id)), 'element_type':'oochatclient_input'
+                   },
+                   {
+                       'me':send_btn_name, 'data':webbtn_val(that=$('#'+send_btn_id)), 'element_type':'oochatclient_btn'
+                   }
+                 ];
+       return val;
+    };
+}
+
+function oochatserver_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    ;
+}
+
 function is_in_list(list, element) {
     for(var i=0;i<list.length;i++){
         if(element === list[i]){
@@ -193,6 +1117,24 @@ $(function(){
 function ootable_init_complete() {
     this.api().columns.adjust().draw()
 };
+
+function ootable_get_row_data(that, data_attr="ootable-details"){
+    let row_that = that[0];
+    let that_ = that[1];
+    if(!that_){
+       var tds = $(row_that).children();
+       var ret = [];
+       tds.each(function(index, element){
+           let klass = $(element).attr("class");
+           let style = $(element).attr("style");
+           let data = $(element).data(data_attr);
+           ret.push({'class':klass, 'style':style, 'data':data});
+       });
+       return ret;
+    }else{
+       ootable_val(that_,data_attr);
+    };
+}
 
 $.attrHooks['viewbox'] = {
     set: function(elem, value, name) {

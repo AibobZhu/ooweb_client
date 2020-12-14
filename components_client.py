@@ -1207,7 +1207,7 @@ class WebComponent(ComponentInf, ClientBase):
             'scripts': rdata['scripts'],
             'script_files': rdata['script_files'],
             'styles': rdata['styles'],
-            'styles_files': rdata['style_files']
+            'styles_files': rdata['styles_files']
         }
 
     def context(self):
@@ -1390,6 +1390,13 @@ class WebComponent(ComponentInf, ClientBase):
         if hasattr(self, '_value') and 'value' not in kwargs:
             kwargs['value'] = self._value
 
+        page = None
+        if 'page' in kwargs and kwargs['page']:
+            page = kwargs['page']
+            if kwargs['page'] == 'no page':
+                pass
+            else:
+                assert (isinstance(page, WebPage))
         context = self._get_objcall_context(func=self.type_(), params=kwargs)
         # self._mycont = self.add_context(context)
         self._mycont = [context]
@@ -1400,13 +1407,12 @@ class WebComponent(ComponentInf, ClientBase):
         if 'parent' in kwargs:
             self._parent = kwargs['parent']
 
-        page = None
-        if 'page' in kwargs and kwargs['page']:
-            page = kwargs['page']
-            assert (isinstance(page, WebPage))
-        elif isinstance(self, WebPage):
+        if page == 'no page':
+            kwargs['page'] = page
+            return
+        if isinstance(self, WebPage):
             page = self
-        else:
+        if not page:
             stack = inspect.stack()
             wrapper_index = 0
             ROP_find = False
@@ -1663,8 +1669,7 @@ class WebComponentBootstrap(WebComponent,
              'comment': 'glyphicon glyphicon-comment',
              'ok-circle': 'glyphicon glyphicon-ok-circle',
              'login': 'glyphicon glyphicon-log-in',
-             'remove': 'glyphicon glyphicon-remove'
-             }
+             'remove': 'glyphicon glyphicon-remove'}
 
     ACTION_MEMBER = ooccd.ACTION_MEMBER
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
@@ -1707,8 +1712,10 @@ class WebComponentBootstrap(WebComponent,
             if ffnm not in my_fnms:
                 def fn(self, *args, **kwargs):
                     my_name = inspect.currentframe().f_code.co_name
-                    page = self._page
-                    vptr_ = page.get_vptr()
+                    vptr_ = ooccd.FORMAT_MEMBER
+                    if hasattr(self, '_page') and not isinstance(self._page, str):
+                        page = self._page
+                        vptr_ = page.get_vptr()
                     if vptr_ not in father_functions[my_name]:
                         raise RuntimeError('{} running with incorrect vptr:{}'.format(
                             my_name, vptr_
@@ -1721,15 +1728,6 @@ class WebComponentBootstrap(WebComponent,
         super().__init__(**kwargs)
         self._vtable={ooccd.RESPONSE_MEMBER: ResponseBootstrap(**kwargs)}
         self.virtual_inherid(fathers={'_response':ResponseBootstrap}, **kwargs)
-
-        '''
-        self._derive_event_members(**kwargs)
-        self._format = FormatBootstrap(**kwargs)
-        self._action = ActionJquery(component=self, **kwargs)
-        self._format = FormatBootstrap(component=self, **kwargs)
-        self._derive_format_members(**kwargs)
-        self._derive_action_members(**kwargs)
-        '''
 
     # EventInf
 
@@ -2618,7 +2616,7 @@ class WebColumn(WebComponentBootstrap):
 
 
 class WebHead1(WebComponentBootstrap):
-    VAL_FUNC_NAME = 'webhead_val'
+    VAL_FUNC_NAME = 'webhead1_val'
 
 
 class WebHead2(WebHead1):
@@ -2660,7 +2658,7 @@ class WebField(WebComponentBootstrap):
 
 class WebImg(WebComponentBootstrap):
 
-    VAL_FUNC_NAME = "web_img_val"
+    VAL_FUNC_NAME = "webimg_val"
     VAL_FUNC_PARAMS = ['that', 'data']
 
     def __init__(self, value=None, **kwargs):
@@ -2787,7 +2785,7 @@ class WebBtn(WebBtnTest, WebComponentBootstrap):
 
 class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
 
-    VAL_FUNC_NAME = 'radio_val'
+    VAL_FUNC_NAME = 'webbtnradio_val'
     VAL_FUNC_ARGS = ['that', 'data=null']
 
     '''
@@ -5724,31 +5722,7 @@ class OOBanner(OOBannerTest, WebDiv):
 
         height = '400px' if not hasattr(self, '_height') else self._height
 
-        return {'id': self.id(), 'imgs': imgs, 'draw_img': self.DRAW_IMG_FUNC_NAME, 'height': height}
-
-    '''
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        print('class {} test_request is called'.format(cls.__name__))
-        if cls.CLASS_TEST_HTML:
-            return cls.CLASS_TEST_HTML
-
-        class TestPage(cls._PAGE_CLASS):
-
-            def process_events_impl(self, req):
-                print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
-                banner = self._get_banner()
-                new_html = render_template_string(self.CAROUSEL_HTML,
-                                                  banner=banner)
-                req['data']['html'] = new_html
-
-        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
-        page.testing_class = cls
-        html = page.render()
-
-        cls.CLASS_TEST_HTML = render_template_string(html)
-        return cls.CLASS_TEST_HTML
-    '''
+        return {'id': self.id(), 'imgs': imgs, 'draw_img': Action.DRAW_IMG_FUNC_NAME, 'height': height}
 
 
 class OOCalendar(OOCalendarTest, WebDiv):
@@ -6286,103 +6260,6 @@ class WebTabItem(WebDiv):
 class WebTab(WebTabTest, WebUl):
 
     VAL_FUNC_NAME = 'webtab_val'
-    """
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        print('class {} test_request is called'.format(cls.__name__))
-        if cls.CLASS_TEST_HTML:
-            return cls.CLASS_TEST_HTML
-
-        class TestPage(cls._PAGE_CLASS):
-
-            tab_name = 'WebTabTest'
-            tab_contain_name = 'tab_contain_test'
-            tab_item1_name = 'tab_item1'
-            tab_item2_name = 'tab_item2'
-            tab_item3_name = 'tab_item3'
-            tab_contain1_name = 'tab_contain1'
-            tab_contain2_name = 'tab_contain2'
-            tab_contain3_name = 'tab_contain3'
-
-            def place_components_impl(self):
-                page = self
-                testing_class = WebTab
-                cls = testing_class
-
-                WebRow = page._SUBCLASSES['WebRow']['class']
-                WebColumn = page._SUBCLASSES['WebColumn']['class']
-                WebTabContain = page._SUBCLASSES['WebTabContain']['class']
-                WebTabItem = page._SUBCLASSES['WebTabItem']['class']
-                WebHead3 = page._SUBCLASSES['WebHead3']['class']
-                with page.add_child(WebRow()) as r1:
-                    with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
-                        with c1.add_child(cls(parent=page, name=self.tab_name, ul_list=[
-                            {'name': self.tab_item1_name, 'href': '#' + self.tab_item1_name},
-                            {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name},
-                            {'name': self.tab_item3_name, 'href': '#' + self.tab_item3_name, 'active': True},
-                        ])) as test:
-                            pass
-                        with c1.add_child(WebTabContain(parent=page, name=self.tab_contain_name)) as contain:
-                            with contain.add_child(WebTabItem(id=self.tab_item1_name, name=self.tab_item1_name)) as item1:
-                                with item1.add_child(
-                                        WebHead3(name=self.tab_contain1_name, value=self.tab_contain1_name)) as contain1:
-                                    pass
-                            with contain.add_child(WebTabItem(id=self.tab_item2_name, name=self.tab_item2_name)) as item2:
-                                with item2.add_child(
-                                        WebHead3(name=self.tab_contain2_name, value=self.tab_contain2_name)) as contain2:
-                                    pass
-                            with contain.add_child(
-                                    WebTabItem(id=self.tab_item3_name, name=self.tab_item3_name, ootype=['active'])) as item3:
-                                with item3.add_child(
-                                        WebHead3(name=self.tab_contain3_name, value=self.tab_contain3_name)) as contain3:
-                                    pass
-
-            def intro_events_impl(self):
-
-                page = self
-                testing_class = WebTab
-                '''
-                testing_cls_name = page.testing_class.testing_cls_name if hasattr(testing_class, 'testing_cls_name') else \
-                    testing_class.__name__
-                '''
-                test = page._components[self.tab_name]['obj']
-                contain = page._components[self.tab_contain_name]['obj']
-
-                with page.render_post_w():
-                    test.render_for_post()
-                    contain.render_for_post()
-
-                with test.on_event_w(event='active_change'):
-                    with page.render_post_w():
-                        test.render_for_post()
-                        contain.render_for_post()
-
-            def on_my_render_impl(self, req):
-
-                '''
-                req = None
-                if hasattr(self._page, '_action'):
-                    req = self._page._action.on_post()
-                else:
-                    req = self._page.on_post()
-                '''
-
-                for r in req:
-                    if r['me'] == self.tab_name:
-                        print('Got tab active item: {}'.format(r['data']))
-                        r['data'] = self.tab_item2_name
-                    if r['me'] == self.tab_contain_name:
-                        print('Got tab contain active page: {}'.format(r['data']))
-                        r['data'] = self.tab_item2_name
-                return jsonify({'status': 'success', 'data': req})
-
-        page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
-        page.testing_class = cls
-        html = page.render()
-
-        cls.CLASS_TEST_HTML = render_template_string(html)
-        return cls.CLASS_TEST_HTML
-    """
 
 
 class WebTabContain(WebDiv):
@@ -6745,8 +6622,8 @@ class OOTable(OOTableTest, WebTable):
     SETTING = {}
     HTML_URL = '/ootable/ootable_html'
 
-    RENDER_IMG_KEY = 'render_img'
-    RENDER_CHART_KEY = 'render_chart'
+    RENDER_IMG_KEY = 'ootable_render_img'
+    RENDER_CHART_KEY = 'ootable_render_chart'
 
     VAL_FUNC_NAME = 'ootable_val'
     VAL_FUNC_ARGS = ['that', 'data', 'trigger_event=false']
@@ -7009,7 +6886,7 @@ class OOTagGroup(OOTagGroupTest, WebTable):
 
 class Var(WebComponentBootstrap):
 
-    VAL_FUNC_NAME = 'var_val'
+    VAL_FUNC_NAME = 'oovar_val'
 
     def __init__(self, parent, var_name='data', **kwargs):
         kwargs['parent'] = parent
@@ -7111,6 +6988,7 @@ class OODict(OODictTest, DictInf, WebComponentBootstrap):
         print(pprint.pformat(html))
         return render_template_string(html)
     '''
+
 
 class WebComponentDummy:
     pass
