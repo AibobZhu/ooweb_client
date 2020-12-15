@@ -378,22 +378,31 @@ class WebBtnGroupTest(ClassTest):
 
     @classmethod
     def test_request(cls, methods=['GET']):
+
         # Create a testing page containing the component tested
         print('class {} test_request is called'.format(cls.__name__))
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
-        TEST_OBJ1='test_obj1'
-        TEST_OBJ2='test_obj2'
-        TEST_OBJ3='test_obj3'
+        TEST_OBJ_NORMAL='test_obj_normal'
+        TEST_OBJ_VERTICAL='test_obj_vertical'
+        TEST_OBJ_HORIZON_CKBX='test_obj_horizon_checkbox'
         TEST_OBJ4='test_obj4'
         GetValueBtn1 = 'getvalue_btn1'
-        GetValueBtn2 = 'getvalue_btn2'
+        GetCkbxValueBtn = 'getcheckboxvalue_btn'
         ShowValue1 = 'show_value1'
-        ShowValue2 = 'show_value2'
+        ShowCkbxValue = 'show_ckbx_value'
+        ShowDynBEValue = 'show_backend_value'
+
         DYN_OBJ = 'dynamic_object'
         DYN_BTN = 'dynamic_btn'
         DYN_VALUE = 'dynamic_value'
+        DYN_BE_OBJ = 'dynamic_beckend_object'
+
+        DYN_BE_BTN = 'dynamic_beckend_btn'
+        DYN_BE_VALUE = 'dynamic_beckend_value'
+
+        DYN_BE_REFRESH_BTN = 'dynamic_beckend_refresh_btn'
 
         def place_components_impl(self):
             page = self
@@ -410,7 +419,7 @@ class WebBtnGroupTest(ClassTest):
                 with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c1:
                     with c1.add_child(WebHead3(value='WebBtnGroup() test:')):
                         pass
-                    with c1.add_child(this_class(name=TEST_OBJ1)) as test_obj1:
+                    with c1.add_child(this_class(name=TEST_OBJ_NORMAL)) as test_obj1:
                         with test_obj1.add_child(WebBtn(value='TestBtn1')) as checkbox1:
                             pass
                         with test_obj1.add_child(WebBtn(value='TestBtn2')) as checkbox2:
@@ -421,7 +430,7 @@ class WebBtnGroupTest(ClassTest):
                 with r2.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c2:
                     with c2.add_child(WebHead3(value='WebBtnGroup(mytype=["vertical"]) test:')):
                         pass
-                    with c2.add_child(this_class(name=TEST_OBJ2, mytype=['vertical'])) as test_obj2:
+                    with c2.add_child(this_class(name=TEST_OBJ_VERTICAL, mytype=['vertical'])) as test_obj2:
                         with test_obj2.add_child(WebBtn(value='TestBtn3')) as checkbox3:
                             pass
                         with test_obj2.add_child(WebBtn(value='TestBtn4')) as checkbox4:
@@ -432,10 +441,13 @@ class WebBtnGroupTest(ClassTest):
                 with r3.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c3:
                     with c3.add_child(WebHead3(value='WebBtnGroup() + WebCheckbox(mytype=["horizontal"]) test:')):
                         pass
-                    with c3.add_child(this_class(name=TEST_OBJ3)) as test_obj3:
-                        with test_obj3.add_child(WebCheckbox(value='TestCheckbox1', mytype=['horizontal'])) as testcheckbox1:
+                    with c3.add_child(this_class(name=TEST_OBJ_HORIZON_CKBX)) as test_obj3:
+                        with test_obj3.add_child(WebCheckbox(value='TestCheckbox1',
+                                                             mytype=['horizontal'],
+                                                             checked=True)) as testcheckbox1:
                             pass
-                        with test_obj3.add_child(WebCheckbox(value='TestCheckbox2', mytype=['horizontal'])) as testcheckbox2:
+                        with test_obj3.add_child(WebCheckbox(value='TestCheckbox2',
+                                                             mytype=['horizontal'])) as testcheckbox2:
                             pass
 
             with page.add_child(WebRow()) as r3_1:
@@ -461,11 +473,11 @@ class WebBtnGroupTest(ClassTest):
                             pass
             with page.add_child(WebRow()) as r5:
                 with r5.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c5:
-                    with c5.add_child(WebBtn(name=GetValueBtn2, value='Get button group values 2')) as testbtn2:
+                    with c5.add_child(WebBtn(name=GetCkbxValueBtn, value='Get checkbox values')) as testbtn2:
                         pass
             with page.add_child(WebRow()) as r6:
                 with r6.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c6:
-                    with c6.add_child(WebHead5(name=ShowValue2)):
+                    with c6.add_child(WebHead5(name=ShowCkbxValue)):
                         pass
 
             with page.add_child(WebRow()) as dyn_title_r:
@@ -478,12 +490,12 @@ class WebBtnGroupTest(ClassTest):
                     with dyn_c.add_child(this_class(name=DYN_OBJ)) as dyn_obj:
                         dyn_checkboxes=['dynamic_checkbox1', 'dynamic_checkbox2', 'dynamic_checkbox3']
                         for dc in dyn_checkboxes:
-                            with dyn_obj.add_child(WebCheckbox(value=dc)):
+                            with dyn_obj.add_child(WebCheckbox(name=dc, value=dc)):
                                 pass
 
             with page.add_child(WebRow()) as dyn_btn_r:
                 with dyn_btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_btn_c:
-                    with dyn_btn_c.add_child(WebBtn(name=DYN_BTN, value='Get WebBtnGroup values')) as dyn_btn:
+                    with dyn_btn_c.add_child(WebBtn(name=DYN_BTN, value='Get dynamic WebBtnGroup values')) as dyn_btn:
                         pass
 
             with page.add_child(WebRow()) as dyn_value_r:
@@ -491,32 +503,71 @@ class WebBtnGroupTest(ClassTest):
                     with dyn_value_c.add_child(WebHead5(name=DYN_VALUE)):
                         pass
 
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_backend_title_r:
+                with dyn_backend_title_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_backend_title_c:
+                    with dyn_backend_title_c.add_child(WebHead3(value='Dynamically create checkbox and button for button group on backend:')):
+                        pass
+            with page.add_child(WebRow()) as dyn_backend_r:
+                with dyn_backend_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_backend_c:
+                    with dyn_backend_c.add_child(this_class(name=DYN_BE_OBJ)) as dyn_be_obj:
+                        pass
+
+            with page.add_child(WebRow()) as dyn_backend_value_r:
+                with dyn_backend_value_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_backend_value_c:
+                    with dyn_backend_value_c.add_child(WebHead5(name=ShowDynBEValue)) as dyn_backend_value:
+                        pass
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_backend_btn_r:
+                with dyn_backend_btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_backend_btn_c:
+                    with dyn_backend_btn_c.add_child(WebBtn(name=DYN_BE_BTN,
+                                                            value='Get dynamic button group values')) as dyn_be_btn:
+                        pass
+                    with dyn_backend_btn_c.add_child(WebBtn(name=DYN_BE_REFRESH_BTN,
+                                                            value='Dynamically refresh the button group on backend.')) \
+                        as dyn_be_ref_btn:
+                        pass
+
         def intro_events_impl(self):
             page = self
-            test_obj3 = page._components[TEST_OBJ3]['obj']
+            test_obj_hor_ckbx = page._components[TEST_OBJ_HORIZON_CKBX]['obj']
             test_obj4 = page._components[TEST_OBJ4]['obj']
             dyn_obj = page._components[DYN_OBJ]['obj']
+            dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
 
             getvalue_btn1 = page._components[GetValueBtn1]['obj']
-            getvalue_btn2 = page._components[GetValueBtn2]['obj']
-            getvalue_btn3 = page._components[DYN_BTN]['obj']
+            ckbx_value_btn = page._components[GetCkbxValueBtn]['obj']
+            dyn_btn = page._components[DYN_BTN]['obj']
+            dyn_be_btn = page._components[DYN_BE_BTN]['obj']
+            dyn_be_ref_btn = page._components[DYN_BE_REFRESH_BTN]['obj']
 
             showvalue1 = page._components[ShowValue1]['obj']
-            showvalue2 = page._components[ShowValue2]['obj']
-            showvalue3 = page._components[DYN_VALUE]['obj']
+            show_ckbx_value = page._components[ShowCkbxValue]['obj']
+            show_dyn_value = page._components[DYN_VALUE]['obj']
+            show_dyn_be_value = page._components[ShowDynBEValue]['obj']
 
             with getvalue_btn1.on_event_w('click'):
                 with page.render_post_w():
-                    test_obj3.render_for_post()
+                    test_obj_hor_ckbx.render_for_post()
                     showvalue1.render_for_post()
-            with getvalue_btn2.on_event_w('click'):
+            with ckbx_value_btn.on_event_w('click'):
                 with page.render_post_w():
                     test_obj4.render_for_post()
-                    showvalue2.render_for_post()
-            with getvalue_btn3.on_event_w('click'):
+                    show_ckbx_value.render_for_post()
+            with dyn_btn.on_event_w('click'):
                 with page.render_post_w():
                     dyn_obj.render_for_post()
-                    showvalue3.render_for_post()
+                    show_dyn_value.render_for_post()
+            with dyn_be_btn.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_be_obj.render_for_post()
+                    show_dyn_be_value.render_for_post()
+            with dyn_be_ref_btn.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_be_ref_btn.render_for_post()
+                    dyn_be_obj.render_for_post()
 
         def on_my_render_impl(self, req):
             page = self
@@ -526,17 +577,19 @@ class WebBtnGroupTest(ClassTest):
             test3_value = ''
             test4_value = ''
             dyn_value = ''
+            dyn_be_value = ''
+            new_dyn_be_value = None
 
             for r in req:
                 if r['me'] == GetValueBtn1:
                     print('{} got request:{}'.format(GetValueBtn1, pprint.pformat(r)))
-                elif r['me'] == GetValueBtn2:
-                    print('{} got request:{}'.format(GetValueBtn2, pprint.pformat(r)))
-                elif r['me'] == TEST_OBJ3:
-                    print('{} got request:{}'.format(TEST_OBJ3, pprint.pformat(r)))
-                    test_obj3 = page._components[TEST_OBJ3]['obj']
-                    test_obj3.request(req=r)
-                    test3_value_=test_obj3.value()
+                elif r['me'] == GetCkbxValueBtn:
+                    print('{} got request:{}'.format(GetCkbxValueBtn, pprint.pformat(r)))
+                elif r['me'] == TEST_OBJ_HORIZON_CKBX:
+                    print('{} got request:{}'.format(TEST_OBJ_HORIZON_CKBX, pprint.pformat(r)))
+                    test_obj_ckbx = page._components[TEST_OBJ_HORIZON_CKBX]['obj']
+                    test_obj_ckbx.request(req=r)
+                    test3_value_=test_obj_ckbx.value()
                     for v in test3_value_:
                         if v['element_type'] == 'WebCheckbox':
                             test3_value += '{}:{},  '.format(v['label'],v['checked'])
@@ -558,9 +611,9 @@ class WebBtnGroupTest(ClassTest):
                     showvalue_obj1.request(req=r)
                     showvalue_obj1.value(test3_value)
                     r['data'] = showvalue_obj1.response()['data']
-                elif r['me'] == ShowValue2:
-                    print('{} got request:{}'.format(ShowValue2, pprint.pformat(r)))
-                    showvalue_obj2 = page._components[ShowValue2]['obj']
+                elif r['me'] == ShowCkbxValue:
+                    print('{} got request:{}'.format(ShowCkbxValue, pprint.pformat(r)))
+                    showvalue_obj2 = page._components[ShowCkbxValue]['obj']
                     showvalue_obj2.request(req=r)
                     showvalue_obj2.value(test4_value)
                     r['data'] = showvalue_obj2.response()['data']
@@ -568,17 +621,59 @@ class WebBtnGroupTest(ClassTest):
                     dyn_obj = page._components[DYN_OBJ]['obj']
                     print('{} got request:{}'.format(dyn_obj.name(), pprint.pformat(r)))
                     dyn_obj.request(req=r)
-                    for v in dyn_obj.value():
-                        if v['element_type'] == 'WebCheckbox':
-                            dyn_value += '<{} checked:{}>  '.format(v['label'], v['checked'])
-                    new_dyn_checkbox = ['NewCheckbox1', 'NewCheckbox2', 'NewCheckbox3']
-
+                    dyn_value = dyn_obj.value()
                 elif r['me'] == DYN_VALUE:
                     dyn_value_obj = page._components[DYN_VALUE]['obj']
                     print('{} got request:{}'.format(dyn_value_obj.name(), pprint.pformat(r)))
                     dyn_value_obj.request(req=r)
-                    dyn_value_obj.value(dyn_value)
+                    if dyn_value:
+                        dyn_value_obj.value(dyn_value)
                     r['data'] = dyn_value_obj.response()['data']
+                elif r['me'] == DYN_BE_OBJ:
+                    dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
+                    print('{} got request:{}'.format(dyn_be_obj.name(), pprint.pformat(r)))
+                    dyn_be_obj.request(req=r)
+                    dyn_be_value = dyn_be_obj.value()
+                    if new_dyn_be_value:
+                        dyn_be_obj.value(new_dyn_be_value)
+                    r['data'] = dyn_be_obj.response()['data']
+                elif r['me'] == ShowDynBEValue:
+                    dyn_be_value_obj = page._components[ShowDynBEValue]['obj']
+                    print('{} got request:{}'.format(dyn_be_value_obj.name(), pprint.pformat(r)))
+                    dyn_be_value_obj.request(req=r)
+                    value_info = 'VALUES: \n'
+                    if dyn_be_value:
+                        if 'children' in dyn_be_value:
+                            for c in dyn_be_value['children']:
+                                if c['element_type'] == 'WebCheckbox':
+                                    value_info += "checkbox: "
+                                    value_info += c['label']
+                                    value_info += ' '
+                                    value_info += str(c['checked'])
+                                    value_info += ',    '
+                        value_info += '\n'
+                        dyn_be_value_obj.value(value_info)
+                    r['data'] = dyn_be_value_obj.response()['data']
+                elif r['me'] == DYN_BE_REFRESH_BTN:
+                    dyn_be_fre_btn = page._components[DYN_BE_REFRESH_BTN]['obj']
+                    print('{} got request:{}'.format(dyn_be_fre_btn.name(), pprint.pformat(r)))
+                    new_dyn_be_value = {'children': [
+                                                        {
+                                                            'element_type': 'WebCheckbox',
+                                                            'value': 'checkbox1',
+                                                            'checked': True
+                                                        },
+                                                        {
+                                                            'element_type': 'WebCheckbox',
+                                                            'value': 'checkbox2',
+                                                            'checked': True
+                                                        },
+                                                        {
+                                                            'element_type': 'WebBtn',
+                                                            'value': 'button1',
+                                                        }
+                                                    ]
+                                       }
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -2708,7 +2803,6 @@ class OOTableTest(ClassTest):
 
 class OOTagGroupTest(ClassTest):
 
-
     def example_setting(self):
         return {
             'paging': False,
@@ -2792,6 +2886,7 @@ class OOTagGroupTest(ClassTest):
                 with LVar(parent=page, var_name='data') as value:
                     testing_obj.value()
                 testing_obj.alert('"All the checked tags: " + data.checked_values')
+                testing_obj.alert('"The expect result: all the checkboxes should be refreshed"')
                 with page.render_post_w():
                     testing_obj.render_for_post()
 
@@ -2804,7 +2899,8 @@ class OOTagGroupTest(ClassTest):
                 if r['me'] == testing_class.__name__:
                     if 'checked_values' in r['data']:
                         print('{} got checked values: {}'.format(testing_obj.name(), r['data']['checked_values']))
-                        r['data'] = {'html': testing_obj.example_data()['html'], 'setting': testing_obj.example_setting()}
+                        r['data'] = {'html': testing_obj.example_data()['html'],
+                                     'setting': testing_obj.example_setting()}
 
             return jsonify({'status': 'success', 'data': req})
 

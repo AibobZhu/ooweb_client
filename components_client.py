@@ -20,7 +20,7 @@ import numpy as np
 from flask import Blueprint, request
 from interfaces import *
 from requests import post
-from share import create_payload, extract_data, APIs, _getStr, day_2_week_number, change_func_name
+from share import create_payload, extract_data, APIs, _getStr, day_2_week_number, change_func_name, suuid
 from test_class import *
 import json
 import oocc_define as ooccd
@@ -2733,8 +2733,32 @@ class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
         vptr = page.get_vptr()
         if vptr == ooccd.RESPONSE_MEMBER:
             if value is not None:
-                raise NotImplementedError("{}.{} doesn't support RESPONSE_MEMBER "
-                                          "mode with param 'value' is not None. ".format(c_name, f_name))
+                if 'children' in value:
+                    children_html = ''
+                    for c in value['children']:
+                        c_value = '' if 'value' not in c else c['value']
+                        c_name = 'random_' + str(suuid()) if 'name' not in c else c['name']
+                        if c['element_type'] == 'WebCheckbox':
+                            checked = False if 'checked' not in c else c['checked']
+                            with WebCheckbox(page='no page',
+                                             name=c_name,
+                                             value=c_value,
+                                             checked=checked) as checkbox:
+                                checkbox.set_api()
+                                children_html += checkbox.render_content()['content']
+                            del checkbox
+                        elif c['element_type'] == 'WebBtn':
+                            with WebBtn(page='no page',
+                                        name=c_name,
+                                        value=c_value) as btn:
+                                btn.set_api()
+                                children_html += btn.render_content()['content']
+                            del btn
+                    if 'html' in value:
+                        value['html'] += children_html
+                    else:
+                        value['html'] = children_html
+                self._vtable[vptr]._response['data'] = {**self._vtable[vptr]._response['data'], **value}
             else:
                 if 'data' in self._vtable[vptr]._request:
                     return self._vtable[vptr]._request['data']
@@ -3031,8 +3055,8 @@ class WebInput(WebComponentBootstrap):
             return self.func_call(params=params)
 
 
-class WebBtnGroup(WebComponentBootstrap):
-    VAL_FUNC_NAME = 'webbtggrp_val'
+class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
+    VAL_FUNC_NAME = 'webbtngrp_val'
 
 
 class WebFormInline(WebComponentBootstrap):

@@ -569,7 +569,7 @@ function webbtndd_val(that, data=null, trigger_event=false, return_parts=["val",
     };
 }
 
-function webbtggrp_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+function webbtngrp_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#' + that.attr('id'));
     if (data == null || typeof data == 'undefined'){
         let children_values = Array();
@@ -582,7 +582,7 @@ function webbtggrp_val(that, data=null, trigger_event=false, return_parts=["val"
             };
         });
         let ret = {};
-        ret.children_values = ret_values;
+        ret.children = children_values;
         ret.element_type = 'WebBtnGroup';
         ret.me = that2.prop('name');
         return ret;
