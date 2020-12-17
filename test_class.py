@@ -41,8 +41,8 @@ class ClassTest():
         """
         Get all subclasses recursively
         """
-
-        for subclass in root_class.__subclasses__():
+        all_subclasses = root_class.__subclasses__()
+        for subclass in all_subclasses:
             if (not (subclass.__name__) in cls._SUBCLASSES.keys()) and \
                     (subclass.__name__.find('Inf') < 0) and \
                     (subclass.__name__.find('WebPage') < 0):
@@ -305,16 +305,26 @@ class WebBtnRadioTest(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        TEST_OBJ = 'test_obj'
+
+        DYN_BE_OBJ = 'test_be_obj'
+        DYN_BE_VAL = 'test_be_val'
+        DYN_BE_REF_BTN = 'dyn_be_ref_btn'
+        DYN_BE_VAL_BTN = 'dyn_be_val_btn'
+
         def place_components_impl(self):
             page = self
-            name = page.testing_class.testing_cls_name
             WebBtnRadio = page._SUBCLASSES['WebBtnRadio']['class']
             WebRow = page._SUBCLASSES['WebRow']['class']
             WebColumn = page._SUBCLASSES['WebColumn']['class']
+            WebHead5 = page._SUBCLASSES['WebHead5']['class']
+            WebBtn = page._SUBCLASSES['WebBtn']['class']
+            WebBr = page._SUBCLASSES['WebBr']['class']
+            WebHead3 = page._SUBCLASSES['WebHead3']['class']
 
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c1:
-                    with c1.add_child(WebBtnRadio(name=name,
+                    with c1.add_child(WebBtnRadio(name=TEST_OBJ,
                                                  mytype=['inline'],
                                                  items=[
                                                      {'label': '测试1', 'checked': ''},
@@ -322,11 +332,39 @@ class WebBtnRadioTest(ClassTest):
                                                      {'label': '测试3'}])) as radio:
                         pass
 
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_title_r:
+                with dyn_title_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_title_c:
+                    with dyn_title_c.add_child(WebHead3(value='Dynamically create radio on backend:')):
+                        pass
+            with page.add_child(WebRow()) as dyn_r:
+                with dyn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_c:
+                    with dyn_c.add_child(WebBtnRadio(name=DYN_BE_OBJ, mytype=['inline'])) as dyn_radio:
+                        pass
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_val_r:
+                with dyn_val_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_val_c:
+                    with dyn_val_c.add_child(WebHead5(name=DYN_BE_VAL)) as dyn_val:
+                        pass
+            with page.add_child(WebRow()) as dyn_btn_r:
+                with dyn_btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_btn_c:
+                    with dyn_btn_c.add_child(WebBtn(name=DYN_BE_VAL_BTN, value='Get value of radio')) as dyn_val_btn:
+                        pass
+                    with dyn_btn_c.add_child(WebBtn(name=DYN_BE_REF_BTN, value='Refresh radio')) as dyn_ref_btn:
+                        pass
+
         def intro_events_impl(self):
             page = self
-            radio = page._components['WebBtnRadio']['obj']
+            radio = page._components[TEST_OBJ]['obj']
             LVar = page._SUBCLASSES['LVar']['class']
             cls = radio.__class__
+
+            dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
+            dyn_be_val = page._components[DYN_BE_VAL]['obj']
+            val_btn = page._components[DYN_BE_VAL_BTN]['obj']
+            ref_btn = page._components[DYN_BE_REF_BTN]['obj']
 
             with page.render_post_w():
                 radio.render_for_post()
@@ -342,20 +380,58 @@ class WebBtnRadioTest(ClassTest):
                     radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
                     with page.render_post_w():
                         radio.render_for_post()
+            with val_btn.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_be_obj.render_for_post()
+                    dyn_be_val.render_for_post()
+            with ref_btn.on_event_w('click'):
+                ref_btn.alert('"Refresh button click"')
+                with page.render_post_w():
+                    ref_btn.render_for_post()
+                    dyn_be_obj.render_for_post()
 
         def on_my_render_impl(self, req):
             page = self
-            if self.__class__.__name__ != 'WebPage':
-                page = self._page
+
             testing_cls = page.testing_class
             testing_cls_name = testing_cls.__name__
-            testing_obj = page._components[testing_cls_name]['obj']
+            testing_obj = page._components[TEST_OBJ]['obj']
+
+            dyn_be_value = None
+            new_dyn_be_value = None
             for r in req:
-                if r['me'] == testing_cls_name:
+                if r['me'] == TEST_OBJ:
                     print('{} got request:{}'.format(testing_cls_name, pprint.pformat(r)))
                     testing_obj.request(req=r)
                     testing_obj.value(value='测试3')
-                    req[req.index(r)] = testing_obj.response()
+                    r['data'] = testing_obj.response()['data']
+                elif r['me'] == DYN_BE_OBJ:
+                    dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
+                    print('{} got request:{}'.format(dyn_be_obj.name(), pprint.pformat(r)))
+                    dyn_be_obj.request(req=r)
+                    dyn_be_value=dyn_be_obj._value_response(radio_cls=testing_cls,
+                                        request_member=dyn_be_obj._vtable[ooccd.RESPONSE_MEMBER])
+                    if new_dyn_be_value:
+                        dyn_be_obj._value_response(radio_cls=dyn_be_obj.__class__,
+                                                    request_member=dyn_be_obj._vtable[ooccd.RESPONSE_MEMBER],
+                                                   value=new_dyn_be_value)
+                    r['data'] = dyn_be_obj.response()['data']
+                elif r['me'] == DYN_BE_VAL:
+                    dyn_val_obj = page._components[DYN_BE_VAL]['obj']
+                    print('{} got request:{}'.format(dyn_val_obj.name(), pprint.pformat(r)))
+                    dyn_val_obj.request(req=r)
+                    info = 'selected:{}, \n\rchildren: {}'.format(dyn_be_value['selected'],
+                                                              dyn_be_value['children'])
+                    dyn_val_obj.value(info)
+                    r['data'] = dyn_val_obj.response()['data']
+                elif r['me'] == DYN_BE_REF_BTN:
+                    new_dyn_be_value = {'children':
+                                            [
+                                                {'label': 'NewItem1', 'checked': True},
+                                                {'label': 'NewItem2'},
+                                                {'label': 'NewItem3'},
+                                            ]
+                                        }
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
@@ -366,7 +442,9 @@ class WebBtnRadioTest(ClassTest):
                 setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
                 setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
 
-        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))
+        page = TestPage(app=current_app,
+                        url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
         page.testing_class = cls
         html = page.render()
 
@@ -401,8 +479,12 @@ class WebBtnGroupTest(ClassTest):
 
         DYN_BE_BTN = 'dynamic_beckend_btn'
         DYN_BE_VALUE = 'dynamic_beckend_value'
-
         DYN_BE_REFRESH_BTN = 'dynamic_beckend_refresh_btn'
+
+        DYN_BE_RADIO_OBJ = 'dynamic_be_radio_obj'
+        DYN_BE_RADIO_VAL_BTN = 'dyn_be_radio_val_btn'
+        DYN_BE_RADIO_REF_BTN = 'dyn_be_radio_ref_btn'
+        DYN_BE_RADIO_VALUE = 'dyn_be_radio_value'
 
         def place_components_impl(self):
             page = self
@@ -530,23 +612,54 @@ class WebBtnGroupTest(ClassTest):
                         as dyn_be_ref_btn:
                         pass
 
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_be_radio_r:
+                with dyn_be_radio_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_be_radio_c:
+                    with dyn_be_radio_c.add_child(WebHead3(value='Dynamic create radios for button group:')):
+                        pass
+            with page.add_child(WebRow()) as dyn_be_radio_r:
+                with dyn_be_radio_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as dyn_be_radio_c:
+                    with dyn_be_radio_c.add_child(this_class(name=DYN_BE_RADIO_OBJ)) as dyn_be_radio_obj:
+                        pass
+            with page.add_child(WebBr()):
+                pass
+            with page.add_child(WebRow()) as dyn_be_radio_val_r:
+                with dyn_be_radio_val_r.add_child(WebColumn(width=self.WIDTH,
+                                                            offset=self.OFFSET)) as dyn_be_radio_val_c:
+                    with dyn_be_radio_val_c.add_child(WebHead5(name=DYN_BE_RADIO_VALUE)) as dyn_be_radio_value:
+                        pass
+            with page.add_child(WebRow()) as dyn_be_radio_btn_r:
+                with dyn_be_radio_btn_r.add_child(WebColumn(width=self.WIDTH,
+                                                            offset=self.OFFSET)) as dyn_be_radio_btn_c:
+                    with dyn_be_radio_btn_c.add_child(WebBtn(name=DYN_BE_RADIO_VAL_BTN,
+                                                             value='Get values')) as dyn_be_radio_btn:
+                        pass
+                    with dyn_be_radio_btn_c.add_child(WebBtn(name=DYN_BE_RADIO_REF_BTN,
+                                                             value='Refresh')) as dyn_be_radio_ref_btn:
+                        pass
+
         def intro_events_impl(self):
             page = self
             test_obj_hor_ckbx = page._components[TEST_OBJ_HORIZON_CKBX]['obj']
             test_obj4 = page._components[TEST_OBJ4]['obj']
             dyn_obj = page._components[DYN_OBJ]['obj']
             dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
+            dyn_be_radio_obj = page._components[DYN_BE_RADIO_OBJ]['obj']
 
             getvalue_btn1 = page._components[GetValueBtn1]['obj']
             ckbx_value_btn = page._components[GetCkbxValueBtn]['obj']
             dyn_btn = page._components[DYN_BTN]['obj']
             dyn_be_btn = page._components[DYN_BE_BTN]['obj']
             dyn_be_ref_btn = page._components[DYN_BE_REFRESH_BTN]['obj']
+            dyn_be_radio_ref_btn = page._components[DYN_BE_RADIO_REF_BTN]['obj']
+            dyn_be_radio_val_btn = page._components[DYN_BE_RADIO_VAL_BTN]['obj']
 
             showvalue1 = page._components[ShowValue1]['obj']
             show_ckbx_value = page._components[ShowCkbxValue]['obj']
             show_dyn_value = page._components[DYN_VALUE]['obj']
             show_dyn_be_value = page._components[ShowDynBEValue]['obj']
+            show_dyn_be_radio_value = page._components[DYN_BE_RADIO_VALUE]['obj']
 
             with getvalue_btn1.on_event_w('click'):
                 with page.render_post_w():
@@ -569,6 +682,15 @@ class WebBtnGroupTest(ClassTest):
                     dyn_be_ref_btn.render_for_post()
                     dyn_be_obj.render_for_post()
 
+            with dyn_be_radio_ref_btn.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_be_radio_ref_btn.render_for_post()
+                    dyn_be_radio_obj.render_for_post()
+            with dyn_be_radio_val_btn.on_event_w('click'):
+                with page.render_post_w():
+                    dyn_be_radio_obj.render_for_post()
+                    show_dyn_be_radio_value.render_for_post()
+
         def on_my_render_impl(self, req):
             page = self
 
@@ -578,7 +700,9 @@ class WebBtnGroupTest(ClassTest):
             test4_value = ''
             dyn_value = ''
             dyn_be_value = ''
+            dyn_be_radio_val = ''
             new_dyn_be_value = None
+            new_dyn_be_radio_val = None
 
             for r in req:
                 if r['me'] == GetValueBtn1:
@@ -643,14 +767,10 @@ class WebBtnGroupTest(ClassTest):
                     dyn_be_value_obj.request(req=r)
                     value_info = 'VALUES: \n'
                     if dyn_be_value:
-                        if 'children' in dyn_be_value:
-                            for c in dyn_be_value['children']:
-                                if c['element_type'] == 'WebCheckbox':
-                                    value_info += "checkbox: "
-                                    value_info += c['label']
-                                    value_info += ' '
-                                    value_info += str(c['checked'])
-                                    value_info += ',    '
+                        value_info += dyn_be_value
+                        '''
+                        
+                        '''
                         value_info += '\n'
                         dyn_be_value_obj.value(value_info)
                     r['data'] = dyn_be_value_obj.response()['data']
@@ -674,6 +794,64 @@ class WebBtnGroupTest(ClassTest):
                                                         }
                                                     ]
                                        }
+                elif r['me'] == DYN_BE_RADIO_REF_BTN:
+                    dyn_be_radio_ref_btn = page._components[DYN_BE_RADIO_REF_BTN]['obj']
+                    print('{} got request:{}'.format(dyn_be_radio_ref_btn.name(), pprint.pformat(r)))
+                    new_dyn_be_radio_val = \
+                        {
+                            'children':[
+                                {
+                                    'element_type':'WebBtnRadio',
+                                    'items':[
+                                                {
+                                                    'element_type':'WebBtnRadio',
+                                                    'label': 'Radio1',
+                                                    'checked': True
+                                                },
+                                                {
+                                                    'element_type': 'WebBtnRadio',
+                                                    'label': 'Radio2',
+                                                },
+                                                {
+                                                    'element_type': 'WebBtnRadio',
+                                                    'label': 'Radio3'
+                                                }
+                                        ]
+                                }
+                            ]
+                        }
+                elif r['me'] == DYN_BE_RADIO_OBJ:
+                    dyn_be_radio_obj = page._components[DYN_BE_RADIO_OBJ]['obj']
+                    print('{} got request:{}'.format(dyn_be_radio_obj.name(), pprint.pformat(r)))
+                    dyn_be_radio_obj.request(req=r)
+                    dyn_be_radio_val = dyn_be_radio_obj.value()
+                    if new_dyn_be_radio_val:
+                        dyn_be_radio_obj.value(value=new_dyn_be_radio_val)
+                    r['data'] = dyn_be_radio_obj.response()['data']
+                elif r['me'] == DYN_BE_RADIO_VALUE:
+                    dyn_be_radio_val_obj = page._components[DYN_BE_RADIO_VALUE]['obj']
+                    print('{} got request:{}'.format(dyn_be_radio_val_obj.name(), pprint.pformat(r)))
+                    dyn_be_radio_val_obj.request(req=r)
+                    info = ''
+                    if dyn_be_radio_val:
+                        if 'children' in dyn_be_radio_val:
+                            for child in dyn_be_radio_val['children']:
+                                if child['element_type'] == 'WebBtnRadio':
+                                    info += 'selected:'
+                                    info += child['selected']
+                                    if 'children' in child:
+                                        info += ', children:{'
+                                        for c in child['children']:
+                                            info += 'label:'
+                                            info += c['label']
+                                            if 'checked' in c.keys():
+                                                info += ',checked:'
+                                                info += str(c['checked'])
+                                            if child['children'].index(c) < len(child['children'])-1:
+                                                info += ';'
+                                        info +='}'
+                    dyn_be_radio_val_obj.value(info)
+                    r['data'] = dyn_be_radio_val_obj.response()['data']
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -1064,7 +1242,8 @@ class WebSelectTest(ClassTest):
             WebRow = page._SUBCLASSES['WebRow']['class']
             WebColumn = page._SUBCLASSES['WebColumn']['class']
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with r1.add_child(WebColumn(width=self.WIDTH,
+                                            offset=self.OFFSET, height='200px')) as c1:
                     options = [{'text': 'option1'},
                                {'text': 'option2'},
                                {'selected': True, 'text': 'option3'}]
@@ -1087,10 +1266,8 @@ class WebSelectTest(ClassTest):
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
-                '''
                 setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
-                '''
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))
         page.testing_class = cls
@@ -1504,10 +1681,12 @@ class OODatePickerSimpleTest(ClassTest):
             page = self
             this_class = page.testing_class
             name = this_class.__name__
-            with page.add_child(
-                    this_class(name=name, radius={'tl': '8px', 'tr': '5px', 'br': '9px', 'bl': '5px'},
-                               width="500px")) as test1:
-                pass
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+            with page.add_child(WebRow()) as r:
+                with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                    with c.add_child(this_class(name=name, width="500px")) as test_obj:
+                        pass
 
         def intro_events_impl(self):
             page = self
@@ -1592,6 +1771,7 @@ class OODatePickerSimpleTest(ClassTest):
 class OODatePickerIconTest(ClassTest):
     testing_cls_name = 'OODatePickerIcon'
 
+    '''
     @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
     @ooccd.RuntimeOnPage()
     def events_trigger_for_class_test(self):
@@ -1619,16 +1799,22 @@ class OODatePickerIconTest(ClassTest):
     @ooccd.RuntimeOnPage()
     def place_components_for_class_test(self):
         page = self
+        WebRow = page._SUBCLASSES['WebRow']
+        WebColumn = page._SUBCLASSES['WebColumn']
+        
         this_class = page.testing_class
         testing_cls_name = this_class.testing_cls_name if hasattr(this_class, 'testing_cls_name') else \
             this_class.__name__
         name = testing_cls_name
-        with page.add_child(this_class(name=name)) as test:
-            pass
+        with page.add_child(WebRow()) as r:
+            with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                with c.add_child(this_class(name=name)) as test:
+                    pass
         with ooccd.MetisTransform.transform_w(component=test, vptr=ooccd.ACTION_MEMBER):
             test.call_custom_func(fname=test.start_func_name,
                               fparams={'that': '$("#{}")'.format(test.id()),
                                        'type': '"{}"'.format(test.VIEWS['week'])})
+    '''
 
     @classmethod
     def test_request(cls, methods=['GET']):
@@ -1642,32 +1828,25 @@ class OODatePickerIconTest(ClassTest):
             testing_cls_name = this_class.testing_cls_name if hasattr(this_class, 'testing_cls_name') else \
                 this_class.__name__
             name = testing_cls_name
-            with page.add_child(this_class(name=name)) as test:
-                pass
-            with ooccd.MetisTransform.transform_w(component=test, vptr=ooccd.ACTION_MEMBER):
-                test.call_custom_func(fname=test.start_func_name,
-                                      fparams={'that': '$("#{}")'.format(test.id()),
-                                               'type': '"{}"'.format(test.VIEWS['week'])})
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+            with page.add_child(WebRow()) as r:
+                with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                    with c.add_child(this_class(name=name)) as test_obj:
+                        pass
 
         def intro_events_impl(self):
             page = self
             test_obj = self._components['OODatePickerIcon']['obj']
+            test_obj.call_custom_func(fname=test_obj.start_func_name,
+                                  fparams={'that': '$("#{}")'.format(test_obj.id()),
+                                           'type': '"{}"'.format(test_obj.VIEWS['week'])})
             with page.render_post_w():
                 test_obj.render_for_post()
 
             with test_obj.on_event_w('change'):
                 with page.render_post_w():
                     test_obj.render_for_post()
-
-        def process_events_impl(self, req):
-            r = req
-            cls = self.__class__
-            if r['data']['date']:
-                dt = cls.get_dates(_data=r['data'])
-                print('OODatePickerIcon testing: got dates: {} ~ {}'.format(
-                    pprint.pformat(dt[0]), pprint.pformat(dt[1]))
-                )
-                cls.get_ret_stamp(r['data'])
 
         def on_my_render_impl(self, req):
             page = self._page
@@ -2905,10 +3084,6 @@ class OOTagGroupTest(ClassTest):
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
-
-            @classmethod
-            def example_data(cls):
-                pass
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)

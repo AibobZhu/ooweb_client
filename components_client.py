@@ -2234,9 +2234,7 @@ class WebPage(WebComponentBootstrap):
     PAGE = None
 
     INSTANCES = set()
-    '''
-    Create an unique instance of page, which add a rule for on_post, and register current page view in app
-    '''
+
 
     @classmethod
     def on_post(cls):
@@ -2744,9 +2742,19 @@ class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
                                              name=c_name,
                                              value=c_value,
                                              checked=checked) as checkbox:
-                                checkbox.set_api()
-                                children_html += checkbox.render_content()['content']
+                                pass
+                            checkbox.set_api()
+                            children_html += checkbox.render_content()['content']
                             del checkbox
+                        elif c['element_type'] == 'WebBtnRadio':
+                            with WebBtnRadio(page='no page',
+                                             name=c_name,
+                                             value=c_value,
+                                             items=c['items']) as radio:
+                                pass
+                            radio.set_api()
+                            children_html += radio.render_content()['content']
+                            del radio
                         elif c['element_type'] == 'WebBtn':
                             with WebBtn(page='no page',
                                         name=c_name,
@@ -2812,12 +2820,52 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
     VAL_FUNC_NAME = 'webbtnradio_val'
     VAL_FUNC_ARGS = ['that', 'data=null']
 
-    '''
     @classmethod
-    def test_request(cls, methods=['GET']):
-        return super().test_request(methods=methods)
-    '''
+    def _value_response(self, radio_cls, request_member, value=None):
+        request_data = request_member._request['data']
+        if value is None:
+            if 'children' in request_data:
+                children_str = ''
+                for c in request_data['children']:
+                    children_str += 'label:'
+                    children_str += c['label']
+                    if 'checked' in c.keys():
+                        children_str += ',checked:'
+                        children_str += str(c['checked'])
+                    if request_data['children'].index(c) < len(request_data['children'])-1:
+                        children_str += ';'
+                request_data['children'] = children_str
+            return request_data
+        else:
+            response_data = request_member._response['data']
+            if isinstance(value, dict) and 'children' in value:
+                with radio_cls(page='no page', items=value['children']) as radio:
+                    pass
+                radio.set_api()
+                r_content = radio.render_content()['content']
+                '''
+                TODO: trim the head and tail div element, to get the real children html
+                '''
+                d = '>'
+                r_content_ls = [r+d for r in r_content.split(d) if r]
+                assert(r_content_ls[0].find('btn-group') >=0)
+                r_content = ''.join(r_content_ls[1:-1])
+                if 'html' in response_data and response_data['html']:
+                    response_data['html'] += r_content
+                else:
+                    response_data['html'] = r_content
+            elif isinstance(value, str):
+                response_data['select'] = value
 
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(radio_cls=self.__class__, request_member=self._vtable[ooccd.RESPONSE_MEMBER], value=value)
+        else:
+            return super().value(value=value)
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -2883,6 +2931,7 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class WebBtnDropdown(WebBtnDropdownTest, WebBtn):
@@ -3036,20 +3085,25 @@ class WebInput(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webinput_val'
 
-    def value(self, value=None):
-        page = self._page
-        if page.get_vptr() == ooccd.RESPONSE_MEMBER:
-
-            if value:
-                if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
-                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['val'] = value
-                else:
-                    self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'val': value}
+    @classmethod
+    def _value_response(cls, request_member, value=None):
+        if value is not None:
+            if 'data' in request_member._response:
+                request_member._response['data']['val'] = value
             else:
-                if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
-                    if 'val' in self._vtable[ooccd.RESPONSE_MEMBER]._response['data']:
-                        return self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['val']
-                return None
+                request_member._response['data'] = {'val': value}
+        else:
+            if 'data' in request_member._request:
+                if 'val' in request_member._request['data']:
+                    return request_member._request['data']['val']
+            return None
+
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(request_member=self._vtable[vptr], value=value)
         else:
             params = {'value': value}
             return self.func_call(params=params)
@@ -3057,6 +3111,45 @@ class WebInput(WebComponentBootstrap):
 
 class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
+
+    @classmethod
+    def _value_response(cls, request_member, my_classes=None, value=None):
+        my_classes_ = {'WebCheckbox': WebCheckbox,
+                       'WebBtnRadio': WebBtnRadio,
+                       'WebBtn': WebBtn} if my_classes is None \
+            else my_classes
+        request_data = request_member._request['data']
+        if value is None:
+            return request_data
+        else:
+            if 'children' in value:
+                children_html = ''
+                for c in value['children']:
+                    if c['element_type'] == 'WebBtnRadio':
+                        with my_classes_['WebBtnRadio'](page='no page', items=c['items']) as radio:
+                            pass
+                        radio.set_api()
+                        r_content = radio.render_content()['content']
+                        children_html += r_content
+                    elif c['element_type'] == 'WebCheckbox':
+                        for item in c['items']:
+                            checked = False if 'checked' not in item else item['checked']
+                            with my_classes_['WebCheckbox'](page='no page', value=item['label'],
+                                             checked=checked) as chkbx:
+                                pass
+                            chkbx.set_api()
+                            children_html += chkbx.render_content()['content']
+
+                request_member._response['data']['html'] = children_html
+
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(self._vtable[ooccd.RESPONSE_MEMBER], value=value)
+        else:
+            return super().value(value=value)
 
 
 class WebFormInline(WebComponentBootstrap):
@@ -3160,7 +3253,7 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
 
     VAL_FUNC_NAME = 'webcheckbox_val'
 
-
+    '''
     def _set_label(self, label):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
@@ -3182,6 +3275,7 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
             self._vtable[vptr]._response['data']['checked'] = checked
         else:
             raise RuntimeError("{}.{} doesn't support ooccd.RESPONSE_MEMBER mode.".format(c_name, f_name))
+    '''
 
     def check(self, checked=None):
         page = self._page
@@ -3189,7 +3283,8 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
         assert (isinstance(checked, bool) or checked is None)
         if vptr == ooccd.RESPONSE_MEMBER:
             if checked is not None:
-                self._set_checked(checked=checked)
+                #self._set_checked(checked=checked)
+                self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['checked'] = checked
             else:
                 if 'checked' in self._vtable[vptr]._request:
                     return self._vtable[vptr]._request['data']['checked']
@@ -3205,7 +3300,7 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
         assert (isinstance(label, str) or label is None)
         if vptr == ooccd.RESPONSE_MEMBER:
             if label is not None:
-                self._set_label(label=label)
+                self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['text'] = label
             else:
                 if 'label' in self._vtable[vptr]._request['data']:
                     return self._vtable[vptr]._request['data']['label']
@@ -3214,6 +3309,29 @@ class WebCheckbox(WebCheckboxTest, WebSpan):
         else:
             params = {'label':label}
             self.func_call(params=params)
+
+    @classmethod
+    def _value_response(cls, request_member, value=None):
+        if isinstance(value, str):
+            self._set_label(value)
+        elif isinstance(value, dict):
+            if 'value' in value.keys():
+                request_member._response['data']['text'] = value['value']
+            elif 'checked' in value.keys():
+                assert (isinstance(value['checked'], bool))
+                request_member._response['data']['checked'] = value['checked']
+        else:
+            raise RuntimeError("{}.{} parameter 'value' doesn't support the formats "
+                               "other then 'str','dict' yet in Response model. ".format(c_name, f_name))
+
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(request_member=self._vtable[ooccd.RESPONSE_MEMBER], value=value)
+        else:
+            return super().value()
 
     '''
     @classmethod

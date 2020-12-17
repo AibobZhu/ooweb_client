@@ -122,36 +122,49 @@ function webbtnradio_on_change(event, that){
 function webbtnradio_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#'+that.attr('id'));
     if(typeof data != 'undefined' && data != null){
-       that2.find('input').each(function(){
-           let v = $(this).attr('data-value');
-           if(('oovalue' in data && v === data.oovalue) || ('select' in data && v === data.select)){
-               that.find('input').prop('checked', false);
-               that.find('input').attr('data-checked', false);
-               $(this).attr('data-checked', true);
-               $(this).prop('checked', true);
-               if('oovalue' in data){
-                   delete data.oovalue;
-               }
-               if('select' in data){
-                   delete data.select;
-               }
-           };
-       });
+        if (('oovalue' in data) || ('select' in data)){
+            that2.find('input').each(function(){
+                let v = $(this).attr('data-value');
+                if(('oovalue' in data && v === data.oovalue) || ('select' in data && v === data.select)){
+                    that.find('input').prop('checked', false);
+                    that.find('input').attr('data-checked', false);
+                    $(this).attr('data-checked', true);
+                    $(this).prop('checked', true);
+                    if('oovalue' in data){
+                        delete data.oovalue;
+                    }
+                    if('select' in data){
+                        delete data.select;
+                    }
+                };
+            });
+        }else if('html' in data){
+            that2.empty();
+        }
        return ooweb_base_val(that=that2, data=data);
     }else{
-       let val = null;
+       let selected_label = null;
+       let children = [];
        that2.find('input').each(function(){
-           let v = $(this).attr('data-checked');
-           if(v === 'true'){
-               val = $(this).attr('data-value');
+           child = {}
+           child.label=$(this).parent().text().trim()
+           let v = $(this).prop('checked');
+           if(v){
+               selected_label = child.label;
+               child.checked=v;
            };
+           children.push(child)
        });
        let base_value=ooweb_base_val(that=that2);
-       base_value.select = val;
-       base_value.oovalue = val;
-        if(typeof base_value != 'undefined' && base_value != null){
+       base_value.selected = selected_label;
+       base_value.oovalue = selected_label;
+       base_value.label = selected_label;
+       base_value.checked = selected_label;
+       base_value.children = children
+       if(typeof base_value != 'undefined' && base_value != null){
             base_value.element_type='WebBtnRadio';
-        };
+       };
+       delete base_value.text;
        return base_value;
     };
 }
@@ -572,11 +585,19 @@ function webbtndd_val(that, data=null, trigger_event=false, return_parts=["val",
 function webbtngrp_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#' + that.attr('id'));
     if (data == null || typeof data == 'undefined'){
+        console.log('webbtngrp_val data is null');
         let children_values = Array();
         that2.children().each(function(){
-            if($(this).find('input').length==1){
-               children_values.push(webcheckbox_val(that=$(this), data=null));
+            console.log('webbtngrp_val, children: $(this):', $(this));
+            if($(this).find('input.checkbox').length==1){
+                /*Find a checkbox*/
+                children_values.push(webcheckbox_val(that=$(this), data=null));
             };
+            if($(this).find('input.radio').length > 0){
+                /*Find a radio*/
+                console.log('webbtngrp find radio');
+                children_values.push(webbtnradio_val(that=$(this), data=null));
+            }
             if($(this).is('button')){
                children_values.push(webbtn_val(that=$(this), data=null));
             };
