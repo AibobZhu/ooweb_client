@@ -27,6 +27,8 @@ class ClassTest():
     WIDTH = ['md6', 'lg6', 'sm10', 'xs10']
     OFFSET = ['mdo3', 'lgo3', 'smo1', 'xso1']
 
+    ROW = 'row'
+
     def events_action_for_class_test(self, req):
         cls = self.__class__
         name_ = cls.__name__
@@ -409,12 +411,18 @@ class WebBtnRadioTest(ClassTest):
                     dyn_be_obj = page._components[DYN_BE_OBJ]['obj']
                     print('{} got request:{}'.format(dyn_be_obj.name(), pprint.pformat(r)))
                     dyn_be_obj.request(req=r)
+                    '''
                     dyn_be_value=dyn_be_obj._value_response(radio_cls=testing_cls,
                                         request_member=dyn_be_obj._vtable[ooccd.RESPONSE_MEMBER])
+                    '''
+                    dyn_be_value=dyn_be_obj.value()
                     if new_dyn_be_value:
+                        '''
                         dyn_be_obj._value_response(radio_cls=dyn_be_obj.__class__,
                                                     request_member=dyn_be_obj._vtable[ooccd.RESPONSE_MEMBER],
                                                    value=new_dyn_be_value)
+                        '''
+                        dyn_be_obj.value(value=new_dyn_be_value)
                     r['data'] = dyn_be_obj.response()['data']
                 elif r['me'] == DYN_BE_VAL:
                     dyn_val_obj = page._components[DYN_BE_VAL]['obj']
@@ -425,13 +433,15 @@ class WebBtnRadioTest(ClassTest):
                     dyn_val_obj.value(info)
                     r['data'] = dyn_val_obj.response()['data']
                 elif r['me'] == DYN_BE_REF_BTN:
-                    new_dyn_be_value = {'children':
-                                            [
-                                                {'label': 'NewItem1', 'checked': True},
-                                                {'label': 'NewItem2'},
-                                                {'label': 'NewItem3'},
-                                            ]
-                                        }
+                    new_dyn_be_value = {
+                        'children':
+                            [
+                                {'label': 'NewItem1', 'checked': True},
+                                {'label': 'NewItem2'},
+                                {'label': 'NewItem3'},
+                            ],
+                        'mytype':['inline']
+                    }
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
@@ -1089,6 +1099,66 @@ class WebInputTest(ClassTest):
         return self.value(value='class {} from class test'.format(self.__class__.__name__))
 
 
+class WebSwitchTest(ClassTest):
+
+    def class_test(self):
+        return self.value(value={
+            'checked': True,
+            'onText': 'Display',
+            'offText': 'Hide'
+        })
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        TESTING_NAME = cls.__name__
+
+        def intro_events_impl(self):
+            page = self._page
+            testing_obj = page._components[TESTING_NAME]['obj']
+            row = page._components[self.ROW]['obj']
+            hide_btn = page._components[self.HIDE_BTN]['obj']
+
+            with testing_obj.on_event_w('switch'):
+                testing_obj.alert('"switch state:"+state+", offColor will be changed to be warning on backend."')
+                with page.render_post_w():
+                    testing_obj.render_for_post()
+            with hide_btn.on_event_w('switch'):
+                row.toggle(state_name='state')
+
+        def on_my_render_impl(self, req):
+            page = self
+            for r in req:
+                if r['me'] == TESTING_NAME:
+                    switch_obj = page._components[TESTING_NAME]['obj']
+                    switch_obj.request(req=r)
+                    switch_obj.value({
+                        'onText': 'Display',
+                        'offText': 'Hide',
+                        'offColor': 'warning'
+                    })
+                    r['data'] = switch_obj.response()['data']
+            return jsonify({'status':'success', 'data':req})
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
+
 class WebBtnToggleTest(ClassTest):
 
     @ooccd.MetisTransform(vptr=ooccd.ACTION_MEMBER)
@@ -1102,6 +1172,45 @@ class WebBtnToggleTest(ClassTest):
             test_obj.alert('"Please check server side to find \'Class testing, class WebBtn got req: ... \'"')
             with page.render_post_w():
                 test_obj.render_for_post()
+
+'''
+class WebBtnSwitchTest(ClassTest):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        def on_my_render_impl(self, req):
+            page = self
+            testing_class = page.testing_class
+            test_obj = page._components[testing_class.__name__]['obj']
+            for r in req:
+                if r['me'] == testing_class.__name__:
+                    print('{} got request:{}'.format(test_obj.name(), pprint.pformat(r)))
+                    test_obj.request(req=r)
+                    test_obj.check(checked=False)
+                    r['data'] = test_obj.response()['data']
+            return jsonify({'status': 'success', 'data': req})
+
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                #setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                #setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+
+        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+'''
 
 
 class WebCheckboxTest(ClassTest):
@@ -1127,7 +1236,8 @@ class WebCheckboxTest(ClassTest):
 
         def intro_events_impl(self):
             page = self
-            test_obj = page._components['WebCheckbox']['obj']
+            test_class = page.testing_class
+            test_obj = page._components[test_class.__name__]['obj']
             LVar = page._SUBCLASSES['LVar']['class']
             with test_obj.on_event_w('change'):
                 with LVar(parent=self, var_name="data") as data:
@@ -1352,7 +1462,7 @@ class WebDatalistTest(ClassTest):
             WebRow = page._SUBCLASSES['WebRow']['class']
             WebColumn = page._SUBCLASSES['WebColumn']['class']
             WebInput = page._SUBCLASSES['WebInput']['class']
-            with page.add_child(WebRow()) as r1:
+            with page.add_child(WebRow(name=self.ROW)) as r1:
                 with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET, height='200px')) as c1:
                     with c1.add_child(WebInput(name=INPUT_NAME, attrs={'list': '{}'.format(TEST_ID)})) as input:
                         options = [{'text': 'option1'},
@@ -3360,17 +3470,25 @@ class OOChartNVD3Test(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
-        def process_events_impl(self, req):
-            test_obj = None
-            test_class = None
-            for name, obj in self._components.items():
-                if name.find('OOChart') == 0:
-                    test_obj = obj['obj']
-                    test_class = test_obj.__class__
-            name_ = req['me']
-            print('Class testing, class {} got req:{}'.format(name_, req))
-            assert (hasattr(test_class, 'test_request_data') and test_class.test_request_data)
-            req['data'] = {'data': cls.test_request_data()}
+        '''
+        def place_components_impl(self):
+            page = self
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+            test_class = page.testing_class
+            class_name = test_class.__name__
+
+            with page.add_child(WebRow()) as r:
+                with r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c:
+                    with c.add_child(test_class(
+                            parent=page,
+                            value=class_name,
+                            name=class_name,
+                            height='400px',
+                            width='100%',
+                            url='/' + test_class.__name__ + '_test')) as test:
+                        pass
+        '''
 
         def on_my_render_impl(self, req):
 
@@ -3384,11 +3502,8 @@ class OOChartNVD3Test(ClassTest):
                 if r['me'] == testing_cls_name:
                     print('{} got request:{}'.format(testing_cls_name, pprint.pformat(r)))
                     testing_obj.request(req=r)
-                    response = testing_obj._vtable[ooccd.RESPONSE_MEMBER]._response
-                    if 'data' not in response:
-                        response['data'] = {}
-                    response['data'] = {'data': cls.test_request_data()}
-                    req[req.index(r)] = response
+                    testing_obj.value({'data': cls.test_request_data()})
+                    r['data'] = testing_obj.response()['data']
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -3396,6 +3511,7 @@ class OOChartNVD3Test(ClassTest):
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
+                #setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl,self))
 
         page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))

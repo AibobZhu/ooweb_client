@@ -516,12 +516,62 @@ function webinput_val(that, data=null, trigger_event=false, return_parts=["val",
     return ret;
 }
 
+function webswitch_val(that, data=null, trigger_event=false, return_parts=["val", "text"]){
+    if((data == null)||(typeof data == 'undefined')){
+        let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+        ret.element_type = 'WebSwitch';
+        return ret;
+    }else{
+        if(('val' in data)&&(typeof data.val == 'object')){
+            if('onText' in data.val){
+                that.bootstrapSwitch('onText', data.val.onText);
+                delete data.val.onText;
+            }
+            if('onColor' in data.val){
+                that.bootstrapSwitch('onColor', data.val.onColor);
+                delete data.val.onColor;
+            }
+            if('offText' in data.val){
+                that.bootstrapSwitch('offText', data.val.offText);
+                delete data.val.offText;
+            }
+            if('offColor' in data.val){
+                that.bootstrapSwitch('offColor', data.val.offColor);
+                delete data.val.offColor;
+            }
+
+        }
+        return ooweb_base_val(that=that, data=data,trigger_event=trigger_event, return_parts=return_parts);
+    }
+}
+
 function weblabel_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
     if(typeof ret != 'undefined' && ret != null){
        ret.element_type = 'WebLabel';
     };
     return ret;
+}
+
+function webbtnswitch_val(that, data=null, trigger_event=false, return_parts=['val', 'text']){
+    if((data == null) || (typeof data == 'undefined')){
+        let input = that.find('input');
+        let span = that.find('span');
+        let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+        ret.element_type = 'WebBtnSwitch';
+        ret.checked = input.prop('checked');
+        return ret;
+    }else{
+        if('checked' in data){
+            that.find('input').prop('checked', data.checked);
+        };
+        let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+        if(typeof ret != 'undefined' && ret != null){
+            ret.element_type = 'WebBtnSwitch';
+            ret.checked = data.checked;
+        };
+        return ret;
+    }
 }
 
 function webcheckbox_val(that, data=null, trigger_event=false, return_parts=["val","text"]){

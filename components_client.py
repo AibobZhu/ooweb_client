@@ -1803,6 +1803,11 @@ class WebComponentBootstrap(WebComponent,
     def hide(self, hide):
         params = {'hide': hide}
         return self.func_call(params=params)
+
+    def toggle(self, state_name):
+        params = {'state_name': state_name}
+        return self.func_call(params=params)
+
     # End appearance
 
     # Position
@@ -2533,6 +2538,9 @@ class WebPage(WebComponentBootstrap):
 
 class ClassTestPage(WebPage):
 
+    ROW = 'row'
+    HIDE_BTN = 'hide_btn'
+
     def place_components_impl(self):
 
         page = self
@@ -2547,7 +2555,7 @@ class ClassTestPage(WebPage):
         default_width = ['md6', 'lg6']
         default_offset = ['mdo3', 'mdo3']
         page._url = '/test_' + testing_class.__name__ + '_requesft'
-        with page.add_child(WebRow()) as r1:
+        with page.add_child(WebRow(name=self.ROW)) as r1:
             with r1.add_child(WebColumn(width=default_width, offset=default_offset, height='200px')) as c1:
                 if class_name.find('OOChart') == 0:
                     with c1.add_child(testing_class(
@@ -2560,19 +2568,35 @@ class ClassTestPage(WebPage):
                                                     value=name_,
                                                     url='/' + testing_class.__name__ + '_test')) as test:
                         pass
+        with page.add_child(WebRow()) as btn_r:
+            with btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET, align=['horizon-center'])) as btn_c:
+                with btn_c.add_child(WebSwitch(name=self.HIDE_BTN, value={"onText":"Display",
+                                                                         "offText":"Hide",
+                                                                         "offColor":"warning"})) as hide_btn:
+                    pass
 
     def intro_events_impl(self):
 
         page = self._page
+        testing_class = page.testing_class
+        hide_btn = None
+        if hasattr(self, 'HIDE_BTN') and self.HIDE_BTN in page._components.keys():
+            hide_btn = page._components[self.HIDE_BTN]['obj']
+        row = None
+        if self.ROW in page._components.keys():
+            row = page._components[self.ROW]['obj']
+        testing_obj = page._components[testing_class.__name__]['obj']
+
         if (not hasattr(self, '_PAGE_CLASS')) or \
                 (hasattr(self, '_PAGE_CLASS') and
                  self._PAGE_CLASS is None):
             page = self
 
         with page.render_post_w():
-            for name, component in page._components.items():
-                component['obj'].render_for_post()
-
+            testing_obj.render_for_post()
+        if hide_btn:
+            with hide_btn.on_event_w('switch'):
+                row.toggle(state_name='state')
         return
 
     def process_events_impl(self, req):
@@ -2839,13 +2863,11 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
         else:
             response_data = request_member._response['data']
             if isinstance(value, dict) and 'children' in value:
-                with radio_cls(page='no page', items=value['children']) as radio:
+                mytype = [] if 'mytype' not in value.keys() else value['mytype']
+                with radio_cls(page='no page', items=value['children'], mytype=mytype) as radio:
                     pass
                 radio.set_api()
                 r_content = radio.render_content()['content']
-                '''
-                TODO: trim the head and tail div element, to get the real children html
-                '''
                 d = '>'
                 r_content_ls = [r+d for r in r_content.split(d) if r]
                 assert(r_content_ls[0].find('btn-group') >=0)
@@ -2862,7 +2884,9 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
         if hasattr(self, '_page') and isinstance(self._page, WebPage):
             vptr = self._page.get_vptr()
         if vptr == ooccd.RESPONSE_MEMBER:
-            return self._value_response(radio_cls=self.__class__, request_member=self._vtable[ooccd.RESPONSE_MEMBER], value=value)
+            return self._value_response(radio_cls=self.__class__,
+                                        request_member=self._vtable[ooccd.RESPONSE_MEMBER],
+                                        value=value)
         else:
             return super().value(value=value)
     '''
@@ -3109,6 +3133,10 @@ class WebInput(WebComponentBootstrap):
             return self.func_call(params=params)
 
 
+class WebSwitch(WebSwitchTest, WebInput):
+    VAL_FUNC_NAME = 'webswitch_val'
+
+
 class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
 
@@ -3126,19 +3154,30 @@ class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
                 children_html = ''
                 for c in value['children']:
                     if c['element_type'] == 'WebBtnRadio':
-                        with my_classes_['WebBtnRadio'](page='no page', items=c['items']) as radio:
+                        kwargs = copy.deepcopy(c)
+                        del kwargs['element_type']
+                        with my_classes_['WebBtnRadio'](page='no page',**kwargs) as radio:
                             pass
                         radio.set_api()
                         r_content = radio.render_content()['content']
                         children_html += r_content
                     elif c['element_type'] == 'WebCheckbox':
+                        kwargs = copy.deepcopy(c)
+                        if 'label' in kwargs.keys():
+                            kwargs['value'] = kwargs['label']
+                        with my_classes_['WebCheckbox'](page='no page', **kwargs) as chkbx:
+                            pass
+                        chkbx.set_api()
+                        children_html += chkbx.render_content()['content']
+                        children_html += '\n'
+                        '''
                         for item in c['items']:
                             checked = False if 'checked' not in item else item['checked']
                             with my_classes_['WebCheckbox'](page='no page', value=item['label'],
                                              checked=checked) as chkbx:
                                 pass
-                            chkbx.set_api()
-                            children_html += chkbx.render_content()['content']
+                        '''
+
 
                 request_member._response['data']['html'] = children_html
 
@@ -3247,6 +3286,10 @@ class WebDiv(WebComponentBootstrap):
 
 class WebLabel(WebDiv):
     VAL_FUNC_NAME = 'weblabel_val'
+
+
+class WebBtnSwitch(WebLabel):
+    VAL_FUNC_NAME = 'webbtnswitch_val'
 
 
 class WebCheckbox(WebCheckboxTest, WebSpan):
