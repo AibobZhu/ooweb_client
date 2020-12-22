@@ -17,12 +17,18 @@ function ooattr(that) {
 }
 */
 
+function ooweb_resize(){
+    var resizeEvent = window.document.createEvent('UIEvents');
+    resizeEvent.initUIEvent('resize', true, false, window, 0);
+    window.dispatchEvent(resizeEvent);
+}
+
 function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     if(typeof data != 'undefined' && data != null){
            if($.type(data) == 'object'){
              let that2 = $('#'+that.attr('id'));
              if('style' in data){
-               for(var key in data['style']){
+               for(var key in Object.keys(data['style'])){
                    that2.css(key, data['style'][key]);
                };
              };
@@ -50,6 +56,17 @@ function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val
              if('val' in data){
                that2.val(data['val']);
              };
+             if('display' in data){
+                console.log('find display:'+data.display)
+                if(data.display == true){
+                    that2.css('display','');
+                }else{
+                    that2.css('display','none');
+                }
+             };
+             if(('resize' in data)&&(data.resize === true)){
+                ooweb_resize();
+             }
            };
         }else{
            let styles = oocss(that);
@@ -122,6 +139,11 @@ function webbtnradio_on_change(event, that){
 function webbtnradio_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#'+that.attr('id'));
     if(typeof data != 'undefined' && data != null){
+        console.log('webbtnradio_val, data:' + Object.keys(data))
+        if('html' in data){
+            that2.empty();
+        }
+        ooweb_base_val(that=that2, data=data);
         if (('oovalue' in data) || ('select' in data)){
             that2.find('input').each(function(){
                 let v = $(this).attr('data-value');
@@ -130,18 +152,9 @@ function webbtnradio_val(that, data=null, trigger_event=false, return_parts=["va
                     that.find('input').attr('data-checked', false);
                     $(this).attr('data-checked', true);
                     $(this).prop('checked', true);
-                    if('oovalue' in data){
-                        delete data.oovalue;
-                    }
-                    if('select' in data){
-                        delete data.select;
-                    }
                 };
             });
-        }else if('html' in data){
-            that2.empty();
         }
-       return ooweb_base_val(that=that2, data=data);
     }else{
        let selected_label = null;
        let children = [];
@@ -520,6 +533,11 @@ function webswitch_val(that, data=null, trigger_event=false, return_parts=["val"
     if((data == null)||(typeof data == 'undefined')){
         let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
         ret.element_type = 'WebSwitch';
+        ret.state = that.bootstrapSwitch('state');
+        ret.onText = that.bootstrapSwitch('onText');
+        ret.offText = that.bootstrapSwitch('offText');
+        ret.onColor = that.bootstrapSwitch('onColor');
+        ret.offColor = that.bootstrapSwitch('offColor');
         return ret;
     }else{
         if(('val' in data)&&(typeof data.val == 'object')){
@@ -1390,10 +1408,10 @@ function oochart_pie_create(svg_id,data,svg=null,parent=null, duration=0,simple=
         //chart.margin({top:0,right:0,bottom:0,left:0});
         chart.showLegend(false).showLabels(false).legend.margin({top:0,right:0,bottom:0,left:0});
       }
-        svg_d3.datum(data)
+      svg_d3.datum(data)
           .transition().duration(duration)
             .call(chart);
-
+      nv.utils.windowResize(function(){chart.update();});
       return chart;
   },function(){
     if(simple){
@@ -1510,7 +1528,7 @@ function oochart_lineplusbar_create(svg_id,data,svg=null,parent=null, duration=0
           .call(chart)
           ;
 
-        nv.utils.windowResize(chart.update);
+        nv.utils.windowResize(function(){chart.update();});
 
         return chart;
     },function(){
@@ -1824,7 +1842,7 @@ function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple
         .call(chart)
         ;
 
-      nv.utils.windowResize(chart.update);
+      nv.utils.windowResize(function(){chart.update();});
 
       return chart;
     });
@@ -1909,8 +1927,7 @@ function oochart_multibar_create(svg_id,data,svg=null,parent=null, duration=0, s
             .call(chart)
             ;
 
-        nv.utils.windowResize(chart.update);
-
+        nv.utils.windowResize(function(){chart.update();});
         return chart;
     }, function(){
         if(parent != null){

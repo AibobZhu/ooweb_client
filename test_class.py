@@ -382,6 +382,12 @@ class WebBtnRadioTest(ClassTest):
                     radio.alert('"The clicked item is in oovalue : " + click_val.oovalue')
                     with page.render_post_w():
                         radio.render_for_post()
+
+            with dyn_be_obj.on_event_w('change'):
+                dyn_be_obj.alert('"Clicked"')
+                with page.render_post_w():
+                    dyn_be_obj.render_for_post()
+
             with val_btn.on_event_w('click'):
                 with page.render_post_w():
                     dyn_be_obj.render_for_post()
@@ -401,6 +407,16 @@ class WebBtnRadioTest(ClassTest):
 
             dyn_be_value = None
             new_dyn_be_value = None
+            new_dyn_be_value2 = {
+                'children':
+                    [
+                        {'label': '2NewItem1', 'checked': True},
+                        {'label': '2NewItem2'},
+                        {'label': '2NewItem3'},
+                    ],
+                'mytype': ['inline'],
+
+            }
             for r in req:
                 if r['me'] == TEST_OBJ:
                     print('{} got request:{}'.format(testing_cls_name, pprint.pformat(r)))
@@ -420,9 +436,9 @@ class WebBtnRadioTest(ClassTest):
                         '''
                         dyn_be_obj._value_response(radio_cls=dyn_be_obj.__class__,
                                                     request_member=dyn_be_obj._vtable[ooccd.RESPONSE_MEMBER],
-                                                   value=new_dyn_be_value)
+                                                   value=new_dyn_be_value2)
                         '''
-                        dyn_be_obj.value(value=new_dyn_be_value)
+                        dyn_be_obj.value(value=new_dyn_be_value2)
                     r['data'] = dyn_be_obj.response()['data']
                 elif r['me'] == DYN_BE_VAL:
                     dyn_val_obj = page._components[DYN_BE_VAL]['obj']
@@ -440,7 +456,8 @@ class WebBtnRadioTest(ClassTest):
                                 {'label': 'NewItem2'},
                                 {'label': 'NewItem3'},
                             ],
-                        'mytype':['inline']
+                        'mytype':['inline'],
+
                     }
             return jsonify({'status': 'success', 'data': req})
 
@@ -3502,7 +3519,8 @@ class OOChartNVD3Test(ClassTest):
                 if r['me'] == testing_cls_name:
                     print('{} got request:{}'.format(testing_cls_name, pprint.pformat(r)))
                     testing_obj.request(req=r)
-                    testing_obj.value({'data': cls.test_request_data()})
+                    testing_obj.value({'data': cls.test_request_data(),
+                                       'value': cls.test_request_data()})
                     r['data'] = testing_obj.response()['data']
 
             return jsonify({'status': 'success', 'data': req})

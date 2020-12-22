@@ -58,7 +58,7 @@ class AppearanceInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def hide(self, hide=False):
+    def display(self, display=None):
         pass
 
 

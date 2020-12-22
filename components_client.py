@@ -122,18 +122,24 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
 
-    def hide(self, hide):
-        hide_ = ""
-        if hide:
-            hide_ = "none"
+    def display(self, display=None):
 
-        if 'data' in self._response:
-            if 'style' in self._response['data']:
-                self._response['data']['style']['display'] = hide_
-            else:
-                self._response['data']={'style':{'display':hide_}}
-        else:
-            self._response['data'] = {'style':{'display':hide_}}
+        if display is None:
+            if 'data' in self._request:
+                if 'style' in self._request['data']:
+                    if 'display' in self._request['data']['style']['display']:
+                        return self._request['data']['style']['display']
+            return None
+        elif display is False:
+            if 'data' in self._response:
+                if 'style' in self._response['data']:
+                    self._response['data']['style']['display'] = 'none'
+            self._response['data'] = {'style':{'display':'none'}}
+        elif display is True:
+            if 'data' in self._response:
+                if 'style' in self._response['data']:
+                    if 'display' in self._response['data']['style']:
+                        del self._response['data']['style']['display']
 
     # End AppearanceInf
 
@@ -164,9 +170,15 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
     def value(self, value=None):
         if value:
             if 'data' in self._response:
-                self._response['data']['text'] = value
+                if isinstance(value, str):
+                    self._response['data']['text'] = value
+                elif isinstance(value, dict):
+                    self._response['data'] = value
             else:
-                self._response['data'] = {'text': value}
+                if isinstance(value, str):
+                    self._response['data']['text'] = value
+                elif isinstance(value, dict):
+                    self._response['data'] = value
         else:
             if 'data' in self._request:
                 if 'val' in self._request['data']:
@@ -268,6 +280,7 @@ class Action(CommandInf, ActionInf):
 
     DRAW_IMG_FUNC_NAME = 'webcomponent_draw_img'
     DRAW_IMG_FUNC_ARG = ['img', 'height']
+
 
 
 """
@@ -1800,8 +1813,8 @@ class WebComponentBootstrap(WebComponent,
         params = {'disable': disable}
         return self.func_call(params=params)
 
-    def hide(self, hide):
-        params = {'hide': hide}
+    def display(self, display=None):
+        params = {'display': display}
         return self.func_call(params=params)
 
     def toggle(self, state_name):
@@ -2535,6 +2548,10 @@ class WebPage(WebComponentBootstrap):
     def get_component(self, name):
         return self._components[name]['obj']
 
+    def resize(self):
+        params = {}
+        return self.func_call(params)
+
 
 class ClassTestPage(WebPage):
 
@@ -2872,10 +2889,7 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
                 r_content_ls = [r+d for r in r_content.split(d) if r]
                 assert(r_content_ls[0].find('btn-group') >=0)
                 r_content = ''.join(r_content_ls[1:-1])
-                if 'html' in response_data and response_data['html']:
-                    response_data['html'] += r_content
-                else:
-                    response_data['html'] = r_content
+                response_data['html'] = r_content
             elif isinstance(value, str):
                 response_data['select'] = value
 
@@ -3136,6 +3150,20 @@ class WebInput(WebComponentBootstrap):
 class WebSwitch(WebSwitchTest, WebInput):
     VAL_FUNC_NAME = 'webswitch_val'
 
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and not isinstance(self._page, str):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if value is not None:
+                self._vtable[vptr]._response['data'] = value
+            else:
+                if 'data' in self._vtable[vptr]._request:
+                    return self._vtable[vptr]._request['data']
+                return None
+        else:
+            params = {'value':value}
+            return self.func_call(params=params)
 
 class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
@@ -3177,7 +3205,6 @@ class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
                                              checked=checked) as chkbx:
                                 pass
                         '''
-
 
                 request_member._response['data']['html'] = children_html
 
@@ -4617,6 +4644,22 @@ class OOChartNVD3(OOChartNVD3Test, WebSvg):
         return cls.CLASS_TEST_HTML
     '''
 
+    @classmethod
+    def _value_response(cls, response_member, value=None):
+        if value:
+            response_member._response['data'] = value
+        else:
+            return response_member._response['data']
+
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(response_member=self._vtable[ooccd.RESPONSE_MEMBER], value=value)
+        else:
+            params = {'value': value}
+            return self.func_call(params=params)
 
 class OOChartLineFinder(OOChartNVD3):
     OOChartNVD3.OOCHART_CLASSES['linefinder'] = __qualname__
@@ -5556,6 +5599,32 @@ class OOChartLine(OOChartNVD3):
 
 class OOChartScatterBubble(OOChartNVD3):
     OOChartNVD3.OOCHART_CLASSES['sbubble'] = __qualname__
+
+    @classmethod
+    def _value_response(cls, response_member, value=None):
+        if value:
+            if value == 'example_data':
+                response_member._response['data'] = self.EXAMPLE_DATA_FUNC_NAME + '(4,40)'
+            else:
+                response_member._response['data'] = value
+        else:
+            raise RuntimeError("{}.{} doesn't support Response mode yet".format(self.__class__.__name__,
+                                                                                'value'))
+    def value(self, value=None):
+        vptr = ooccd.FORMAT_MEMBER
+        if hasattr(self, '_page') and isinstance(self._page, WebPage):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._value_response(
+                response_member=self._vtable[ooccd.RESPONSE_MEMBER],
+                value=value
+            )
+        else:
+            if value:
+                if value == 'example_data':
+                    value = self.EXAMPLE_DATA_FUNC_NAME + '(4,40)'
+            params = {'value': value}
+            return self.func_call(params=params)
 
     @classmethod
     def test_request_data(cls):
