@@ -297,6 +297,54 @@ class OODictTest(ClassTest):
         return cls.CLASS_TEST_HTML
 
 
+class WebIconTest(ClassTest):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        TEST_OBJ = 'test_obj'
+
+        def place_components_impl(self):
+            page = self
+            WebIcon = page._SUBCLASSES['WebIcon']['class']
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c1:
+                    with c1.add_child(WebIcon(name=TEST_OBJ,
+                                              icon='arrow-right',
+                                              font={'size':'60px'},
+                                              color={'color':'grey'})) as icon:
+                        pass
+
+        def intro_events_impl(self):
+            pass
+
+        def on_my_render_impl(self, req):
+            return jsonify({'status': 'success', 'data': req})
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+
+        page = TestPage(app=current_app,
+                        url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
+
 class WebBtnRadioTest(ClassTest):
 
     testing_cls_name = 'WebBtnRadio'

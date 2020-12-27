@@ -139,7 +139,6 @@ function webbtnradio_on_change(event, that){
 function webbtnradio_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#'+that.attr('id'));
     if(typeof data != 'undefined' && data != null){
-        console.log('webbtnradio_val, data:' + Object.keys(data))
         if('html' in data){
             that2.empty();
         }

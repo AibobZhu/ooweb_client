@@ -1682,7 +1682,8 @@ class WebComponentBootstrap(WebComponent,
              'comment': 'glyphicon glyphicon-comment',
              'ok-circle': 'glyphicon glyphicon-ok-circle',
              'login': 'glyphicon glyphicon-log-in',
-             'remove': 'glyphicon glyphicon-remove'}
+             'remove': 'glyphicon glyphicon-remove',
+             'arrow-right': 'glyphicon glyphicon-arrow-right'}
 
     ACTION_MEMBER = ooccd.ACTION_MEMBER
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
@@ -1705,7 +1706,8 @@ class WebComponentBootstrap(WebComponent,
             print('virtual_inherid, find WebPage')
         father_functions = {}
         for father_nm, father_cls in fathers.items():
-            self._vtable[father_nm] = father_cls(component=self, **kwargs)
+            father = father_cls(component=self, **kwargs)
+            self._vtable[father_nm] = father
             father_fnms = [f[0] for f in inspect.getmembers(father_cls, inspect.isfunction) if f[0].find('__') != 0]
             for fnm in father_fnms:
                 if fnm not in father_functions.keys():
@@ -1733,7 +1735,9 @@ class WebComponentBootstrap(WebComponent,
                         raise RuntimeError('{} running with incorrect vptr:{}'.format(
                             my_name, vptr_
                         ))
-                    return getattr(self._vtable[vptr_], my_name)(*args, **kwargs)
+                    vfather = self._vtable[vptr_]
+                    func = getattr(vfather, my_name)
+                    return func(*args, **kwargs)
                 change_func_name(fn,ffnm)
                 setattr(self, ffnm, types.MethodType(fn, self))
 
@@ -2865,16 +2869,30 @@ class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
     def _value_response(self, radio_cls, request_member, value=None):
         request_data = request_member._request['data']
         if value is None:
-            if 'children' in request_data:
+            if 'children' in request_data.keys():
                 children_str = ''
-                for c in request_data['children']:
-                    children_str += 'label:'
-                    children_str += c['label']
-                    if 'checked' in c.keys():
-                        children_str += ',checked:'
-                        children_str += str(c['checked'])
-                    if request_data['children'].index(c) < len(request_data['children'])-1:
-                        children_str += ';'
+                if isinstance(request_data['children'], dict):
+                    for c in request_data['children']:
+                        children_str += 'label:'
+                        children_str += c['label']
+                        if 'checked' in c.keys():
+                            children_str += ',checked:'
+                            children_str += str(c['checked'])
+                        if request_data['children'].index(c) < len(request_data['children'])-1:
+                            children_str += ';'
+                elif isinstance(request_data['children'], str) and request_data['children']:
+                    '''
+                    children_str = request_data['children']
+                    children_kv = children_str.split(',')
+                    for kv in children_kv:
+                        child = kv.split(':')
+                        if child[0] == 'label':
+                            children_str += 'label:'
+                            children_str += child[1]
+                        if child[0] == 'checked':
+                            pass
+                    '''
+                    print('find children is string')
                 request_data['children'] = children_str
             return request_data
         else:
@@ -3309,6 +3327,10 @@ class WebDatalist(WebDatalistTest, WebSelect):
 class WebDiv(WebComponentBootstrap):
 
     VAL_FUNC_NAME = 'webdiv_val'
+
+
+class WebIcon(WebIconTest, WebDiv):
+    pass
 
 
 class WebLabel(WebDiv):
