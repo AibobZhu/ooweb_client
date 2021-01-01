@@ -297,6 +297,54 @@ class OODictTest(ClassTest):
         return cls.CLASS_TEST_HTML
 
 
+class WebATest(ClassTest):
+
+    @classmethod
+    def test_request(cls, methods=['GET']):
+        print('class {} test_request is called'.format(cls.__name__))
+        if cls.CLASS_TEST_HTML:
+            return cls.CLASS_TEST_HTML
+
+        TEST_OBJ = 'test_obj'
+
+        def place_components_impl(self):
+            page = self
+            WebA = page._SUBCLASSES['WebA']['class']
+            WebBtn = page._SUBCLASSES['WebBtn']['class']
+            WebRow = page._SUBCLASSES['WebRow']['class']
+            WebColumn = page._SUBCLASSES['WebColumn']['class']
+
+            with page.add_child(WebRow()) as r1:
+                with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c1:
+                    with c1.add_child(WebA(name=TEST_OBJ,
+                                           href='#')) as icon:
+                        with icon.add_child(WebBtn(value='Test')) as btn:
+                            pass
+
+        def intro_events_impl(self):
+            pass
+
+        def on_my_render_impl(self, req):
+            return jsonify({'status': 'success', 'data': req})
+
+        class TestPage(cls._PAGE_CLASS):
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
+                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
+
+        page = TestPage(app=current_app,
+                        url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
+        page.testing_class = cls
+        html = page.render()
+
+        cls.CLASS_TEST_HTML = render_template_string(html)
+        return cls.CLASS_TEST_HTML
+
+
 class WebIconTest(ClassTest):
 
     @classmethod
@@ -1104,7 +1152,7 @@ class WebBtnDropdownTest(ClassTest):
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
 
-
+'''
 class WebBtnTest(ClassTest):
 
     @classmethod
@@ -1156,7 +1204,7 @@ class WebBtnTest(ClassTest):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
-
+'''
 
 class WebInputTest(ClassTest):
 
@@ -1185,13 +1233,13 @@ class WebSwitchTest(ClassTest):
             page = self._page
             testing_obj = page._components[TESTING_NAME]['obj']
             row = page._components[self.ROW]['obj']
-            hide_btn = page._components[self.HIDE_BTN]['obj']
+            hide_switch = page._components[self.HIDE_SWITCH]['obj']
 
             with testing_obj.on_event_w('switch'):
                 testing_obj.alert('"switch state:"+state+", offColor will be changed to be warning on backend."')
                 with page.render_post_w():
                     testing_obj.render_for_post()
-            with hide_btn.on_event_w('switch'):
+            with hide_switch.on_event_w('switch'):
                 row.toggle(state_name='state')
 
         def on_my_render_impl(self, req):
@@ -3510,6 +3558,7 @@ class OOChatServerTest(OOChatClientTest):
             current_app.socketio.on_namespace(ServerChatNM(server_obj=None,
                                                            socket_namespace=testing_class.NAMESPACE))
 
+
         class TestPage(cls._PAGE_CLASS):
             TestName = '客服1'
 
@@ -3517,7 +3566,8 @@ class OOChatServerTest(OOChatClientTest):
                 super().__init__(**kwargs)
                 setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
 
-        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
+        page = TestPage(app=current_app,
+                        url='/test_' + cls.__name__ + '_request',
                         value='class {} test'.format(cls.__name__))
         page.testing_class = cls
         html = page.render()
@@ -3563,6 +3613,10 @@ class OOChartNVD3Test(ClassTest):
             testing_cls = page.testing_class
             testing_cls_name = testing_cls.__name__
             testing_obj = page._components[testing_cls_name]['obj']
+            hide_switch = 'no hide switch' if not hasattr(self, 'HIDE_SWITCH') else self.HIDE_SWITCH
+            dis_switch = 'no disable switch' if not hasattr(self, 'DISABLE_SWITCH') else self.DISABLE_SWITCH
+            hide = None
+            disable = False
             for r in req:
                 if r['me'] == testing_cls_name:
                     print('{} got request:{}'.format(testing_cls_name, pprint.pformat(r)))
@@ -3570,6 +3624,23 @@ class OOChartNVD3Test(ClassTest):
                     testing_obj.value({'data': cls.test_request_data(),
                                        'value': cls.test_request_data()})
                     r['data'] = testing_obj.response()['data']
+                elif r['me'] == hide_switch:
+                    hide_switch_obj = page._components[self.HIDE_SWITCH]['obj']
+                    hide_switch_obj.request(r)
+                    value = hide_switch_obj.value()
+                    hide = value['onText'] if value['state'] else value['offText']
+                elif r['me'] == dis_switch:
+                    dis_switch = page._components[self.DISABLE_SWITCH]['obj']
+                    dis_switch.request(r)
+                    value = dis_switch.value()
+                    disable = False if value['state'] else True
+                elif r['me'] == self.ROW:
+                    row = page._components[self.ROW]['obj']
+                    row.request(req=r)
+                    display = (hide != 'Hide')
+                    row.value({'display': display})
+                    r['data'] = row.response()['data']
+
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -3577,10 +3648,11 @@ class OOChartNVD3Test(ClassTest):
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
-                #setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
                 setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl,self))
 
-        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request', value='class {} test'.format(cls.__name__))
+        page = TestPage(app=current_app,
+                        url='/test_' + cls.__name__ + '_request',
+                        value='class {} test'.format(cls.__name__))
         page.testing_class = cls
         html = page.render()
 

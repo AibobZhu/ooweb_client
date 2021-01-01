@@ -28,13 +28,20 @@ function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val
            if($.type(data) == 'object'){
              let that2 = $('#'+that.attr('id'));
              if('style' in data){
-               for(var key in Object.keys(data['style'])){
+               for(var key in data['style']){
                    that2.css(key, data['style'][key]);
                };
              };
              if('attr' in data){
                for(var key in data['attr']){
-                   that2.attr(key, data['attr'][key]);
+                   if(data['attr'][key] == 'false'){
+                       that2.prop(key, false);
+                   }else if(data['attr'][key] == 'true'){
+                       that2.prop(key, true);
+                   }else{
+                       that2.prop(key, data['attr'][key]);
+                   }
+
                };
              };
              if('remove_class' in data){
@@ -57,13 +64,19 @@ function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val
                that2.val(data['val']);
              };
              if('display' in data){
-                console.log('find display:'+data.display)
                 if(data.display == true){
                     that2.css('display','');
                 }else{
                     that2.css('display','none');
                 }
              };
+             if('disabled' in data){
+                if(data.disabled == true){
+                    that2.prop('disabled', true);
+                }else{
+                    that2.prop('disabled', false);
+                }
+             }
              if(('resize' in data)&&(data.resize === true)){
                 ooweb_resize();
              }
@@ -531,6 +544,7 @@ function webinput_val(that, data=null, trigger_event=false, return_parts=["val",
 function webswitch_val(that, data=null, trigger_event=false, return_parts=["val", "text"]){
     if((data == null)||(typeof data == 'undefined')){
         let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
+        delete ret['attr']['data-bootstrapSwitch'];
         ret.element_type = 'WebSwitch';
         ret.state = that.bootstrapSwitch('state');
         ret.onText = that.bootstrapSwitch('onText');
@@ -652,17 +666,14 @@ function webbtndd_val(that, data=null, trigger_event=false, return_parts=["val",
 function webbtngrp_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#' + that.attr('id'));
     if (data == null || typeof data == 'undefined'){
-        console.log('webbtngrp_val data is null');
         let children_values = Array();
         that2.children().each(function(){
-            console.log('webbtngrp_val, children: $(this):', $(this));
             if($(this).find('input.checkbox').length==1){
                 /*Find a checkbox*/
                 children_values.push(webcheckbox_val(that=$(this), data=null));
             };
             if($(this).find('input.radio').length > 0){
                 /*Find a radio*/
-                console.log('webbtngrp find radio');
                 children_values.push(webbtnradio_val(that=$(this), data=null));
             }
             if($(this).is('button')){
@@ -1813,6 +1824,7 @@ function oochart_line_example_data(){
     }
   ];
 }
+
 function oochart_line_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
@@ -1869,7 +1881,8 @@ function oochart_scatterbubble_example_data(groups=4, points=40){
         }
       }
       return data;
-};
+}
+
 function oochart_scatterbubble_create(svg_id,data,svg=null,parent=null, duration=0,simple=false){
     var svg_d3 = oochart_create_svg(svg_id,svg);
     nv.addGraph(function() {
@@ -1959,12 +1972,13 @@ function webpage_render(url, data, async=true){
     let data_post = [];
     let data_func = {};
     data.forEach(function(val,index,arr){
-        data_post.push({'data':val.data, 'me':val.me});
+        data_post.push({'data':val.data, 'extra_data':val.extra_data, 'me':val.me});
         data_func[val.me] = {'that':val.that, 'func':val.func, 'trigger_event':val.trigger_event};
     })
     let data_j = null;
     try{
         data_j = JSON.stringify(data_post);
+        console.log('data_j len:'+String(data_j.length))
     }catch(err){
         let data_a = []
         data_post.forEach(function(val, index, arr){
@@ -1989,8 +2003,6 @@ function webpage_render(url, data, async=true){
 }
 
 function web_img_val(that, data, trigger_event=false){
-    console.log(that.attr('id'));
-    console.log(data);
     that.attr('src', data);
 }
 

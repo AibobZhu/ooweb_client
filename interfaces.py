@@ -113,7 +113,7 @@ class EventInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def render_for_post(self, trigger_event=False, return_parts=["all"]):
+    def render_for_post(self, extra_data='null', trigger_event=False, return_parts=["all"]):
         pass
 
     @abc.abstractmethod

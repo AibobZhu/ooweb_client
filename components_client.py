@@ -117,24 +117,37 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
 
-    def disable(self, **kwargs):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    def disable(self, disable=None):
+        if disable is None:
+            if 'data' in self._request:
+                if 'attr' in self._request['data']:
+                    if 'disabled' in self._request['data']['attr']:
+                        return self._request['data']['attr']['disabled']
+            return None
+        else:
+            disable_val = 'true' if disable else 'false'
+            if 'data' in self._response:
+                if 'attr' in self._response['data']:
+                    self._response['data']['attr']['disabled']=disable_val
+                else:
+                    self._response['data']['attr'] = {'disabled':disable_val}
+            else:
+                self._response['data'] = {'attr':{'disabled':disable_val}}
 
     def display(self, display=None):
 
         if display is None:
             if 'data' in self._request:
                 if 'style' in self._request['data']:
-                    if 'display' in self._request['data']['style']['display']:
+                    if 'display' in self._request['data']['style']:
                         return self._request['data']['style']['display']
             return None
         elif display is False:
             if 'data' in self._response:
                 if 'style' in self._response['data']:
                     self._response['data']['style']['display'] = 'none'
-            self._response['data'] = {'style':{'display':'none'}}
+            else:
+                self._response['data'] = {'style':{'display':'none'}}
         elif display is True:
             if 'data' in self._response:
                 if 'style' in self._response['data']:
@@ -219,9 +232,17 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
     def request(self, req):
         self._request = req
         self._response = {'me': req['me'], 'data':{}}
+        req = self._response
 
     def response(self):
         return self._response
+
+    def requesting_event(self):
+        if self._request:
+            if 'extra_data' in self._request and self._request['extra_data']:
+                if 'event' in self._request['extra_data']:
+                    return self._request['extra_data']['event']
+        return None
 
 
 class ClientBase(metaclass=abc.ABCMeta):
@@ -1770,8 +1791,10 @@ class WebComponentBootstrap(WebComponent,
         finally:
             self._pop_current_context()
 
-    def render_for_post(self, trigger_event=False, return_parts=["all"]):
-        params = {'trigger_event': trigger_event, 'return_parts': return_parts}
+    def render_for_post(self, extra_data='null', trigger_event=False, return_parts=["all"]):
+        params = {'extra_data': extra_data,
+                  'trigger_event': trigger_event,
+                  'return_parts': return_parts}
         return self.func_call(params)
 
     def trigger_event(self, event):
@@ -2559,13 +2582,70 @@ class WebPage(WebComponentBootstrap):
 
 class ClassTestPage(WebPage):
 
-    ROW = 'row'
     HIDE_BTN = 'hide_btn'
+
+    HIDE_SWITCH = 'hide_switch'
+    DISABLE_SWITCH = 'disable_switch'
+    ROW = 'row'
+    COL = 'col'
+
+    @classmethod
+    def _place_components_impl(cls, page):
+
+        testing_class = page.testing_class
+        testing_cls_name = testing_class.__name__
+        class_name = testing_class.__name__
+        name_ = testing_cls_name
+
+        WebRow = page._SUBCLASSES['WebRow']['class']
+        WebColumn = page._SUBCLASSES['WebColumn']['class']
+        WebSwitch = page._SUBCLASSES['WebSwitch']['class']
+        height = '500px'
+        if class_name.find('OOChart') == 0:
+            height = '400px'
+        page._url = '/test_' + testing_class.__name__ + '_request'
+
+        with page.add_child(WebRow(name=page.ROW)) as r1:
+            with r1.add_child(WebColumn(width=page.WIDTH,
+                                        offset=page.OFFSET,
+                                        height=height)) as c1:
+                if class_name.find('OOChart') == 0:
+                    with c1.add_child(testing_class(
+                            parent=page, value=class_name,
+                            name=name_,
+                            width='100%',
+                            height=height,
+                            url='/' + testing_class.__name__ + '_test')) as test:
+                        pass
+                else:
+                    with c1.add_child(testing_class(parent=c1,
+                                                    name=name_,
+                                                    url='/' + testing_class.__name__ + '_test')) as test:
+                        pass
+        with page.add_child(WebRow()) as btn_r:
+            with btn_r.add_child(WebColumn(width=page.WIDTH,
+                                           offset=page.OFFSET,
+                                           align=['horizon-center'])) as btn_c:
+                with btn_c.add_child(WebSwitch(name=page.HIDE_SWITCH,
+                                               value={
+                                                   "onText": "Display",
+                                                   "offText": "Hide",
+                                                   "offColor": "warning"
+                                               })) as hide_btn:
+                    pass
+                with btn_c.add_child(WebSwitch(name=page.DISABLE_SWITCH,
+                                               value={
+                                                   "onText": "Enable",
+                                                   "offText": "Disable",
+                                                   "offColor": "info"
+                                               })) as dis_btn:
+                    pass
 
     def place_components_impl(self):
 
         page = self
-
+        self._place_components_impl(page=page)
+        '''
         testing_class = page.testing_class
         testing_cls_name = testing_class.__name__
         class_name = testing_class.__name__
@@ -2590,15 +2670,59 @@ class ClassTestPage(WebPage):
                                                     url='/' + testing_class.__name__ + '_test')) as test:
                         pass
         with page.add_child(WebRow()) as btn_r:
-            with btn_r.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET, align=['horizon-center'])) as btn_c:
-                with btn_c.add_child(WebSwitch(name=self.HIDE_BTN, value={"onText":"Display",
+            with btn_r.add_child(WebColumn(width=self.WIDTH,
+                                           offset=self.OFFSET,
+                                           align=['horizon-center'])) as btn_c:
+                with btn_c.add_child(WebSwitch(name=self.HIDE_BTN,
+                                               value={"onText":"Display",
                                                                          "offText":"Hide",
                                                                          "offColor":"warning"})) as hide_btn:
                     pass
+        '''
+
+    @classmethod
+    def _intro_events_impl(cls, page):
+        hide_switch = page._components[page.HIDE_SWITCH]['obj'] if page.HIDE_SWITCH in page._components.keys() else None
+        dis_switch = page._components[page.DISABLE_SWITCH]['obj'] if page.DISABLE_SWITCH in page._components.keys() else None
+        row = page._components[page.ROW]['obj'] if page.ROW in page._components.keys() else None
+
+        testing_class = page.testing_class
+        testing_obj = page._components[testing_class.__name__]['obj']
+
+        with page.render_post_w():
+            '''
+            for name, component in page._components.items():
+                component['obj'].render_for_post()
+            '''
+            testing_obj.render_for_post()
+
+        if hide_switch:
+            with hide_switch.on_event_w('switch'):
+                # row.toggle(state_name='state')
+                with page.render_post_w():
+                    hide_switch.render_for_post()
+                    row.render_for_post()
+
+        if dis_switch:
+            with dis_switch.on_event_w('switch'):
+                with page.render_post_w():
+                    dis_switch.render_for_post()
+                    row.render_for_post()
+                    testing_obj.render_for_post()
+
+        return
 
     def intro_events_impl(self):
 
         page = self._page
+        if (not hasattr(self, '_PAGE_CLASS')) or \
+                (hasattr(self, '_PAGE_CLASS') and
+                 self._PAGE_CLASS is None):
+            page = self
+
+        self._intro_events_impl(page=page)
+
+        '''
         testing_class = page.testing_class
         hide_btn = None
         if hasattr(self, 'HIDE_BTN') and self.HIDE_BTN in page._components.keys():
@@ -2619,6 +2743,7 @@ class ClassTestPage(WebPage):
             with hide_btn.on_event_w('switch'):
                 row.toggle(state_name='state')
         return
+        '''
 
     def process_events_impl(self, req):
         cls = self.__class__
@@ -2629,11 +2754,49 @@ class ClassTestPage(WebPage):
         else:
             req['data'] = {'data': cls.test_request_data(), 'attrs':'align:'}
 
+    @classmethod
+    def _on_my_render_impl(cls,page, req):
+        testing_cls = page.testing_class
+        testing_cls_name = testing_cls.__name__
+        testing_obj = page._components[testing_cls_name]['obj']
+        hide = None
+        disable = False
+
+        hide_switch = 'no hide switch' if not hasattr(page, 'HIDE_SWITCH') else page.HIDE_SWITCH
+        dis_switch = 'no disable switch' if not hasattr(page, 'DISABLE_SWITCH') else page.DISABLE_SWITCH
+        for r in req:
+            if r['me'] == testing_cls_name:
+                print('Got {} request:{}'.format(testing_obj.name(), pprint.pformat(r)))
+                testing_obj.request(req=r)
+                testing_obj.class_test()
+                testing_obj.disable(disable)
+                r['data'] = testing_obj.response()['data']
+            elif r['me'] == hide_switch:
+                hide_switch = page._components[page.HIDE_SWITCH]['obj']
+                hide_switch.request(r)
+                value = hide_switch.value()
+                hide = value['onText'] if value['state'] else value['offText']
+            elif r['me'] == dis_switch:
+                dis_switch = page._components[page.DISABLE_SWITCH]['obj']
+                dis_switch.request(r)
+                value = dis_switch.value()
+                disable = False if value['state'] else True
+            elif r['me'] == page.ROW:
+                row = page._components[page.ROW]['obj']
+                row.request(req=r)
+                display = (hide != 'Hide')
+                row.value({'display': display, 'hide': hide})
+                r['data'] = row.response()['data']
+
+        return jsonify({'status': 'success', 'data': req})
+
     def on_my_render_impl(self, req):
 
         page = self
         if self.__class__.__name__ != 'WebPage':
             page = self._page
+        return self._on_my_render_impl(page=page, req=req)
+        '''
         testing_cls = page.testing_class
         testing_cls_name = testing_cls.__name__
         testing_obj = page._components[testing_cls_name]['obj']
@@ -2644,6 +2807,7 @@ class ClassTestPage(WebPage):
                 testing_obj.class_test()
                 r['data'] = testing_obj.response()['data']
         return jsonify({'status': 'success', 'data': req})
+        '''
 
 
 class WebA(WebComponentBootstrap):
@@ -2845,7 +3009,7 @@ class WebBtnToolbar(WebComponentBootstrap):
         return json.dumps({"status": "sucess"}), 201
 
 
-class WebBtn(WebBtnTest, WebComponentBootstrap):
+class WebBtn(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtn_val'
     '''
     @classmethod
@@ -2858,6 +3022,10 @@ class WebBtn(WebBtnTest, WebComponentBootstrap):
     def test_result(cls):
         return cls.on_post()
     '''
+
+    def value(self, value=None):
+        params = {'value':value}
+        return self.func_call(params=params)
 
 
 class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):
@@ -3182,6 +3350,7 @@ class WebSwitch(WebSwitchTest, WebInput):
         else:
             params = {'value':value}
             return self.func_call(params=params)
+
 
 class WebBtnGroup(WebBtnGroupTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webbtngrp_val'
