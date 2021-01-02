@@ -92,7 +92,8 @@ class ClassTest():
             return cls.CLASS_TEST_HTML
 
         WebPage = cls._PAGE_CLASS
-        page = WebPage(url='/test_'+cls.__name__+'_request', value='class {} test'.format(cls.__name__))
+        page = WebPage(url='/test_'+cls.__name__+'_request',
+                       value='class {} test'.format(cls.__name__))
         '''
         page.place_components = types.MethodType(cls.place_components_for_class_test, page)
         page.place_components()
@@ -311,14 +312,23 @@ class WebATest(ClassTest):
             page = self
             WebA = page._SUBCLASSES['WebA']['class']
             WebBtn = page._SUBCLASSES['WebBtn']['class']
+            WebIcon = page._SUBCLASSES['WebIcon']['class']
             WebRow = page._SUBCLASSES['WebRow']['class']
             WebColumn = page._SUBCLASSES['WebColumn']['class']
 
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=self.WIDTH, offset=self.OFFSET)) as c1:
+                with r1.add_child(WebColumn(width=self.WIDTH,
+                                            offset=self.OFFSET,
+                                            align='horizon-center')) as c1:
+                    with c1.add_child(WebA(align='left')) as a1:
+                        with a1.add_child(WebIcon(icon='arrow-left')) as icon1:
+                            pass
                     with c1.add_child(WebA(name=TEST_OBJ,
-                                           href='#')) as icon:
-                        with icon.add_child(WebBtn(value='Test')) as btn:
+                                           href='#')) as a2:
+                        with a2.add_child(WebBtn(value='Test')) as btn:
+                            pass
+                    with c1.add_child(WebA(align='right')) as a3:
+                        with a3.add_child(WebIcon(icon='arrow-right')) as icon2:
                             pass
 
         def intro_events_impl(self):
@@ -2316,6 +2326,11 @@ class OODatePickerRangeTest(ClassTest):
 class OOBannerTest(ClassTest):
     testing_cls_name = 'OOBanner'
 
+    def class_test(self):
+        banner = self._get_banner()
+        new_html = render_template_string(self.CAROUSEL_HTML, banner=banner)
+        self.value({'html': new_html})
+
     @ooccd.MetisTransform(vptr=ooccd.RESPONSE_MEMBER)
     def events_action_for_class_test(self, req):
         print('Class testing, class {} got req:{}'.format(self.__class__.__name__, req['data']))
@@ -2323,53 +2338,6 @@ class OOBannerTest(ClassTest):
         new_html = render_template_string(self.CAROUSEL_HTML,
                                           banner=banner)
         req['data']['html'] = new_html
-
-    @classmethod
-    def test_request(cls, methods=['GET']):
-        print('class {} test_request is called'.format(cls.__name__))
-        if cls.CLASS_TEST_HTML:
-            return cls.CLASS_TEST_HTML
-
-        def intro_events_impl(self):
-            page = self
-            testing_class = page.testing_class
-            testing_obj = page._components[testing_class.__name__]['obj']
-            with page.render_post_w():
-                testing_obj.render_for_post(return_parts=['val'])
-        def on_my_render_impl(self, req):
-            page = self
-            if self.__class__.__name__ != 'WebPage':
-                page = self._page
-            testing_cls = page.testing_class
-            testing_cls_name = testing_cls.__name__
-            testing_obj = page._components[testing_cls_name]['obj']
-            for r in req:
-                if r['me'] == testing_cls_name:
-                    print('{} got request:{}'.format(testing_obj.name(), pprint.pformat(r)))
-                    testing_obj.request(req=r)
-                    banner = testing_obj._get_banner()
-                    new_html = render_template_string(testing_obj.CAROUSEL_HTML, banner=banner)
-                    response = testing_obj._vtable[ooccd.RESPONSE_MEMBER]._response
-                    if 'data' not in response:
-                        response['data'] = {}
-                    response['data']['html'] = new_html
-                    r = response
-            return jsonify({'status': 'success', 'data': req})
-
-        class TestPage(cls._PAGE_CLASS):
-
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                setattr(self, 'on_my_render_impl', types.MethodType(on_my_render_impl, self))
-                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
-
-        page = TestPage(app=current_app, url='/test_' + cls.__name__ + '_request',
-                        value='class {} test'.format(cls.__name__))
-        page.testing_class = cls
-        html = page.render()
-
-        cls.CLASS_TEST_HTML = render_template_string(html)
-        return cls.CLASS_TEST_HTML
 
 
 class OOCalendarTest(ClassTest):

@@ -182,22 +182,17 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
 
     def value(self, value=None):
         if value:
-            if 'data' in self._response:
-                if isinstance(value, str):
-                    self._response['data']['text'] = value
-                elif isinstance(value, dict):
-                    self._response['data'] = value
-            else:
-                if isinstance(value, str):
-                    self._response['data']['text'] = value
-                elif isinstance(value, dict):
-                    self._response['data'] = value
+            if 'data' not in self._response:
+                self._response = {}
+            if isinstance(value, str):
+                self._response['data']['text'] = value
+            elif isinstance(value, dict):
+                self._response['data'] = value
         else:
             if 'data' in self._request:
                 if 'val' in self._request['data']:
                     return self._request['data']['text']
-            else:
-                return None
+            return None
 
     def attrs(self, **kwargs):
         c_name = self.__class__.__name__
@@ -1704,7 +1699,8 @@ class WebComponentBootstrap(WebComponent,
              'ok-circle': 'glyphicon glyphicon-ok-circle',
              'login': 'glyphicon glyphicon-log-in',
              'remove': 'glyphicon glyphicon-remove',
-             'arrow-right': 'glyphicon glyphicon-arrow-right'}
+             'arrow-right': 'glyphicon glyphicon-arrow-right',
+             'arrow-left': 'glyphicon glyphicon-arrow-left'}
 
     ACTION_MEMBER = ooccd.ACTION_MEMBER
     FORMAT_MEMBER = ooccd.FORMAT_MEMBER
@@ -1837,8 +1833,25 @@ class WebComponentBootstrap(WebComponent,
         return self.func_call(params=params)
 
     def disable(self, disable=None):
-        params = {'disable': disable}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if disable is not None:
+                response = self._vtable[vptr]._response
+                if 'data' in response:
+                    response['data']['disabled'] = disable
+                else:
+                    response['data'] = {'disabled': disable}
+            else:
+                request = self._vtable[vptr]._request
+                if 'data' in request:
+                    if 'disabled' in request['data']:
+                        return request['data']['disabled']
+                return None
+        else:
+            params = {'disable': disable}
+            return self.func_call(params=params)
 
     def display(self, display=None):
         params = {'display': display}
@@ -2305,13 +2318,13 @@ class WebPage(WebComponentBootstrap):
         return ret
 
     @classmethod
-    def register(cls, app, rule, top_menu, end_point=None, view_func=None, title=None):
+    def register(cls, app, rule, top_menu, end_point=None, view_func=None, title=None, name='no_page_name'):
 
-        def get_page(top_menu=top_menu, rule=rule, title=title):
+        def get_page(top_menu=top_menu, rule=rule, title=title, name=name):
             title_ = title
             if not title:
                 title_ = cls.__name__
-            page = cls(nav_items=top_menu, url=rule, value=title)
+            page = cls(nav_items=top_menu, url=rule, value=title_, name=name)
             html = page.render()
             return render_template_string(html)
 
@@ -2324,8 +2337,14 @@ class WebPage(WebComponentBootstrap):
             end_point_ = end_point
 
         end_point_on_ = end_point_ + '_on_page_render'
-        app.add_url_rule(rule=rule, endpoint=end_point_, view_func=view_func_, methods=['GET', 'POST'])
-        app.add_url_rule(rule=rule+'/on_post', endpoint=end_point_on_, view_func=cls.on_page_render, methods=['POST'])
+        app.add_url_rule(rule=rule,
+                         endpoint=end_point_,
+                         view_func=view_func_,
+                         methods=['GET', 'POST'])
+        app.add_url_rule(rule=rule+'/on_post',
+                         endpoint=end_point_on_,
+                         view_func=cls.on_page_render,
+                         methods=['POST'])
 
     def type_(self):
         return 'WebPage'
@@ -2363,7 +2382,12 @@ class WebPage(WebComponentBootstrap):
         super().__del__()
 
     def init_api(self,
-                 app,page_name=None, view_config=None, url_prefix=None, endpoint=None, on_post=None):
+                 app,
+                 page_name=None,
+                 view_config=None,
+                 url_prefix=None,
+                 endpoint=None,
+                 on_post=None):
 
         if not self.app:
             self.app = app
@@ -2745,6 +2769,7 @@ class ClassTestPage(WebPage):
         return
         '''
 
+    '''
     def process_events_impl(self, req):
         cls = self.__class__
         name_ = req['me']
@@ -2753,6 +2778,7 @@ class ClassTestPage(WebPage):
             req['data'] = {'val': name_ + '_testing from on_post', 'text': name_ + '_testing from on_post'}
         else:
             req['data'] = {'data': cls.test_request_data(), 'attrs':'align:'}
+    '''
 
     @classmethod
     def _on_my_render_impl(cls,page, req):
@@ -2785,7 +2811,7 @@ class ClassTestPage(WebPage):
                 row = page._components[page.ROW]['obj']
                 row.request(req=r)
                 display = (hide != 'Hide')
-                row.value({'display': display, 'hide': hide})
+                row.value({'display': display, 'disabled': disable})
                 r['data'] = row.response()['data']
 
         return jsonify({'status': 'success', 'data': req})
@@ -2810,7 +2836,7 @@ class ClassTestPage(WebPage):
         '''
 
 
-class WebA(WebComponentBootstrap):
+class WebA(WebATest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'weba_val'
 
 
@@ -3024,8 +3050,26 @@ class WebBtn(WebComponentBootstrap):
     '''
 
     def value(self, value=None):
-        params = {'value':value}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page') and self._page:
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if value:
+                response = self._vtable[vptr]._response
+                if 'data' in response:
+                    response['data']['text'] = value
+                    response['data']['value'] = value
+                else:
+                    response['data'] = {'text': value, 'value': value}
+                self._vtable[vptr]._response = response
+            else:
+                request = self._vtable[vptr]._request
+                if 'data' in request:
+                    return request['data']
+                return None
+        else:
+            params = {'value':value}
+            return self.func_call(params=params)
 
 
 class WebBtnRadio(WebBtnRadioTest, WebBtnGroup):

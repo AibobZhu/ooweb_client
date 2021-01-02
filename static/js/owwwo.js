@@ -58,6 +58,7 @@ function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val
                that2.text(data['text']);
              };
              if('html' in data){
+               that2.empty();
                that2.html(data['html']);
              };
              if('val' in data){
