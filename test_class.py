@@ -316,19 +316,28 @@ class WebATest(ClassTest):
             WebRow = page._SUBCLASSES['WebRow']['class']
             WebColumn = page._SUBCLASSES['WebColumn']['class']
 
-            with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=self.WIDTH,
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=self.WIDTH,
                                             offset=self.OFFSET,
-                                            align='horizon-center')) as c1:
-                    with c1.add_child(WebA(align='left')) as a1:
-                        with a1.add_child(WebIcon(icon='arrow-left')) as icon1:
+                                            align='horizon-center',
+                                            height='80px',
+                                            styles={'border':'solid 1px blue'})) as c22:
+                    with c22.add_child(WebA()) as a21:
+                        with a21.add_child(WebIcon(
+                                                    align=['left'],
+                                                    icon='arrow-left',
+                                                   font={'size':'40px'},
+                                                    margin={'top':'20px'})) as left_arrow2:
                             pass
-                    with c1.add_child(WebA(name=TEST_OBJ,
-                                           href='#')) as a2:
-                        with a2.add_child(WebBtn(value='Test')) as btn:
+                    with c22.add_child(WebA()) as a22:
+                        with a22.add_child(WebBtn(value='Test', height='40px',
+                                              margin={'top':'20px'})) as btn_22:
                             pass
-                    with c1.add_child(WebA(align='right')) as a3:
-                        with a3.add_child(WebIcon(icon='arrow-right')) as icon2:
+                    with c22.add_child(WebA()) as a23:
+                        with a23.add_child(WebIcon(align=['right'],
+                                               icon='arrow-right',
+                                                   font={'size':'60px'},
+                                               margin={'top':'10px'})) as rightt_arrow2:
                             pass
 
         def intro_events_impl(self):
@@ -338,6 +347,8 @@ class WebATest(ClassTest):
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
+            SIDE_WIDTH = ['md1', 'lg1', 'xs1', 'sm1']
+            CENTER_WIDTH = ['md4', 'lg4', 'xs4', 'sm4']
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
