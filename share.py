@@ -202,3 +202,12 @@ def change_func_name(fn, name):
                                     code.co_freevars,
                                     code.co_cellvars)
 
+def dict_to_str(d,split):
+    s = ''
+    for k,v in d.items():
+        s += k
+        s += ':'
+        s += v
+        s += split
+    s = s[:-1]
+    return s

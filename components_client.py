@@ -38,6 +38,25 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         self._response = {'me': self._response['me']}
         '''
 
+    def _add_style(self, style_value, style_key=None ):
+        if 'data' in self._response:
+            rsp_style = self._response['data']['style']
+            if 'style' in self._response['data']:
+                if isinstance(style_value, dict):
+                    rsp_style = {**rsp_style, **style_value}
+                elif isinstance(style_value, str):
+                    res_style[style_key] = style_value
+            else:
+                if isinstance(style_value, dict):
+                    rsp_style['style'] = style_value
+                elif isinstance(style_value, str):
+                    rsp_style['style'] = {style_key: style_value}
+        else:
+            if isinstance(style_value, dict):
+                self._response['data'] = {'style': style_value}
+            elif isinstance(color, str):
+                self._response['data'] = {'style': {style_key: style_value}}
+
     # AppearanceInf
     def width(self, width=None):
         def _width_process(width):
@@ -81,25 +100,45 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
                             ret_class.append(FormatBootstrap.COL_NAME[c])
             return {'class': ret_class, 'style': ret_style}
 
-    def height(self, **kwargs):
-        c_name = self.__class__.__name__
-        f_name = inspect.currentframe().f_code.co_name
-        raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+    def height(self, height=None):
+        if height is not None:
+            if 'style' not in self._response['data'].keys():
+                self._response['data']['style'] = {}
+            res_style = self._response['data']['style']
+            res_style['height'] = height
+        else:
+            if 'style' in self._response['data'].keys():
+                if 'height' in self._response['data']['style']:
+                    return self._response['data']['style']['height']
+            return None
+
 
     def color(self, color=None):
+
+        def _convert_color_dict(color):
+            assert(isinstance(color, dict))
+            if 'background' in color.keys():
+                color['background-color'] = color['background']
+                del color['background']
+            if 'border' in color.keys():
+                color['border-color'] = color['border']
+                del color['border']
+            return color
+
         if color is not None:
-            if 'data' in self._response:
-                if 'style' in self._response['data']:
-                    self._response['data']['style']['color'] = color
-                else:
-                    self._response['data']['style'] = {'color': color}
-            else:
-                self._response['data'] = {'style': {'color': color}}
+            if 'style' not in self._response['data']:
+                self._response['data']['style'] = {}
+            rsp_style = self._response['data']['style']
+            if isinstance(color, dict):
+                _convert_color_dict(color)
+                rsp_style.update(color)
+            elif isinstance(color, str):
+                rep_style['color'] = color
         else:
             if 'data' in self._request:
                 if 'style' in self._request['data']:
                     if 'color' in self._request['data']['style']:
-                        return self._request['data']['style']['color']
+                        return _convert_color_dict(self._request['data']['style']['color'])
             return None
 
     def font(self, **kwargs):
@@ -1809,28 +1848,64 @@ class WebComponentBootstrap(WebComponent,
 
     # Appearance members
     def width(self, width=None):
-        params = {'width':width}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].width(width=width)
+        else:
+            params = {'width':width}
+            return self.func_call(params=params)
 
     def height(self, height=None):
-        params = {'height':height}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].height(height=height)
+        else:
+            params = {'height':height}
+            return self.func_call(params=params)
 
     def color(self, color=None):
-        params = {'color':color}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].color(color=color)
+        else:
+            params = {'color':color}
+            return self.func_call(params=params)
 
     def font(self, font=None):
-        params = {'font':font}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].font(font=font)
+        else:
+            params = {'font':font}
+            return self.func_call(params=params)
 
     def border(self, border=None):
-        params = {'border':border}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].border(border=border)
+        else:
+            params = {'border':border}
+            return self.func_call(params=params)
 
     def icon(self, icon=None):
-        params = {'icon': icon}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].icon(icon=icon)
+        else:
+            params = {'icon': icon}
+            return self.func_call(params=params)
 
     def disable(self, disable=None):
         vptr = ooccd.RESPONSE_MEMBER
@@ -1854,8 +1929,14 @@ class WebComponentBootstrap(WebComponent,
             return self.func_call(params=params)
 
     def display(self, display=None):
-        params = {'display': display}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].display(display=display)
+        else:
+            params = {'display': display}
+            return self.func_call(params=params)
 
     def toggle(self, state_name):
         params = {'state_name': state_name}
@@ -1865,20 +1946,44 @@ class WebComponentBootstrap(WebComponent,
 
     # Position
     def pad(self, pad=None):
-        params = {'pad': pad}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].pad(pad=pad)
+        else:
+            params = {'pad': pad}
+            return self.func_call(params=params)
 
     def margin(self, margin=None):
-        params = {'margin':margin}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].margin(margin=margin)
+        else:
+            params = {'margin':margin}
+            return self.func_call(params=params)
 
     def align(self, align=None):
-        params = {'align': align}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].align(align=align)
+        else:
+            params = {'align': align}
+            return self.func_call(params=params)
 
     def offset(self, offset=None):
-        params = {'offset': offset}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].offset(offset=offset)
+        else:
+            params = {'offset': offset}
+            return self.func_call(params=params)
     # End position
 
     # Property.
@@ -1890,16 +1995,34 @@ class WebComponentBootstrap(WebComponent,
             return self.func_call(params=params)
 
     def attrs(self, attrs=None):
-        params = {'attrs': attrs}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].attrs(attrs=attrs)
+        else:
+            params = {'attrs': attrs}
+            return self.func_call(params=params)
 
     def classes(self, classes=None):
-        params = {'classes': classes}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].classes(classes=classes)
+        else:
+            params = {'classes': classes}
+            return self.func_call(params=params)
 
     def styles(self, styles=None):
-        params = {'styles': styles}
-        return self.func_call(params=params)
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            return self._vtable[vptr].styles(styles=styles)
+        else:
+            params = {'styles': styles}
+            return self.func_call(params=params)
     # End property
 
     # CommandInf
@@ -3527,6 +3650,14 @@ class WebBr(WebComponentBootstrap):
 class WebHr(WebComponentBootstrap):
     VAL_FUNC_NAME = 'webhr_val'
 
+    @classmethod
+    def _class_test(cls, obj):
+        obj.height('2px')
+        obj.color({'background': '#ccc'})
+
+    def class_test(self):
+        self._class_test(obj=self)
+
 
 class WebUl(WebUlTest, WebComponentBootstrap):
     VAL_FUNC_NAME = 'webul_val'
@@ -4895,6 +5026,7 @@ class OOChartNVD3(OOChartNVD3Test, WebSvg):
         else:
             params = {'value': value}
             return self.func_call(params=params)
+
 
 class OOChartLineFinder(OOChartNVD3):
     OOChartNVD3.OOCHART_CLASSES['linefinder'] = __qualname__
