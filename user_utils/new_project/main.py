@@ -2,6 +2,7 @@ from flask import Flask
 from flask_appconfig import AppConfig
 from flask_bootstrap import Bootstrap
 #from flask_socketio import SocketIO
+import pages
 
 project_name = 'not set yet'
 
@@ -14,9 +15,7 @@ def create_app():
 
 
 app = create_app()
-
-import pages
-
+pages.register(app=app)
 # run for developing
 app.run(host='0.0.0.0', port=5000, debug=True)
 

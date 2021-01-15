@@ -2415,7 +2415,7 @@ class WebPage(WebComponentBootstrap):
     PAGE = None
 
     INSTANCES = set()
-
+    RUNNING_INSTANCE = None
 
     @classmethod
     def on_post(cls):
@@ -2436,18 +2436,30 @@ class WebPage(WebComponentBootstrap):
         req = cls.on_post()
         ret = req
         assert(len(cls.INSTANCES))
+        assert(cls.RUNNING_INSTANCE)
+        ret = cls.RUNNING_INSTANCE.on_my_render(req=req)
+        '''
         for ins in cls.INSTANCES:
             ret = ins.on_my_render(req=req)
+        '''
         return ret
 
     @classmethod
-    def register(cls, app, rule, top_menu, end_point=None, view_func=None, title=None, name='no_page_name'):
+    def register(cls, app, rule, top_menu, name, end_point=None, view_func=None, title=None):
 
         def get_page(top_menu=top_menu, rule=rule, title=title, name=name):
             title_ = title
             if not title:
                 title_ = cls.__name__
-            page = cls(nav_items=top_menu, url=rule, value=title_, name=name)
+            page = None
+            for ins in cls.INSTANCES:
+                if ins.name() == name:
+                    page = ins
+                    cls.RUNNING_INSTANCE = ins
+                    break;
+            if not page:
+                page = cls(nav_items=top_menu, url=rule, value=title_, name=name)
+                cls.RUNNING_INSTANCE = page
             html = page.render()
             return render_template_string(html)
 
@@ -2473,6 +2485,16 @@ class WebPage(WebComponentBootstrap):
         return 'WebPage'
 
     def __init__(self, app=None, url_prefix=None, **kwargs):
+        my_name  = self.name() if 'name' not in kwargs else kwargs['name']
+        me_instances = []
+        for ins in self.__class__.INSTANCES:
+            if ins.name() == my_name:
+                me_instances.append(ins)
+        if not me_instances:
+            self.__class__.INSTANCES.add(self)
+        else:
+            assert(0)
+
         self.set_context([])
         self._root_class = WebComponentBootstrap
         if 'url' in kwargs:
@@ -2495,7 +2517,7 @@ class WebPage(WebComponentBootstrap):
         self.place = types.MethodType(place, self)
         self._components = {}
         self.rendered = False
-        self.__class__.INSTANCES.add(self)
+
         self._vptr = ooccd.FORMAT_MEMBER
         self._vptr_ori = [self._vptr]
         self._cells = {}
