@@ -268,31 +268,43 @@ class OODictTest(ClassTest):
         if cls.CLASS_TEST_HTML:
             return cls.CLASS_TEST_HTML
 
+        def place_components_impl(self):
+            page = self
+            WebBtn = page._SUBCLASSES['WebBtn']['class']
+            OODict = page._SUBCLASSES['OODict']['class']
+            with page.add_child(WebBtn(value='Test dict', name='name1')) as btn1:
+                pass
+            with page.add_child(WebBtn(value='Test dict update', name='name2')) as btn2:
+                pass
+
+        def intro_events_impl(self):
+            page = self
+            OODict = self._SUBCLASSES['OODict']['class']
+
+            btn1 = page._components['name1']['obj']
+            btn2 = page._components['name2']['obj']
+
+            with btn1.on_event_w('click'):
+                with btn1.add_child(
+                        OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'},
+                               var_name='test_dict')) as dict:
+                    pass
+                btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
+
+            with btn2.on_event_w("click"):
+                with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'},
+                            var_name='test_dict_update') as dict_update:
+                    pass
+                with dict_update.update_w(key='key2'):
+                    dict_update.add_scripts('"val_updated";\n', indent=False)
+                btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+
         class TestPage(cls._PAGE_CLASS):
-            def place_components_impl(self):
-                page = self
-                WebBtn = page._SUBCLASSES['WebBtn']['class']
-                OODict = page._SUBCLASSES['OODict']['class']
-                with page.add_child(WebBtn(value='Test dict', name='name1')) as btn1:
-                    pass
-                with page.add_child(WebBtn(value='Test dict update', name='name2')) as btn2:
-                    pass
 
-                with ooccd.MetisTransform.transform_w(component=self, vptr=ooccd.ACTION_MEMBER):
-                    with btn1.on_event_w('click'):
-                        with btn1.add_child(
-                                OODict(parent=page, name='OODict', dict={'key1': '"val1"', 'key2': '"val2"'},
-                                       var_name='test_dict')) as dict:
-                            pass
-                        btn1.alert('"Test dict: { key1:" + test_dict.key1 + "}"')
-
-                    with btn2.on_event_w("click"):
-                        with OODict(parent=page, dict={'key1': '"val1"', 'key2': '"val2"'},
-                                    var_name='test_dict_update') as dict_update:
-                            pass
-                        with dict_update.update_w(key='key2'):
-                            dict_update.add_scripts('"val_updated";\n', indent=False)
-                        btn2.alert('"Test dict update: { key2:" + test_dict_update.key2 + "}"')
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                setattr(self, 'place_components_impl', types.MethodType(place_components_impl, self))
+                setattr(self, 'intro_events_impl', types.MethodType(intro_events_impl, self))
 
         page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request', value='class {} test'.format(cls.__name__))
         page.testing_class = cls
