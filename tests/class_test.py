@@ -27,6 +27,7 @@ for name, tc in testing_classes.items():
     setattr(TestRequestPage, 'testing_class', tc['class'])
     tc['class']._PAGE_CLASS = TestRequestPage
     url_rule = 'test_' + name + '_request'
+    '''
     app.add_url_rule('/'+url_rule,
                      endpoint=url_rule,
                      view_func=tc['test_request'],
@@ -35,6 +36,8 @@ for name, tc in testing_classes.items():
                      endpoint='test_'+name+'_on_post',
                      view_func=TestRequestPage.on_page_render,
                      methods=['POST'])
+    '''
+    TestRequestPage.register(app=app, rule='/'+url_rule, view_func=tc['test_request'], name=name+'_page', top_menu=None)
 
 app.add_url_rule('/', endpoint='home', view_func=home, methods=['GET', 'POST'])
 app.socketio.run(app=app, host='0.0.0.0', port=5000)

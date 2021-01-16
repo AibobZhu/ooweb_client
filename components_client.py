@@ -2445,29 +2445,38 @@ class WebPage(WebComponentBootstrap):
         return ret
 
     @classmethod
-    def register(cls, app, rule, top_menu, name, end_point=None, view_func=None, title=None):
+    def get_page(cls, top_menu, rule, title, name, page_class=None):
+        page_class_ = cls
+        if page_class:
+          page_class_ = page_class
 
-        def get_page(top_menu=top_menu, rule=rule, title=title, name=name):
-            title_ = title
-            if not title:
-                title_ = cls.__name__
-            page = None
-            for ins in cls.INSTANCES:
-                if ins.name() == name:
-                    page = ins
-                    cls.RUNNING_INSTANCE = ins
-                    break;
-            if not page:
-                page = cls(nav_items=top_menu, url=rule, value=title_, name=name)
-                cls.RUNNING_INSTANCE = page
-            html = page.render()
-            return render_template_string(html)
+        title_ = title
+        if not title:
+            title_ = cls.__name__
+        page = None
+        for ins in cls.INSTANCES:
+            if ins.name() == name:
+                page = ins
+                page_class_.RUNNING_INSTANCE = ins
+                break;
+        if not page:
+            page = page_class_(nav_items=top_menu, url=rule, value=title_, name=name)
+            page_class_.RUNNING_INSTANCE = page
+        html = page.render()
+        return render_template_string(html)
 
-        view_func_ = get_page
+    @classmethod
+    def register(cls, app, rule, top_menu, name, end_point=None, view_func=None, title=None, page_class=None):
+
+        page_class_ = cls
+        if page_class:
+            page_class_ = page_class
+
+        view_func_ = page_class_.get_page
         if view_func:
             view_func_ = view_func
 
-        end_point_ = '{}_route'.format(cls.__name__)
+        end_point_ = '{}_route'.format(page_class_.__name__)
         if end_point:
             end_point_ = end_point
 
@@ -2478,7 +2487,7 @@ class WebPage(WebComponentBootstrap):
                          methods=['GET', 'POST'])
         app.add_url_rule(rule=rule+'/on_post',
                          endpoint=end_point_on_,
-                         view_func=cls.on_page_render,
+                         view_func=page_class_.on_page_render,
                          methods=['POST'])
 
     def type_(self):
@@ -3034,7 +3043,7 @@ class WebField(WebComponentBootstrap):
             return self.func_call(params=params)
 
 
-class WebImg(WebComponentBootstrap):
+class WebImg(WebImgTest, WebComponentBootstrap):
 
     VAL_FUNC_NAME = "webimg_val"
     VAL_FUNC_PARAMS = ['that', 'data']
@@ -3046,15 +3055,21 @@ class WebImg(WebComponentBootstrap):
         super().__init__(**kwargs)
 
     def value(self, value):
-        page = self._page
-        if page.get_vptr() == ooccd.RESPONSE_MEMBER:
-            if 'data' in self._vtable[ooccd.RESPONSE_MEMBER]._response:
-                self._vtable[ooccd.RESPONSE_MEMBER]._response['data']['oovalue'] = value
+        vptr = ooccd.RESPONSE_MEMBER
+        if hasattr(self, '_page'):
+            vptr = self._page.get_vptr()
+        if vptr == ooccd.RESPONSE_MEMBER:
+            if isinstance(value, str):
+                self._vtable[vptr]._response['data']['oovalue'] = value
+            elif isinstance(value, dict):
+                self._vtable[vptr]._response['data'] = {**self._vtable[vptr]._response['data'], **value}
             else:
-                self._vtable[ooccd.RESPONSE_MEMBER]._response['data'] = {'oovalue': value}
+                assert(False)
         else:
             params = {'value': value}
             return self.func_call(params=params)
+
+    '''
     @classmethod
     def test_request(cls, methods=['GET']):
         # Create a testing page containing the component tested
@@ -3087,6 +3102,7 @@ class WebImg(WebComponentBootstrap):
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+    '''
 
 
 class WebBtnToggle(WebBtnToggleTest, WebComponentBootstrap):
@@ -4439,6 +4455,7 @@ class OOChatClient(OOChatClientTest, WebComponentBootstrap):
         return render_template_string(html)
     '''
 
+    """
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -4511,12 +4528,20 @@ class OOChatClient(OOChatClientTest, WebComponentBootstrap):
 
                 return jsonify({'status': 'success', 'data': req})
 
+        '''
         page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
         page.testing_class = cls
         html = page.render()
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+        '''
+        title_name = 'class {} test'.format(cls.__name__)
+        page_html = TestPage.get_page(top_menu=None, name=title_name, rule='/test_' + cls.__name__ + '_request',
+                                      title=title_name)
+        cls._PAGE_CLASS.RUNNING_INSTANCE = TestPage.RUNNING_INSTANCE
+        return page_html
+    """
 
 
 from flask_socketio import *
@@ -4915,6 +4940,7 @@ class OOChatServer(OOChatServerTest, OOChatClient):
         return render_template_string(html)
     '''
 
+    """
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -4944,12 +4970,20 @@ class OOChatServer(OOChatServerTest, OOChatClient):
                 current_app.socketio.on_namespace(ServerChatNM(server_obj=None,
                                                                socket_namespace=testing_class.NAMESPACE))
 
+        '''
         page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
         page.testing_class = cls
         html = page.render()
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+        '''
+        title_name = 'class {} test'.format(cls.__name__)
+        page_html = TestPage.get_page(top_menu=None, name=title_name, rule='/test_' + cls.__name__ + '_request',
+                                      title=title_name)
+        cls._PAGE_CLASS.RUNNING_INSTANCE = TestPage.RUNNING_INSTANCE
+        return page_html
+    """
 
 
 class OOChartNVD3(OOChartNVD3Test, WebSvg):
@@ -6762,6 +6796,7 @@ class OOCalendar(OOCalendarTest, WebDiv):
 
         return r
 
+    """
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -6836,12 +6871,20 @@ class OOCalendar(OOCalendarTest, WebDiv):
 
                 return jsonify({'status': 'success', 'data': req_})
 
+        '''
         page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
         page.testing_class = cls
         html = page.render()
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+        '''
+        title_name = 'class {} test'.format(cls.__name__)
+        page_html = TestPage.get_page(top_menu=None, name=title_name, rule='/test_' + cls.__name__ + '_request',
+                                      title=title_name)
+        cls._PAGE_CLASS.RUNNING_INSTANCE = TestPage.RUNNING_INSTANCE
+        return page_html
+    """
 
 
 class OOCalendarBar(WebDiv):
@@ -7087,6 +7130,7 @@ class WebTable(WebTableTest, WebComponentBootstrap):
 
         return html
 
+    """
     @classmethod
     def test_request(cls, methods=['GET']):
         print('class {} test_request is called'.format(cls.__name__))
@@ -7203,13 +7247,15 @@ class WebTable(WebTableTest, WebComponentBootstrap):
                         r['data'] = {'html': self.example_data()}
 
                 return jsonify({'status': 'success', 'data': req})
-
+        '''
         page = TestPage(app=current_app, url='/test_'+cls.__name__+'_request')
         page.testing_class = cls
         html = page.render()
 
         cls.CLASS_TEST_HTML = render_template_string(html)
         return cls.CLASS_TEST_HTML
+        '''
+    """
 
 
 class OOTable(OOTableTest, WebTable):
