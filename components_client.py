@@ -2454,38 +2454,46 @@ class WebPage(WebComponentBootstrap):
         if not title:
             title_ = cls.__name__
         page = None
-        for ins in cls.INSTANCES:
+        for ins in page_class_.INSTANCES:
             if ins.name() == name:
                 page = ins
-                page_class_.RUNNING_INSTANCE = ins
-                break;
+                break
         if not page:
             page = page_class_(nav_items=top_menu, url=rule, value=title_, name=name)
-            page_class_.RUNNING_INSTANCE = page
+            page_class_.INSTANCES.add(page)
+        page_class_.RUNNING_INSTANCE = page
         html = page.render()
         return render_template_string(html)
 
     @classmethod
-    def register(cls, app, rule, top_menu, name, end_point=None, view_func=None, title=None, page_class=None):
+    def register(cls, app, rules, top_menu, name, end_point=None, view_func=None, title=None, page_class=None):
 
         page_class_ = cls
         if page_class:
             page_class_ = page_class
 
-        view_func_ = page_class_.get_page
+        def view_func__(top_menu=top_menu, name=name, title=title):
+            req_rule = request.url_rule.rule
+            return page_class_.get_page(top_menu=top_menu, rule=req_rule, name=name, title=title)
+
+        view_func_ = view_func__
         if view_func:
             view_func_ = view_func
 
         end_point_ = '{}_route'.format(page_class_.__name__)
         if end_point:
             end_point_ = end_point
-
         end_point_on_ = end_point_ + '_on_page_render'
-        app.add_url_rule(rule=rule,
+
+        if name == 'WebBtnRadio_page':
+            print('find WebBtnRadio')
+
+        for rule in rules:
+            app.add_url_rule(rule=rule,
                          endpoint=end_point_,
                          view_func=view_func_,
                          methods=['GET', 'POST'])
-        app.add_url_rule(rule=rule+'/on_post',
+            app.add_url_rule(rule=rule+'/on_post',
                          endpoint=end_point_on_,
                          view_func=page_class_.on_page_render,
                          methods=['POST'])

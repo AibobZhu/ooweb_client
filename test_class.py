@@ -114,8 +114,10 @@ class ClassTest():
         return cls.CLASS_TEST_HTML
         """
         Page = cls._PAGE_CLASS
+        Page.testing_class = cls
         return Page.get_page(top_menu=None, rule='/test_'+cls.__name__+'_request',
                             name='class {} test'.format(cls.__name__), title='class {} test'.format(cls.__name__))
+
 
 class GVarTest(ClassTest):
 
@@ -613,8 +615,13 @@ class WebBtnRadioTest(ClassTest):
         return cls.CLASS_TEST_HTML
         '''
         title_name = 'class {} test'.format(cls.__name__)
-        page_html = TestPage.get_page(top_menu=None, name=title_name, rule='/test_' + cls.__name__ + '_request',title=title_name)
+        page_html = TestPage.get_page(top_menu=None, name=title_name,
+                                      rule='/test_' + cls.__name__ + '_request',
+                                      title=title_name,
+                                      page_class=TestPage)
         cls._PAGE_CLASS.RUNNING_INSTANCE = TestPage.RUNNING_INSTANCE
+        cls._PAGE_CLASS.testing_class = cls
+        TestPage.testing_class = cls
         return page_html
 
 
