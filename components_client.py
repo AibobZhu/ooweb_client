@@ -2480,15 +2480,19 @@ class WebPage(WebComponentBootstrap):
         if view_func:
             view_func_ = view_func
 
-        end_point_ = '{}_route'.format(page_class_.__name__)
-        if end_point:
-            end_point_ = end_point
-        end_point_on_ = end_point_ + '_on_page_render'
 
         if name == 'WebBtnRadio_page':
             print('find WebBtnRadio')
 
         for rule in rules:
+            end_point_ = rule+'_endpoint'
+            end_point_on_ = rule + '_on_post_endpoint'
+            '''
+            if end_point:
+                end_point_ = end_point
+                end_point_on_ = end_point+'_on_post_endpoint'
+            '''
+
             app.add_url_rule(rule=rule,
                          endpoint=end_point_,
                          view_func=view_func_,

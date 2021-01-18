@@ -86,6 +86,8 @@ def main(argv):
                 f2.write(newline)
         os.remove(new_page_file)
         os.rename('{}/tmp.bak'.format(prj_root_dir), '{}/{}.py'.format(prj_pages_dir, page_name))
+    else:
+        return
 
     if not os.path.exists(pages_init_file):
         (status, output) = subprocess.getstatusoutput('cp {}/new_project/pages/__init__.py {}/'.
