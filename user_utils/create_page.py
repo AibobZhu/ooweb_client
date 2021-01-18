@@ -2,7 +2,7 @@ import os, sys, getopt, subprocess
 
 USAGE = '''
 Usage:
-    create_page.py [-n|--page_name] <new page name> [-u|--page_url] <new page rule url> [-r|--project_root] <your project root directory>
+    create_page.py [-n|--page_name] <new page name> [-u|--page_urls] <new page rule urls like 'rule1,rule2,...'> [-r|--project_root] <your project root directory>
     Note: page naming should follow the naming rule of class in Python.
 '''
 
@@ -13,11 +13,11 @@ def main(argv):
     prj_pages_dir = '{}/pages'.format(prj_root_dir)
     pages_init_file = '{}/__init__.py'.format(prj_pages_dir)
     page_name = None
-    page_rule = None
+    page_rules = None
     src_dir = '/'.join(os.path.realpath(__file__).split('/')[0:-1])
 
     try:
-        opts, args = getopt.getopt(argv,"hn:r:u:",["page_name=", "project_root=", "page_rule="])
+        opts, args = getopt.getopt(argv,"hn:r:u:",["page_name=", "project_root=", "page_urls="])
     except getopt.GetoptError as e:
         print(e)
         print(USAGE)
@@ -40,10 +40,11 @@ def main(argv):
                 sys.exit()
             prj_pages_dir = '{}/pages'.format(prj_root_dir)
             pages_init_file = '{}/__init__.py'.format(prj_pages_dir)
-        elif opt in ("-u", "--page_url"):
-            page_rule = arg
+        elif opt in ("-u", "--page_urls"):
+            rules = arg.split(',')
+            page_rules = ','.join(rules)
             if not arg:
-                print('Error: please input valid value of -u or --page_url')
+                print('Error: please input valid value of -u or --page_urls')
                 print(USAGE)
                 sys.exit()
 
@@ -59,8 +60,8 @@ def main(argv):
         print('Error: project_root is not valid!')
         print(USAGE)
         sys.exit(2)
-    if not page_rule:
-        print('Error: page_rule is not valid!')
+    if not page_rules:
+        print('Error: page_rules is not valid!')
         print(USAGE)
         sys.exit(3)
     if not page_name:
@@ -68,21 +69,23 @@ def main(argv):
         print(USAGE)
         sys.exit(4)
 
-    (status, output) = subprocess.getstatusoutput('cp {}/new_page.py {}'.format(src_dir, prj_pages_dir))
-    print(status)
-    if status != 0:
-        print('Error: copy file template from:"{}" to :"{}/{}.py" failed'.
-              format(src_dir+'/new_page.py', prj_pages_dir, page_name))
-        sys.exit()
-    print(output)
+    page_file = prj_pages_dir+'/'+page_name+'.py'
+    if not os.path.exists(page_file):
+        (status, output) = subprocess.getstatusoutput('cp {}/new_page.py {}'.format(src_dir, prj_pages_dir))
+        print(status)
+        if status != 0:
+            print('Error: copy file template from:"{}" to :"{}/{}.py" failed'.
+                  format(src_dir+'/new_page.py', prj_pages_dir, page_name))
+            sys.exit()
+        print(output)
 
-    new_page_file = '{}/new_page.py'.format(prj_pages_dir)
-    with open(new_page_file, "r", encoding="utf-8") as f1, open("{}/tmp.bak".format(prj_root_dir), "w", encoding="utf-8") as f2:
-        for line in f1:
-            newline = line.replace("OONewPage", "{}".format(page_name)).replace("/oonewpage_rule_not_set", page_rule)
-            f2.write(newline)
-    os.remove(new_page_file)
-    os.rename('{}/tmp.bak'.format(prj_root_dir), '{}/{}.py'.format(prj_pages_dir, page_name))
+        new_page_file = '{}/new_page.py'.format(prj_pages_dir)
+        with open(new_page_file, "r", encoding="utf-8") as f1, open("{}/tmp.bak".format(prj_root_dir), "w", encoding="utf-8") as f2:
+            for line in f1:
+                newline = line.replace("OONewPage", "{}".format(page_name))
+                f2.write(newline)
+        os.remove(new_page_file)
+        os.rename('{}/tmp.bak'.format(prj_root_dir), '{}/{}.py'.format(prj_pages_dir, page_name))
 
     if not os.path.exists(pages_init_file):
         (status, output) = subprocess.getstatusoutput('cp {}/new_project/pages/__init__.py {}/'.
@@ -93,16 +96,21 @@ def main(argv):
             ))
             sys.exit()
         print(output)
+
     with open(pages_init_file, "r", encoding="utf-8") as f1, open("{}/tmp.bak".format(prj_root_dir), "w", encoding="utf-8") as f2:
         newline1 = "from pages.{} import {}\n".format(page_name, page_name)
-        newline2 = "    {}.register(app=app, rule='{}', name='{}', top_menu=BasePage.top_menu)".format(
-            page_name, page_rule,page_name)
+        newline1_wrote = False
+        newline2 = "    {}.register(app=app, rules=[{}], name='{}', top_menu=BasePage.top_menu)\n".format(
+            page_name, page_rules,page_name)
+        newline2_wrote = False
         for line in f1:
            f2.write(line)
-           if line.find('#import all pages') >= 0:
+           if line.find('#import all pages') >= 0 and not newline1_wrote:
                f2.write(newline1)
-           if line.find('def register(app):') >= 0:
+               newline1_wrote = True
+           if line.find('def register(app):') >= 0 and not newline2_wrote:
                f2.write(newline2)
+               newline2_wrote = True
 
     os.remove(pages_init_file)
     os.rename('{}/tmp.bak'.format(prj_root_dir), '{}/__init__.py'.format(prj_pages_dir))
