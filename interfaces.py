@@ -73,7 +73,7 @@ class AppearanceInf(metaclass=abc.ABCMeta):
              'LightCoral':'#F08080','RosyBrown':'#BC8F8F','IndianRed':'#CD5C5C',
              'Red':'#FF0000','Brown':'#A52A2A','FireBrick':'#B22222',
              'DarkRed':'#8B0000','Maroon':'#800000','White':'#FFFFFF',
-             'WhiteSmoke':'#F5F5F5','Gainsboro':'#DCDCDC','LightGrey':'#D3D3D3',
+             'WhiteSmoke':'#F5F5F5','Gainsboro':'#DCDCDC','LightGray':'#D3D3D3',
              'Silver':'#C0C0C0','DarkGray':'#A9A9A9','Gray':'#808080',
              'DimGray':'#696969','Black':'#000000',
              }
@@ -146,6 +146,10 @@ class PropertyInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def styles(self, styles=None):
+        pass
+
+    @abc.abstractmethod
+    def html(self, html=None):
         pass
 
 

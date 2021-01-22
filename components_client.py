@@ -222,11 +222,11 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
     def value(self, value=None):
         if value:
             if 'data' not in self._response:
-                self._response = {}
+                self._response['data'] = {}
             if isinstance(value, str):
                 self._response['data']['text'] = value
             elif isinstance(value, dict):
-                self._response['data'] = value
+                self._response['data'] = {**self._response['data'], **value}
         else:
             if 'data' in self._request:
                 if 'val' in self._request['data']:
@@ -247,6 +247,21 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
         c_name = self.__class__.__name__
         f_name = inspect.currentframe().f_code.co_name
         raise NotImplementedError("{}.{} hasn't been implemented really!".format(c_name, f_name))
+
+    def html(self, html=None):
+        if html:
+            if 'data' not in self._response:
+                self._response['data']
+            if isinstance(html, str):
+                self._response['data']['html'] = html
+            elif isinstance(html, dict):
+                self._response['data'] = {**self._response['data'], **value}
+        else:
+            if 'data' in self._request:
+                if 'html' in self._request['data']:
+                    return self._request['data']['html']
+            return None
+
     # End PropertyInf
 
     def on_post(self):
@@ -2161,6 +2176,10 @@ class WebComponentBootstrap(WebComponent,
     def get_context_indent(self):
         params = {}
         return self.func_call(params=params)
+
+    def render(self):
+        return self.render_content()
+
     # End ComponentInf
 
     # Other functions
@@ -6911,10 +6930,34 @@ class WebTab(WebTabTest, WebUl):
 
     VAL_FUNC_NAME = 'webtab_val'
 
+    def add_item(self, item_name=None):
+        params = {'item_name': item_name}
+        return self.func_call(params)
+
+    def remove_item(self, item_name=None):
+        params = {'item_name': item_name}
+        return self.func_call(params)
+
+    def active_item(self, item_name):
+        params = {'item_name': item_name}
+        return self.func_call(params)
+
 
 class WebTabContain(WebDiv):
 
     VAL_FUNC_NAME = 'webtabcontain_val'
+
+    def add_item(self, item_name=None):
+        params = {'item_name': item_name}
+        return self.func_call(params)
+
+    def remove_item(self, item_name=None):
+        params = {'item_name': item_name}
+        return self.func_call(params)
+
+    def active_item(self, item_name):
+        params = {'item_name': item_name}
+        return self.func_call(params)
 
 
 class WebTable(WebTableTest, WebComponentBootstrap):

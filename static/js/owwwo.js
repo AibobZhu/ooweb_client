@@ -41,7 +41,6 @@ function ooweb_base_val(that, data=null, trigger_event=false, return_parts=["val
                    }else{
                        that2.prop(key, data['attr'][key]);
                    }
-
                };
              };
              if('remove_class' in data){
@@ -833,6 +832,7 @@ function oocalendar_val(that, data=null, trigger_event=false, return_parts=["val
 }
 
 function webtab_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
     if(typeof data != 'undefined' && data != null){
         if('active_tab' in data){
             that.find('li').removeClass('active');
@@ -842,7 +842,6 @@ function webtab_val(that, data=null, trigger_event=false, return_parts=["val","t
         }
     }else{
        let val = that.find('.active').text().trim();
-       let ret = {};
        ret.active_tab=val;
        ret.element_type='WebTab';
        return ret;
@@ -851,6 +850,7 @@ function webtab_val(that, data=null, trigger_event=false, return_parts=["val","t
 
 function webtabcontain_val(that, data=null, trigger_event=false, return_parts=["val","text"]){
     let that2 = $('#'+that.prop('id'));
+    let ret = ooweb_base_val(that=that, data=data, trigger_event=trigger_event, return_parts=return_parts);
     if(typeof data != 'undefined' && data != null){
         if('active_tab' in data){
             that2.find('.tab-pane').removeClass('active');
@@ -860,7 +860,6 @@ function webtabcontain_val(that, data=null, trigger_event=false, return_parts=["
         };
     }else{
        let val = that2.find('.active').attr('id');
-       let ret = {};
        ret.active_tab=val;
        ret.element_type='WebTabContain';
        return ret;

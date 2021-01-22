@@ -2951,8 +2951,10 @@ class WebTabTest(ClassTest):
             WebTabContain = page._SUBCLASSES['WebTabContain']['class']
             WebTabItem = page._SUBCLASSES['WebTabItem']['class']
             WebHead3 = page._SUBCLASSES['WebHead3']['class']
+            WebBtn = page._SUBCLASSES['WebBtn']['class']
+
             with page.add_child(WebRow()) as r1:
-                with r1.add_child(WebColumn(width=['md8'], offset=['mdo2'], height='200px')) as c1:
+                with r1.add_child(WebColumn(width=['md8','lg8'], offset=['mdo2','lgo2'], height='200px')) as c1:
                     with c1.add_child(cls(parent=page, name=self.tab_name, ul_list=[
                         {'name': self.tab_item1_name, 'href': '#' + self.tab_item1_name},
                         {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name, 'active': True},
@@ -2964,14 +2966,12 @@ class WebTabTest(ClassTest):
                                 id=self.tab_item1_name,
                                 name=self.tab_item1_name)) as item1:
                             with item1.add_child(WebHead3(
-                                    name=self.tab_contain1_name,
                                     value=self.tab_contain1_name)) as contain1:
                                 pass
                         with contain.add_child(WebTabItem(
                                 id=self.tab_item2_name,
                                 name=self.tab_item2_name)) as item2:
                             with item2.add_child(WebHead3(
-                                    name=self.tab_contain2_name,
                                     value=self.tab_contain2_name)) as contain2:
                                 pass
                         with contain.add_child(WebTabItem(
@@ -2979,9 +2979,12 @@ class WebTabTest(ClassTest):
                                 name=self.tab_item3_name,
                                 mytype=['active'])) as item3:
                             with item3.add_child(WebHead3(
-                                    name=self.tab_contain3_name,
                                     value=self.tab_contain3_name)) as contain3:
                                 pass
+            with page.add_child(WebRow()) as r2:
+                with r2.add_child(WebColumn(width=['md8','lg8'], offset=['mdo2','lgo2'])) as c2:
+                    with c2.add_child(WebBtn(name=self.DYN_BTN, value='Dynamic component in tab_item2')) as dyn_btn:
+                        pass
 
         def intro_events_impl(self):
 
@@ -2990,6 +2993,7 @@ class WebTabTest(ClassTest):
 
             test = page._components[self.tab_name]['obj']
             contain = page._components[self.tab_contain_name]['obj']
+            dyn_btn = page._components[self.DYN_BTN]['obj']
 
             with page.render_post_w():
                 test.render_for_post()
@@ -3000,15 +3004,39 @@ class WebTabTest(ClassTest):
                     test.render_for_post()
                     contain.render_for_post()
 
+            with dyn_btn.on_event_w(event='click'):
+                with page.render_post_w():
+                    dyn_btn.render_for_post()
+                    test.render_for_post(return_parts=['html'])
+                    contain.render_for_post(return_parts=['html'])
+
         def on_my_render_impl(self, req):
             page = self._page
+            dyn_btn = page._components[self.DYN_BTN]['obj']
+            dyn_update = False
             for r in req:
                 if r['me'] == self.tab_name:
                     print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
-                    r['data']['active_tab'] = self.tab_item2_name
+                    tab_obj = self._components[self.tab_name]['obj']
+                    tab_obj.request(r)
+                    tab_obj.active_item(self.tab_item2_name)
+                    if dyn_update:
+                        tab_obj.remove_item(self.tab_item3_name)
+                    r['data']=tab_obj.response()['data']
+
                 elif r['me'] == self.tab_contain_name:
                     print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
-                    r['data']['active_tab'] = self.tab_item2_name
+                    tab_con_obj = page._components[self.tab_contain_name]['obj']
+                    tab_con_obj.request(r)
+                    tab_con_obj.active_item(self.tab_item2_name)
+                    if dyn_update:
+                        tab_con_obj.remove_item(self.tab_item3_name)
+                    r['data']=tab_con_obj.response()['data']
+
+                elif r['me'] == self.DYN_BTN:
+                    print('Got {} request:{}'.format(self.DYN_BTN, r))
+                    dyn_update = True
+
             return jsonify({'status': 'success', 'data': req})
 
         class TestPage(cls._PAGE_CLASS):
@@ -3021,6 +3049,7 @@ class WebTabTest(ClassTest):
             tab_contain1_name = 'tab_contain1'
             tab_contain2_name = 'tab_contain2'
             tab_contain3_name = 'tab_contain3'
+            DYN_BTN = 'dyn_btn'
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
@@ -3290,7 +3319,6 @@ class WebTableTest(ClassTest):
                                       title=title_name)
         cls._PAGE_CLASS.RUNNING_INSTANCE = TestPage.RUNNING_INSTANCE
         return page_html
-
 
 
 class OOTableTest(ClassTest):
