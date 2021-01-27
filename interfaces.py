@@ -273,11 +273,11 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def add_child(self, child=None, child_id=None, objs=None):
+    def add_child(self, child=None, child_id=None, objs=None, render=False):
         pass
 
     @abc.abstractmethod
-    def remove_child(self,child=None, child_id=None,objs=None):
+    def remove_child(self,child_name=None,child=None, child_id=None,objs=None, render=False):
         pass
 
     @abc.abstractmethod

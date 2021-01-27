@@ -8,7 +8,7 @@ import random
 from share import randDatetimeRange, _getStr
 import oocc_define as ooccd
 import pickle
-
+from bs4 import BeautifulSoup
 
 class MinXin:
 
@@ -2981,9 +2981,12 @@ class WebTabTest(ClassTest):
                             with item3.add_child(WebHead3(
                                     value=self.tab_contain3_name)) as contain3:
                                 pass
+
             with page.add_child(WebRow()) as r2:
                 with r2.add_child(WebColumn(width=['md8','lg8'], offset=['mdo2','lgo2'])) as c2:
-                    with c2.add_child(WebBtn(name=self.DYN_BTN, value='Dynamic component in tab_item2')) as dyn_btn:
+                    with c2.add_child(WebBtn(name=self.DEL_BTN, value='Remove tab_item3')) as dyn_btn:
+                        pass
+                    with c2.add_child(WebBtn(name=self.ADD_BTN, value='Add head3 in item_item2')) as add_btn:
                         pass
 
         def intro_events_impl(self):
@@ -2993,7 +2996,8 @@ class WebTabTest(ClassTest):
 
             test = page._components[self.tab_name]['obj']
             contain = page._components[self.tab_contain_name]['obj']
-            dyn_btn = page._components[self.DYN_BTN]['obj']
+            del_btn = page._components[self.DEL_BTN]['obj']
+            add_btn = page._components[self.ADD_BTN]['obj']
 
             with page.render_post_w():
                 test.render_for_post()
@@ -3004,16 +3008,25 @@ class WebTabTest(ClassTest):
                     test.render_for_post()
                     contain.render_for_post()
 
-            with dyn_btn.on_event_w(event='click'):
+            with del_btn.on_event_w(event='click'):
                 with page.render_post_w():
-                    dyn_btn.render_for_post()
+                    del_btn.render_for_post()
+                    test.render_for_post(return_parts=['html'])
+                    contain.render_for_post(return_parts=['html'])
+
+            with add_btn.on_event_w(event='click'):
+                with page.render_post_w():
+                    add_btn.render_for_post()
                     test.render_for_post(return_parts=['html'])
                     contain.render_for_post(return_parts=['html'])
 
         def on_my_render_impl(self, req):
             page = self._page
-            dyn_btn = page._components[self.DYN_BTN]['obj']
+            WebHead3 = page._SUBCLASSES['WebHead3']['class']
+            del_btn = page._components[self.DEL_BTN]['obj']
+            add_btn = page._components[self.ADD_BTN]['obj']
             dyn_update = False
+            add_update = False
             for r in req:
                 if r['me'] == self.tab_name:
                     print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
@@ -3021,7 +3034,15 @@ class WebTabTest(ClassTest):
                     tab_obj.request(r)
                     tab_obj.active_item(self.tab_item2_name)
                     if dyn_update:
-                        tab_obj.remove_item(self.tab_item3_name)
+                        tab_obj.remove_child(child_name=self.tab_item3_name)
+                        html = tab_obj.render()['content']
+                        child_html = ''
+                        for j in BeautifulSoup(html, 'html5lib').body.findChildren(recursive=False)[0].findChildren(recursive=False):
+                            child_html += str(j)
+                        tab_obj.html(child_html)
+                    if add_update:
+                        html = tab_obj.add_child(child={'item':{'name':self.tab_item4_name,'href':'#'+self.tab_item4_name}}, render=True)
+                        tab_obj.html(html)
                     r['data']=tab_obj.response()['data']
 
                 elif r['me'] == self.tab_contain_name:
@@ -3030,12 +3051,36 @@ class WebTabTest(ClassTest):
                     tab_con_obj.request(r)
                     tab_con_obj.active_item(self.tab_item2_name)
                     if dyn_update:
-                        tab_con_obj.remove_item(self.tab_item3_name)
+                        tab_con_obj.remove_child(child_name=self.tab_item3_name)
+                        html = tab_con_obj.render()['content']
+                        child_html = ''
+                        for j in BeautifulSoup(html, 'html5lib').body.findChildren(recursive=False)[0].findChildren(recursive=False):
+                            child_html += str(j)
+                        tab_con_obj.html(child_html)
+                    if add_update:
+                        """
+                        #Add a new component in tab item
+                        now = datetime.datetime.now()
+                        if not tab_con_obj.find_child(name=self.tab_item3_name):
+                            with tab_con_obj.add_child(WebItem(name=self.tab_item3_name)):
+                                pass
+                        item_obj = tab_con_obj.find_child(name=self.tab_item3_name)
+                        with item_obj.add_child(WebRow()) as r:
+                            with r.add_child(WebColumn(width=['md8','lg8'],offset=['mdo2','ldo2'])) as c:
+                                with c.add_child(WebHead3(value='New contain added at {}'.format(now))):
+                                    pass
+                        html = tab_con_obj.render()['html']
+                        tab_con_obj.html(html=html)
+                        """
+                        pass
                     r['data']=tab_con_obj.response()['data']
 
-                elif r['me'] == self.DYN_BTN:
-                    print('Got {} request:{}'.format(self.DYN_BTN, r))
+                elif r['me'] == self.DEL_BTN:
+                    print('Got {} request:{}'.format(self.DEL_BTN, r))
                     dyn_update = True
+
+                elif r['me'] == self.ADD_BTN:
+                    add_update = True
 
             return jsonify({'status': 'success', 'data': req})
 
@@ -3046,10 +3091,13 @@ class WebTabTest(ClassTest):
             tab_item1_name = 'tab_item1'
             tab_item2_name = 'tab_item2'
             tab_item3_name = 'tab_item3'
+            tab_item4_name = 'tab_item4'
             tab_contain1_name = 'tab_contain1'
             tab_contain2_name = 'tab_contain2'
             tab_contain3_name = 'tab_contain3'
-            DYN_BTN = 'dyn_btn'
+
+            DEL_BTN = 'del_btn'
+            ADD_BTN = 'add_btn'
 
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)

@@ -112,7 +112,6 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
                     return self._response['data']['style']['height']
             return None
 
-
     def color(self, color=None):
 
         def _convert_color_dict(color):
@@ -263,6 +262,14 @@ class ResponseBootstrap(AppearanceInf, PositionInf, PropertyInf):
             return None
 
     # End PropertyInf
+
+    # ComponentInf
+    def add_child(self, child=None, child_id=None, objs=None):
+        pass
+
+    def remove_child(self, child=None, child_id=None,objs=None):
+        pass
+    # End ComponentInf
 
     def on_post(self):
         """
