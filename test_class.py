@@ -3000,13 +3000,13 @@ class WebTabTest(ClassTest):
             add_btn = page._components[self.ADD_BTN]['obj']
 
             with page.render_post_w():
-                test.render_for_post()
-                contain.render_for_post()
+                test.render_for_post(return_parts=['html'])
+                contain.render_for_post(return_parts==['html'])
 
             with test.on_event_w(event='active_change'):
                 with page.render_post_w():
-                    test.render_for_post()
-                    contain.render_for_post()
+                    test.render_for_post(return_parts=['html'])
+                    contain.render_for_post(return_parts=['html'])
 
             with del_btn.on_event_w(event='click'):
                 with page.render_post_w():
@@ -3029,34 +3029,30 @@ class WebTabTest(ClassTest):
             add_update = False
             for r in req:
                 if r['me'] == self.tab_name:
-                    print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
+                    #print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
                     tab_obj = self._components[self.tab_name]['obj']
                     tab_obj.request(r)
                     tab_obj.active_item(self.tab_item2_name)
                     if dyn_update:
                         tab_obj.remove_child(child_name=self.tab_item3_name)
-                        html = tab_obj.render()['content']
-                        child_html = ''
-                        for j in BeautifulSoup(html, 'html5lib').body.findChildren(recursive=False)[0].findChildren(recursive=False):
-                            child_html += str(j)
-                        tab_obj.html(child_html)
+                        new_html = tab_obj.render(children_only=True)['html']
+                        tab_obj.html(new_html)
                     if add_update:
-                        html = tab_obj.add_child(child={'item':{'name':self.tab_item4_name,'href':'#'+self.tab_item4_name}}, render=True)
-                        tab_obj.html(html)
+                        print('test bs object prettify')
+                        print(tab_obj._bsobj.prettify())
+                        #html = tab_obj.add_child(child={'item':{'name':self.tab_item4_name,'href':'#'+self.tab_item4_name}}, render=True)
+                        #tab_obj.html(html)
                     r['data']=tab_obj.response()['data']
 
                 elif r['me'] == self.tab_contain_name:
-                    print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
+                    #print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
                     tab_con_obj = page._components[self.tab_contain_name]['obj']
                     tab_con_obj.request(r)
                     tab_con_obj.active_item(self.tab_item2_name)
                     if dyn_update:
                         tab_con_obj.remove_child(child_name=self.tab_item3_name)
-                        html = tab_con_obj.render()['content']
-                        child_html = ''
-                        for j in BeautifulSoup(html, 'html5lib').body.findChildren(recursive=False)[0].findChildren(recursive=False):
-                            child_html += str(j)
-                        tab_con_obj.html(child_html)
+                        children_html = tab_con_obj.render(children_only=True)['html']
+                        tab_con_obj.html(children_html)
                     if add_update:
                         """
                         #Add a new component in tab item

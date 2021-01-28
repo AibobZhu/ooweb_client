@@ -277,7 +277,7 @@ class ComponentInf(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def remove_child(self,child_name=None,child=None, child_id=None,objs=None, render=False):
+    def remove_child(self,child_name=None,child=None, child_id=None,objs=None):
         pass
 
     @abc.abstractmethod
@@ -294,6 +294,10 @@ class ComponentInf(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def url(self, url=None, js=True):
+        pass
+
+    @abc.abstractmethod
+    def render(self, children_only=False):
         pass
 
     @abc.abstractmethod
