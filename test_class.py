@@ -2956,15 +2956,16 @@ class WebTabTest(ClassTest):
             with page.add_child(WebRow()) as r1:
                 with r1.add_child(WebColumn(width=['md8','lg8'], offset=['mdo2','lgo2'], height='200px')) as c1:
                     with c1.add_child(cls(parent=page, name=self.tab_name, ul_list=[
-                        {'name': self.tab_item1_name, 'href': '#' + self.tab_item1_name},
-                        {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name, 'active': True},
+                        {'name': self.tab_item1_name, 'href': '#' + self.tab_item1_name, 'active': True},
+                        {'name': self.tab_item2_name, 'href': '#' + self.tab_item2_name},
                         {'name': self.tab_item3_name, 'href': '#' + self.tab_item3_name},
                     ])) as test:
                         pass
                     with c1.add_child(WebTabContain(parent=page, name=self.tab_contain_name)) as contain:
                         with contain.add_child(WebTabItem(
                                 id=self.tab_item1_name,
-                                name=self.tab_item1_name)) as item1:
+                                name=self.tab_item1_name,
+                                mytype=['active'])) as item1:
                             with item1.add_child(WebHead3(
                                     value=self.tab_contain1_name)) as contain1:
                                 pass
@@ -2976,8 +2977,7 @@ class WebTabTest(ClassTest):
                                 pass
                         with contain.add_child(WebTabItem(
                                 id=self.tab_item3_name,
-                                name=self.tab_item3_name,
-                                mytype=['active'])) as item3:
+                                name=self.tab_item3_name)) as item3:
                             with item3.add_child(WebHead3(
                                     value=self.tab_contain3_name)) as contain3:
                                 pass
@@ -3023,6 +3023,7 @@ class WebTabTest(ClassTest):
         def on_my_render_impl(self, req):
             page = self._page
             WebHead3 = page._SUBCLASSES['WebHead3']['class']
+            WebTabItem = page._SUBCLASSES['WebTabItem']['class']
             del_btn = page._components[self.DEL_BTN]['obj']
             add_btn = page._components[self.ADD_BTN]['obj']
             dyn_update = False
@@ -3032,43 +3033,34 @@ class WebTabTest(ClassTest):
                     #print('{} got tab active item: {}'.format(self.tab_name, pprint.pformat(r['data'])))
                     tab_obj = self._components[self.tab_name]['obj']
                     tab_obj.request(r)
-                    tab_obj.active_item(self.tab_item2_name)
                     if dyn_update:
                         tab_obj.remove_child(child_name=self.tab_item3_name)
                         new_html = tab_obj.render(children_only=True)['html']
                         tab_obj.html(new_html)
                     if add_update:
-                        print('test bs object prettify')
-                        print(tab_obj._bsobj.prettify())
-                        #html = tab_obj.add_child(child={'item':{'name':self.tab_item4_name,'href':'#'+self.tab_item4_name}}, render=True)
-                        #tab_obj.html(html)
+                        tab_obj.add_child(child={'name':self.tab_item4_name,
+                                                  'href':self.tab_item4_name})
+                        new_html = tab_obj.render(children_only=True)['html']
+                        tab_obj.html(new_html)
+                    #tab_obj.active_item(self.tab_item1_name)
                     r['data']=tab_obj.response()['data']
 
                 elif r['me'] == self.tab_contain_name:
                     #print('{} got tab contain active page: {}'.format(self.tab_contain1_name, pprint.pformat(r['data'])))
                     tab_con_obj = page._components[self.tab_contain_name]['obj']
                     tab_con_obj.request(r)
-                    tab_con_obj.active_item(self.tab_item2_name)
                     if dyn_update:
                         tab_con_obj.remove_child(child_name=self.tab_item3_name)
                         children_html = tab_con_obj.render(children_only=True)['html']
                         tab_con_obj.html(children_html)
                     if add_update:
-                        """
-                        #Add a new component in tab item
-                        now = datetime.datetime.now()
-                        if not tab_con_obj.find_child(name=self.tab_item3_name):
-                            with tab_con_obj.add_child(WebItem(name=self.tab_item3_name)):
+                        with tab_con_obj.add_child(WebTabItem(id=self.tab_item4_name,
+                                                              name=self.tab_item4_name,)) as item4:
+                            with item4.add_child(WebHead3(value=self.tab_contain4_name)) as contain4:
                                 pass
-                        item_obj = tab_con_obj.find_child(name=self.tab_item3_name)
-                        with item_obj.add_child(WebRow()) as r:
-                            with r.add_child(WebColumn(width=['md8','lg8'],offset=['mdo2','ldo2'])) as c:
-                                with c.add_child(WebHead3(value='New contain added at {}'.format(now))):
-                                    pass
-                        html = tab_con_obj.render()['html']
-                        tab_con_obj.html(html=html)
-                        """
-                        pass
+                        children_html = tab_con_obj.render(children_only=True)['html']
+                        tab_con_obj.html(children_html)
+                    #tab_con_obj.active_item(self.tab_item1_name)
                     r['data']=tab_con_obj.response()['data']
 
                 elif r['me'] == self.DEL_BTN:
@@ -3091,6 +3083,7 @@ class WebTabTest(ClassTest):
             tab_contain1_name = 'tab_contain1'
             tab_contain2_name = 'tab_contain2'
             tab_contain3_name = 'tab_contain3'
+            tab_contain4_name = 'tab_contain4'
 
             DEL_BTN = 'del_btn'
             ADD_BTN = 'add_btn'
